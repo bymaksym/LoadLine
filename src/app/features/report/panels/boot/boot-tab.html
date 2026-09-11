@@ -1,0 +1,243 @@
+@let t = i18n.ui();
+@let totals = split();
+
+<app-panel-header [howTo]="t.howToBoot" [subtitle]="t.secBootSub" [title]="t.secBoot" />
+
+<div class="split">
+    <div class="split__item">
+        <span class="split__label">{{ t.bootPackages }}<app-explain [text]="t.helpBootPackages" /></span>
+        <span class="split__figure">{{ totals.pkgBytes | bytes }}</span>
+        <span class="split__sub">{{ pct(totals.pkgBytes) }} · {{ t.entriesCount(totals.pkgCount) }}</span>
+    </div>
+    <div class="split__item">
+        <span class="split__label">{{ t.bootOwnCode }}<app-explain [text]="t.helpBootOwnCode" /></span>
+        <span class="split__figure">{{ totals.ownBytes | bytes }}</span>
+        <span class="split__sub">{{ pct(totals.ownBytes) }} · {{ t.entriesCount(totals.ownCount) }}</span>
+    </div>
+    <span class="track split__track">
+        <i class="split__pkg" [style.width.%]="percent(totals.pkgBytes)"></i>
+    </span>
+    <span class="split__barnote">{{ splitTitle() }}</span>
+    <p class="split__total">
+        {{ t.tileBoot }}:
+        <strong [attr.data-v]="bootVerdict()">{{ store.analysis()?.bootBytes ?? 0 | bytes }}</strong>
+        <span class="split__rule">{{ bootRule() }}</span>
+    </p>
+</div>
+
+<!-- What the colours of the bars below mean. The red one only when there is a red bar to explain. -->
+<div class="legend">
+    <span> <i aria-hidden="true" style="background: var(--seg-boot)"></i> {{ t.legBootPkg }} </span>
+    <span> <i aria-hidden="true" style="background: var(--seg-own)"></i> {{ t.legBootOwn }} </span>
+    @if (hasBadRow()) {
+        <span>
+            <i aria-hidden="true" style="background: var(--crit)"></i> {{ t.legBootBad
+            }}<app-explain [text]="lazyImportersHelp()" />
+        </span>
+    }
+</div>
+
+<!-- Sixty-one rows and no way to look for one: the same field the other tables have. -->
+<div class="toolbar">
+    <div class="toolbar__group">
+        <input
+            class="field"
+            type="search"
+            [attr.aria-label]="t.filterBoot"
+            [placeholder]="t.filterBoot"
+            [value]="filter()"
+            (input)="search($any($event.target).value)"
+        />
+        <span aria-live="polite" class="toolbar__count">{{ t.shownRows(rows().length, allRows().length) }}</span>
+    </div>
+</div>
+
+<div class="scroller--tall">
+    <table>
+        <thead>
+            <!--
+            The bar sits right after the name. At the far end of the row it had some 700 px of empty
+            cell in front of it and stopped reading as a comparison between rows.
+            -->
+            <tr>
+                <th
+                    app-sort
+                    class="name-col"
+                    [active]="order().key === 'name'"
+                    [dir]="order().dir"
+                    [help]="t.helpSource"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick('name')"
+                >
+                    {{ t.thSource }}
+                </th>
+                <th class="bar-col"></th>
+                <th
+                    app-sort
+                    class="num"
+                    [active]="order().key === 'bytes'"
+                    [dir]="order().dir"
+                    [help]="t.helpSize"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick('bytes')"
+                >
+                    {{ t.thSize }}
+                </th>
+                <th class="num">%<app-explain [text]="t.helpBootPercent" /></th>
+                <th
+                    app-sort
+                    class="num"
+                    [active]="order().key === 'exclusive'"
+                    [dir]="order().dir"
+                    [help]="t.helpExclusive"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick('exclusive')"
+                >
+                    {{ t.thExclusive }}
+                </th>
+                <th
+                    app-sort
+                    [active]="order().key === 'importers'"
+                    [dir]="order().dir"
+                    [help]="t.helpImporters"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick('importers')"
+                >
+                    {{ t.thImporters }}
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of rows(); track row.name) {
+                @let isOpen = expanded() === row.name;
+
+                <tr
+                    class="row-btn"
+                    role="button"
+                    tabindex="0"
+                    [attr.aria-expanded]="isOpen"
+                    [attr.data-key]="row.name"
+                    [class.is-lazy]="row.fewImporters"
+                    (click)="toggle(row)"
+                    (keydown.enter)="toggle(row)"
+                    (keydown.space)="toggle(row); $event.preventDefault()"
+                >
+                    <td class="path">
+                        <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
+                        {{ row.name }}
+                        @if (row.isProjectCode) {
+                            <span class="tag" [title]="t.helpBootOwnCode">{{ t.ownCodeRow }}</span>
+                        }
+                        @if (row.isCommonJs) {
+                            <span class="tag tag--warn" [title]="t.helpCommonJs">{{ t.tagCommonJs }}</span>
+                        }
+                    </td>
+                    <td>
+                        <span
+                            class="track"
+                            [class.track--bad]="row.sizeVerdict === 'bad'"
+                            [class.track--own]="row.isProjectCode"
+                        >
+                            <i [style.width.%]="row.percent"></i>
+                        </span>
+                    </td>
+                    <td class="num" [attr.data-v]="row.sizeVerdict">
+                        {{ row.bytes | bytes }}
+                        @if (row.sizeVerdict === 'bad') {
+                            <i aria-hidden="true" class="dot-v dot-v--after" data-v="bad"></i>
+                            <span class="sr-only">, {{ t.verdictBad }}.</span>
+                        }
+                    </td>
+                    <td class="num" [attr.data-v]="row.sizeVerdict">{{ row.percent.toFixed(1) }} %</td>
+                    <!--
+                    The figure that says whether the row above is worth acting on. When the two
+                    agree the cell is quiet; when they do not, that gap IS the finding, so it is
+                    the one that gets marked.
+                    -->
+                    <td class="num">
+                        @if (row.exclusive < row.bytes) {
+                            <strong>{{ row.exclusive | bytes }}</strong>
+                        } @else {
+                            <span class="muted">{{ row.exclusive | bytes }}</span>
+                        }
+                    </td>
+                    <td class="who">
+                        @if (row.importers === null) {
+                            <span class="muted" [title]="t.helpBootOwnCode">—</span>
+                        } @else if (row.importers === 0) {
+                            <span class="muted" [title]="t.helpImportersNone">{{ t.importersNone }}</span>
+                        } @else {
+                            {{ t.importersCount(row.importers) }}
+                            @if (row.fewImporters) {
+                                <span class="tag tag--crit" [title]="lazyImportersHelp()"
+                                    >{{ t.importersLazyOnly(row.lazyScreens.length, row.importers) }}:
+                                    {{ row.lazyScreens.join(', ') }}</span
+                                >
+                            }
+                        }
+                    </td>
+                </tr>
+
+                @if (isOpen) {
+                    <tr class="detail">
+                        <td colspan="5">
+                            <!--
+                            Where the figures of the row above come from. It used to be three
+                            `title` attributes on three cells, which is three explanations nobody
+                            on a touch screen could reach and sixty-one rows' worth of them if they
+                            had each been given a mark. The row already opens; this is what it says.
+                            -->
+                            <p class="detail-figures">{{ rowFigures(row) }}</p>
+                            <div class="detail-grid" [class.detail-grid--single]="row.isProjectCode">
+                                @if (!row.isProjectCode) {
+                                    <div>
+                                        <h4 class="detail-title">{{ t.bootChain }}</h4>
+                                        <app-chain [none]="t.bootChainNone" [steps]="row.chain" />
+
+                                        @if (row.importerFiles.length > 0) {
+                                            <h4 class="detail-title">{{ t.thImporters }}</h4>
+                                            <div class="chips">
+                                                @for (file of row.importerFiles; track file.path) {
+                                                    @if (file.screen) {
+                                                        <button
+                                                            class="chip chip--screen"
+                                                            type="button"
+                                                            [title]="t.seeInScreens + ': ' + file.path"
+                                                            (click)="nav.go('screens', file.path)"
+                                                        >
+                                                            {{ file.path }}
+                                                        </button>
+                                                    } @else {
+                                                        <span class="chip">{{ file.path }}</span>
+                                                    }
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                <div>
+                                    <h4 class="detail-title">{{ t.contents }}</h4>
+                                    <app-path-tree [items]="row.files" />
+                                    <!--
+                                    This tab only says what the entry weighs HERE. Whether it also
+                                    lands in other chunks is a question only the search answers, and
+                                    until now getting there meant retyping the name.
+                                    -->
+                                    <p class="detail-more">
+                                        <button class="link-btn" type="button" (click)="nav.go('search', row.name)">
+                                            {{ t.seeInSearch }} →
+                                        </button>
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            } @empty {
+                <tr>
+                    <td class="empty" colspan="5">{{ t.noMatch }}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

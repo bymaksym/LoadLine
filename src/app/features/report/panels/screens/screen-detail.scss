@@ -1,0 +1,61 @@
+:host {
+    display: block;
+}
+
+.detail-origin {
+    margin: 0 0 0.6rem;
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+/* The heading of the chain: it names the answer under it, so it goes in the small step. */
+.detail-why {
+    margin: 0 0 0.15rem;
+    font-size: var(--fs-note);
+    font-weight: 600;
+    color: var(--muted);
+}
+
+/* The total broken into its three parts, two of which are somewhere else in the report. */
+.detail-parts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem 0.4rem;
+    align-items: baseline;
+
+    margin: 0 0 0.9rem;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-body);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+
+    &__op {
+        color: var(--line-strong);
+    }
+}
+
+.scroller + .scroller {
+    margin-top: 0.9rem;
+}
+
+.twist {
+    display: inline-block;
+    width: 1rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+/*
+ * The detail sits on the sunk background, so its own expandable rows take the surface colour when
+ * open: the other way round they would disappear into the panel they are drawn on.
+ */
+tr.row-btn[aria-expanded='true'] td,
+tr.detail td {
+    background: var(--surface);
+}
+
+/* One line of this row, for the thread where the decision is being argued. */
+.detail-copy {
+    margin: 0 0 0.9rem;
+}

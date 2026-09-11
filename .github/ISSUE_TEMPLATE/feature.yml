@@ -1,0 +1,53 @@
+name: Feature request
+description: Something Loadline should answer and does not
+labels: ['enhancement']
+body:
+    - type: markdown
+      attributes:
+          value: |
+              **"What it does not do" in the README is a list of decisions, not a backlog.**
+              Several of the obvious requests are on it on purpose, with the reason. Worth a
+              look before writing — if your request is there, the useful issue is the one that
+              argues with the reason rather than repeating the request.
+
+    - type: textarea
+      id: question
+      attributes:
+          label: The question you are trying to answer
+          description: |
+              Not the feature — the question about your build that you cannot answer today.
+              This tool exists because every analyser answered "how much do my chunks weigh?"
+              and none answered "what does opening this screen download?". Which question is
+              yours?
+      validations:
+          required: true
+
+    - type: textarea
+      id: today
+      attributes:
+          label: What you do instead today
+          description: The treemap, the terminal, the network tab, a spreadsheet — whatever the current workaround is.
+      validations:
+          required: false
+
+    - type: textarea
+      id: shape
+      attributes:
+          label: What the answer would look like
+          description: A number, a column, a signal, a flag on the command. Rough is fine.
+      validations:
+          required: false
+
+    - type: checkboxes
+      id: constraints
+      attributes:
+          label: Does it fit what the tool is?
+          description: |
+              These are properties of Loadline, not stages it is at. A request that needs one
+              of them broken is very unlikely to happen, and saying so now saves us both time.
+          options:
+              - label: It does not need a network request, a server or an account
+              - label: It works from build output alone, without running the app
+              - label: The page and the command can both do it
+      validations:
+          required: false

@@ -1,0 +1,238 @@
+@let t = i18n.ui();
+@let all = screens();
+@let visible = rows();
+@let counts = verdictCount();
+
+<app-panel-header [howTo]="t.howToScreens" [subtitle]="t.secScreensSub" [title]="t.secScreens" />
+
+@if (all.length) {
+    <div class="toolbar">
+        <div class="toolbar__group">
+            <input
+                class="field"
+                type="search"
+                [attr.aria-label]="t.filterScreens"
+                [placeholder]="t.filterScreens"
+                [value]="filter()"
+                (input)="filter.set($any($event.target).value)"
+            />
+            <span aria-live="polite" class="toolbar__count">{{ t.shownCount(visible.length, all.length) }}</span>
+        </div>
+
+        <div class="toolbar__group" role="group" [attr.aria-label]="t.colTotal">
+            @for (option of verdictFilters; track option) {
+                <button
+                    class="ctl"
+                    type="button"
+                    [attr.aria-pressed]="verdictFilter() === option"
+                    [class.ctl--active]="verdictFilter() === option"
+                    [title]="option === 'all' ? '' : totalRule()"
+                    (click)="verdictFilter.set(option)"
+                >
+                    @if (option !== 'all') {
+                        <i aria-hidden="true" class="dot-v" [attr.data-v]="option"></i>
+                    }
+                    {{ verdictLabel(option) }}
+                    @if (option !== 'all') {
+                        <span class="ctl__n">{{ counts[option] }}</span>
+                    }
+                </button>
+            }
+        </div>
+
+        <!--
+        Which columns are drawn. One control and not five: five toggles in a row would be five more
+        things to read every visit, and this is a thing somebody sets once. What it can take away is
+        the three figures that break the total down and the delta — never the name, the bar or the
+        total, which are what the table is.
+        -->
+        <details class="cols">
+            <summary class="ctl">{{ t.columnsBtn(numberColumns().length, allColumns().length) }}</summary>
+            <div class="cols__menu">
+                @for (column of hideableColumns(); track column.key) {
+                    <label class="cols__row">
+                        <input type="checkbox" [checked]="shows(column.key)" (change)="toggleColumn(column.key)" />
+                        {{ column.label }}
+                    </label>
+                }
+            </div>
+        </details>
+    </div>
+
+    <!--
+    One line where there were three paragraphs (the legend, the round trips of the first load and
+    "this is computed, not measured"). The colour legend went into the header row, right on top of
+    the bars it explains — it used to sit three blocks above them, out of sight by row ten.
+    -->
+    <p class="caveat">
+        <span>{{ startupNote() }}<app-explain [text]="t.startupHelp" /></span>
+        <!-- Each clause carries its own separator, so a middle dot never opens a line on its own. -->
+        <span class="caveat__item">
+            <span aria-hidden="true">·</span>&ngsp;<span [innerHTML]="t.screensCaveat"></span>&ngsp;<button
+                class="link-btn"
+                type="button"
+                (click)="nav.go('measured')"
+            >
+                {{ t.measureFromScreens }} →
+            </button>
+        </span>
+        <!-- The rule the Total column is coloured by, written out rather than left in a `title`. -->
+        <span class="caveat__item"><span aria-hidden="true">·</span> {{ totalRule() }}</span>
+        @if (deltaNote(); as note) {
+            <span class="caveat__item"><span aria-hidden="true">·</span> {{ note }}</span>
+        }
+    </p>
+
+    <div class="scroller--tall screens">
+        <div class="screen-row screen-row--head" [style.--screen-cols]="gridColumns()">
+            <span
+                app-sort
+                class="screen-row__name"
+                [active]="order().key === 'name'"
+                [dir]="order().dir"
+                [sortLabel]="t.sortByColumn"
+                (pick)="pick('name')"
+                >{{ t.colScreen }}</span
+            >
+
+            <!-- The legend of the three colours, on top of the bars they colour. -->
+            <span class="screen-row__legend">
+                <span>
+                    <i aria-hidden="true" style="background: var(--seg-boot)"></i> {{ t.legBoot
+                    }}<app-explain [text]="t.helpDelivery.eager" />
+                </span>
+                <span>
+                    <i aria-hidden="true" style="background: var(--seg-shared)"></i> {{ t.legShared
+                    }}<app-explain [text]="t.helpDelivery.lazy" />
+                </span>
+                <span>
+                    <i aria-hidden="true" style="background: var(--seg-own)"></i> {{ t.legOwn
+                    }}<app-explain [text]="t.helpDelivery.lazy" />
+                </span>
+            </span>
+
+            @for (column of numberColumns(); track column.key) {
+                <span
+                    app-sort
+                    [active]="order().key === column.key"
+                    [class]="column.cls"
+                    [dir]="order().dir"
+                    [help]="column.help"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick(column.key)"
+                    >{{ column.label }}</span
+                >
+            }
+        </div>
+
+        @for (screen of visible; track screen.source) {
+            @let isOpen = expanded() === screen.source;
+
+            <div class="screen" [attr.data-key]="screen.source" [class.is-open]="isOpen">
+                <button
+                    class="screen-row"
+                    type="button"
+                    [attr.aria-controls]="'screen-detail-' + $index"
+                    [attr.aria-expanded]="isOpen"
+                    [style.--screen-cols]="gridColumns()"
+                    (click)="toggle(screen)"
+                >
+                    <span class="screen-row__name" [title]="screen.source">{{ screen.label }}</span>
+
+                    <!--
+                    The bar is a picture of the three figures that follow it in the row, so it is
+                    hidden: describing it as well would read every size out twice.
+                    -->
+                    <span aria-hidden="true" class="bar">
+                        <!--
+                        The verdict, drawn where the bars already are. The shared scale makes the
+                        comparison between rows visible without reading a number; these two lines do
+                        the same for "is it over budget", which was a colour on a figure at the far
+                        end of the row.
+                        -->
+                        @if (thresholds().ok !== null) {
+                            <b class="bar__mark" [style.left.%]="thresholds().ok"></b>
+                        }
+                        @if (thresholds().bad !== null) {
+                            <b class="bar__mark bar__mark--bad" [style.left.%]="thresholds().bad"></b>
+                        }
+                        <i
+                            style="background: var(--seg-boot)"
+                            [style.width.%]="percent(screen.boot)"
+                            [title]="t.treeBoot + ' ' + (screen.boot | bytes)"
+                        ></i>
+                        <i
+                            style="background: var(--seg-shared)"
+                            [style.width.%]="percent(screen.shared)"
+                            [title]="t.colShared + ' ' + (screen.shared | bytes)"
+                        ></i>
+                        <i
+                            style="background: var(--seg-own)"
+                            [style.width.%]="percent(screen.own)"
+                            [title]="t.colOwn + ' ' + (screen.own | bytes)"
+                        ></i>
+                    </span>
+
+                    <!--
+                    The header row is a strip of sort buttons, not a table header a row can be read
+                    against, so every figure carries its own column name: without it a row reads as
+                    five bare numbers.
+                    -->
+                    <span class="sr-only">{{ t.treeBoot }} {{ screen.boot | bytes }}.</span>
+                    @if (shows('waves')) {
+                        <span class="screen-row__num screen-row__num--waves">
+                            <span class="sr-only">{{ t.colWaves }} </span>{{ screen.waves }}
+                            <span class="sr-only">.</span>
+                        </span>
+                    }
+                    @if (shows('shared')) {
+                        <span class="screen-row__num screen-row__num--shared">
+                            <span class="sr-only">{{ t.colShared }} </span>{{ screen.shared | bytes }}
+                            <span class="sr-only">.</span>
+                        </span>
+                    }
+                    <!--
+                    The rating carries a shape as well as a colour: a disc, a square or a triangle.
+                    In a cell there is no room for the word, and the tone on its own is not something
+                    everybody can read.
+                    -->
+                    @if (shows('own')) {
+                        <span class="screen-row__num screen-row__num--own" [attr.data-v]="ownVerdict(screen)">
+                            <span class="sr-only">{{ t.colOwn }} </span>{{ screen.own | bytes }}
+                            <i aria-hidden="true" class="dot-v dot-v--after" [attr.data-v]="ownVerdict(screen)"></i>
+                            <span class="sr-only">, {{ verdictLabel(ownVerdict(screen)) }}.</span>
+                        </span>
+                    }
+                    <span class="screen-row__num screen-row__total" [attr.data-v]="totalVerdict(screen)">
+                        <span class="sr-only">{{ t.colTotal }} </span>{{ screen.total | bytes }}
+                        <i aria-hidden="true" class="dot-v dot-v--after" [attr.data-v]="totalVerdict(screen)"></i>
+                        <span class="sr-only">, {{ verdictLabel(totalVerdict(screen)) }}.</span>
+                    </span>
+                    @if (shows('delta') && deltaOf(screen); as delta) {
+                        <!--
+                        Narrow, this cell drops to a line of its own under the bar. The column name
+                        is written out there: a bare `+12 kB` hanging below a row explained nothing.
+                        -->
+                        <span class="screen-row__num screen-row__delta" [attr.data-tone]="delta.tone">
+                            <span class="col-label">{{ t.colDelta }} </span>{{ delta.text }}
+                        </span>
+                    }
+                </button>
+
+                @if (isOpen) {
+                    <div class="screen-detail" [id]="'screen-detail-' + $index">
+                        <app-screen-detail [screen]="screen" />
+                    </div>
+                }
+            </div>
+        } @empty {
+            <p class="empty empty--pad">{{ t.noMatch }}</p>
+        }
+    </div>
+} @else {
+    <p class="empty">{{ t.noScreens }}</p>
+}
+
+<!-- What the table has no row for. Outside the branch above: with every row marked away, the -->
+<!-- list is the only thing left on screen, and it is what undoes the marks. -->
+<app-not-screens />

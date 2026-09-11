@@ -1,0 +1,5 @@
+# The executable is read by a shell before Node ever sees it, and a shebang followed by a carriage
+# return is not a shebang: a CRLF checkout on Windows would publish a command that fails on every
+# Linux runner with `env: node\r: No such file or directory`. Pinning the one file in the repository
+# that carries a shebang costs nothing and cannot be undone by an editor's default.
+bin/loadline.js text eol=lf

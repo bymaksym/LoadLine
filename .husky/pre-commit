@@ -1,0 +1,7 @@
+echo -e "\nRunning linters...\n"
+pnpm exec lint-staged || true
+
+echo -e "\nType checking...\n"
+pnpm run typecheck
+
+echo -e "\nPre-commit checks passed!"

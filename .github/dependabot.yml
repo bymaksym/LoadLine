@@ -1,0 +1,60 @@
+# Dependency updates, and the reason the settings are not the defaults.
+#
+# Every dependency here is a development dependency — the published package has none — so an
+# update can never reach somebody who ran `npx loadline`. That takes the urgency out of it and
+# leaves the cost: a pull request per package per week is how Dependabot gets muted, and a
+# muted Dependabot is worse than none, because the security alerts arrive in the same place.
+#
+# So: grouped, monthly, and majors left out. `pnpm run deps:check` (npm-check-updates, with a
+# cooldown) is still the tool for deciding a major on purpose. What this file is for is the
+# patch nobody would have chosen to look at.
+#
+# Security updates ignore `schedule` and `open-pull-requests-limit` and arrive as soon as an
+# advisory lands, which is the behaviour worth keeping.
+
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: monthly
+      open-pull-requests-limit: 3
+      groups:
+          angular:
+              patterns: ['@angular/*', 'angular-eslint']
+          linting:
+              patterns:
+                  - 'eslint*'
+                  - '@eslint/*'
+                  - 'typescript-eslint'
+                  - 'stylelint*'
+                  - 'prettier*'
+          everything-else:
+              patterns: ['*']
+              exclude-patterns:
+                  - '@angular/*'
+                  - 'angular-eslint'
+                  - 'eslint*'
+                  - '@eslint/*'
+                  - 'typescript-eslint'
+                  - 'stylelint*'
+                  - 'prettier*'
+      ignore:
+          # Majors are a decision with a migration behind them, not something to merge on a
+          # Monday. `pnpm run deps:check` is where they get looked at.
+          - dependency-name: '*'
+            update-types: ['version-update:semver-major']
+      commit-message:
+          # commitlint enforces Conventional Commits, and Dependabot's default prefix is not
+          # one. Without this every Dependabot pull request fails the commit-message check.
+          prefix: chore
+          include: scope
+
+    # The workflows pin actions by major tag (`actions/checkout@v4`), which silently stops
+    # receiving fixes the day a v5 exists. This is the only thing that notices.
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: monthly
+      commit-message:
+          prefix: ci

@@ -1,0 +1,65 @@
+@let n = node();
+@let t = i18n.ui();
+
+<div class="row" [class.row--file]="n.isFile" [style.padding-left.rem]="depth() * 1.05">
+    @if (n.isFile) {
+        <!--
+        A file opens too, and what it opens is the one question that follows every row of this
+        report: why is this here. The leaf marker becomes the control rather than a control being
+        added next to it — the tree already draws thousands of these rows, and thousands of new
+        buttons would cost more than the question is worth.
+        -->
+        <button
+            class="twist twist--leaf"
+            type="button"
+            [attr.aria-expanded]="whyOpen()"
+            [attr.aria-label]="t.whyHereOf(n.name)"
+            (click)="whyOpen.set(!whyOpen())"
+        >
+            {{ whyOpen() ? '−' : '·' }}
+        </button>
+    } @else {
+        <button
+            class="twist"
+            type="button"
+            [attr.aria-expanded]="open()"
+            [attr.aria-label]="n.name"
+            (click)="open.set(!open())"
+        >
+            {{ open() ? '−' : '+' }}
+        </button>
+    }
+
+    <span class="name-cell">
+        <span class="name" [title]="n.id">{{ n.name }}</span>
+        @if (!n.isFile) {
+            <span class="count">{{ t.filesCount(n.files) }}</span>
+        }
+    </span>
+
+    <span aria-hidden="true" class="share">
+        <i [style.width.%]="sharePercent()"></i>
+    </span>
+
+    <span class="size">{{ node().bytes | bytes }}</span>
+</div>
+
+@if (n.isFile) {
+    @if (whyOpen()) {
+        <div class="why" [style.padding-left.rem]="depth() * 1.05 + 1.4">
+            <h5 class="why__title">{{ t.whyHere }}</h5>
+            <app-chain [none]="t.whyHereNone" [steps]="chain()" />
+        </div>
+    }
+} @else if (open()) {
+    @for (child of n.children; track child.id) {
+        <app-path-node
+            [autoOpenDepth]="autoOpenDepth()"
+            [depth]="depth() + 1"
+            [force]="force()"
+            [node]="child"
+            [scale]="scale()"
+            [siblings]="n.children.length"
+        />
+    }
+}

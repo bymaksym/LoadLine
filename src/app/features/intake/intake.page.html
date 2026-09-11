@@ -1,0 +1,272 @@
+@let t = i18n.ui();
+
+<input accept=".json,application/json" id="statsInput" type="file" (change)="onStats($event)" />
+<input id="distInput" multiple type="file" webkitdirectory (change)="onDist($event)" />
+<input accept=".json,application/json" id="baselineInput" type="file" (change)="onBaseline($event)" />
+<input id="baselineDistInput" multiple type="file" webkitdirectory (change)="onBaselineDist($event)" />
+<input accept=".json,.yml,.yaml" id="contextInput" multiple type="file" (change)="onContext($event)" />
+
+@if (compact()) {
+    <div
+        class="bar"
+        [class.is-over]="dragging() === 'stats'"
+        (dragenter)="onDragOver($event, 'stats')"
+        (dragleave)="dragging.set(null)"
+        (dragover)="onDragOver($event, 'stats')"
+        (drop)="onDrop($event, 'stats')"
+    >
+        <div class="bar__status">
+            <span aria-hidden="true" class="bar__ok">✓</span>
+            <span class="mono">{{ statsStatus() }}</span>
+            <span aria-hidden="true" class="bar__sep">·</span>
+            <!--
+            Four states on one line of middle dots, all weighing the same. This one does not weigh
+            the same: raw figures mean every number on the page is above what anybody downloads.
+            -->
+            <span aria-live="polite" [attr.data-tone]="distTone()">
+                @if (distTone() === 'warn') {
+                    <span aria-hidden="true">⚠</span>
+                }
+                {{ compactDist() }}
+            </span>
+            @if (store.baseline(); as baseline) {
+                <span aria-hidden="true" class="bar__sep">·</span>
+                <span [attr.data-tone]="store.comparisonBlocked() ? 'error' : null">{{
+                    t.baselineShort(baseline.name)
+                }}</span>
+            }
+            @if (store.contextInfo(); as context) {
+                <span aria-hidden="true" class="bar__sep">·</span>
+                <span>{{ t.contextShort(context.files.length) }}</span>
+            }
+        </div>
+
+        <div class="bar__actions">
+            <!-- A suggestion, not the main action: it used to be the loudest thing on the page. -->
+            @if (!store.compressed()) {
+                @if (store.canPickFolder) {
+                    <button class="file-btn file-btn--ghost" type="button" (click)="pickDist()">
+                        {{ t.intakeAddDist }}
+                    </button>
+                } @else {
+                    <label
+                        class="file-btn file-btn--ghost"
+                        for="distInput"
+                        tabindex="0"
+                        (keydown)="activate($event, 'distInput')"
+                    >
+                        {{ t.intakeAddDist }}
+                    </label>
+                }
+            }
+            <!--
+            The loop is compile → look → change → compile, and every turn of it used to cost a drag
+            of four thousand files. It is only here where the browser can actually hold on to the
+            folder: not in Firefox, not in Safari, and not from a `file://` page, which is how this
+            is opened most of the time. Where it cannot, the button is not drawn at all.
+            -->
+            @if (store.canReread()) {
+                <button class="file-btn file-btn--ghost" type="button" [title]="t.rereadHelp" (click)="reread()">
+                    {{ t.rereadBtn }}
+                </button>
+            }
+            @if (!store.baseline()) {
+                <label
+                    class="file-btn file-btn--ghost"
+                    for="baselineInput"
+                    tabindex="0"
+                    (keydown)="activate($event, 'baselineInput')"
+                >
+                    {{ t.intakeAddBaseline }}
+                </label>
+            }
+            @if (!store.contextInfo()) {
+                <label
+                    class="file-btn file-btn--ghost"
+                    for="contextInput"
+                    tabindex="0"
+                    (keydown)="activate($event, 'contextInput')"
+                >
+                    {{ t.intakeAddContext }}
+                </label>
+            }
+            <button class="ctl" type="button" (click)="expandedByUser.set(true)">{{ t.intakeShow }}</button>
+        </div>
+    </div>
+} @else {
+    <div class="intake">
+        @if (store.lastSession(); as last) {
+            <div class="restore">
+                <span>{{ t.restorePrompt(last.name, last.date) }}</span>
+                <span class="restore__actions">
+                    <button class="ctl ctl--active" type="button" (click)="store.restoreLast()">
+                        {{ t.restoreBtn }}
+                    </button>
+                    <button class="ctl" type="button" (click)="store.forgetLast()">
+                        {{ t.restoreForget }}
+                    </button>
+                </span>
+            </div>
+        }
+        <div
+            class="drop drop--main"
+            [class.is-over]="dragging() === 'stats'"
+            (dragenter)="onDragOver($event, 'stats')"
+            (dragleave)="dragging.set(null)"
+            (dragover)="onDragOver($event, 'stats')"
+            (drop)="onDrop($event, 'stats')"
+        >
+            <h2>{{ t.drop1Title }}</h2>
+            <p [innerHTML]="t.drop1Body"></p>
+
+            <div class="drop__actions">
+                <label class="file-btn" for="statsInput" tabindex="0" (keydown)="activate($event, 'statsInput')">
+                    {{ t.drop1Btn }}
+                </label>
+                <!--
+                The highest barrier this tool had: evaluating it started with building an
+                application. The example is the same analysis on a build that ships with the page.
+                -->
+                @if (!store.statsInfo()) {
+                    <button class="ctl" type="button" (click)="store.loadSample()">{{ t.sampleBtn }}</button>
+                }
+                @if (store.statsInfo()) {
+                    <button class="ctl" type="button" (click)="removeStats()">
+                        {{ store.isSample() ? t.sampleRemove : t.statsRemove }}
+                    </button>
+                }
+            </div>
+
+            <div aria-live="polite" class="status" [attr.data-tone]="store.error() ? 'error' : null">
+                {{ statsStatus() }}
+            </div>
+
+            <!--
+            The one place a failure can be reported from. With a report on screen the same button
+            sits at the end of it; here there is no report, which is exactly what is being reported.
+            -->
+            @if (store.error()) {
+                <div class="drop__actions">
+                    <button class="ctl" type="button" [title]="t.diagnosticsHint" (click)="copyDiagnostics()">
+                        {{ copiedDiagnostics() ? t.diagnosticsCopied : t.diagnosticsBtn }}
+                    </button>
+                </div>
+            }
+        </div>
+
+        <div class="drop">
+            <h2>{{ t.drop2Title }}</h2>
+            <p [innerHTML]="t.drop2Body"></p>
+
+            <div class="drop__actions">
+                @if (store.canPickFolder) {
+                    <button class="file-btn file-btn--ghost" type="button" (click)="pickDist()">
+                        {{ t.drop2Btn }}
+                    </button>
+                } @else {
+                    <label
+                        class="file-btn file-btn--ghost"
+                        for="distInput"
+                        tabindex="0"
+                        (keydown)="activate($event, 'distInput')"
+                    >
+                        {{ t.drop2Btn }}
+                    </label>
+                }
+                @if (store.canReread()) {
+                    <button class="ctl" type="button" [title]="t.rereadHelp" (click)="reread()">
+                        {{ t.rereadBtn }}
+                    </button>
+                }
+                @if (store.distFiles()) {
+                    <button class="ctl" type="button" (click)="removeDist()">{{ t.distRemove }}</button>
+                }
+            </div>
+
+            <div aria-live="polite" class="status" [attr.data-tone]="distTone()">{{ distStatus() }}</div>
+
+            <!-- Tens of megabytes, one file at a time: it takes as long as it takes, and now it says so. -->
+            @if (store.progress(); as progress) {
+                <span class="track progress">
+                    <i [style.width.%]="(progress.done / (progress.total || 1)) * 100"></i>
+                </span>
+            }
+        </div>
+
+        <div
+            class="drop"
+            [class.is-over]="dragging() === 'baseline'"
+            (dragenter)="onDragOver($event, 'baseline')"
+            (dragleave)="dragging.set(null)"
+            (dragover)="onDragOver($event, 'baseline')"
+            (drop)="onDrop($event, 'baseline')"
+        >
+            <h2>{{ t.drop3Title }}</h2>
+            <p [innerHTML]="t.drop3Body"></p>
+
+            <div class="drop__actions">
+                <label
+                    class="file-btn file-btn--ghost"
+                    for="baselineInput"
+                    tabindex="0"
+                    (keydown)="activate($event, 'baselineInput')"
+                >
+                    {{ t.drop3Btn }}
+                </label>
+                <label
+                    class="file-btn file-btn--ghost"
+                    for="baselineDistInput"
+                    tabindex="0"
+                    (keydown)="activate($event, 'baselineDistInput')"
+                >
+                    {{ t.drop3BtnDist }}
+                </label>
+                @if (store.baseline()) {
+                    <button class="ctl" type="button" (click)="store.clearBaseline()">
+                        {{ t.baselineRemove }}
+                    </button>
+                }
+            </div>
+
+            <div aria-live="polite" class="status" [attr.data-tone]="baselineTone()">
+                {{ baselineStatus() }}
+            </div>
+        </div>
+
+        <div
+            class="drop"
+            [class.is-over]="dragging() === 'context'"
+            (dragenter)="onDragOver($event, 'context')"
+            (dragleave)="dragging.set(null)"
+            (dragover)="onDragOver($event, 'context')"
+            (drop)="onDrop($event, 'context')"
+        >
+            <h2>{{ t.drop4Title }}</h2>
+            <p [innerHTML]="t.drop4Body"></p>
+
+            <div class="drop__actions">
+                <label
+                    class="file-btn file-btn--ghost"
+                    for="contextInput"
+                    tabindex="0"
+                    (keydown)="activate($event, 'contextInput')"
+                >
+                    {{ t.drop4Btn }}
+                </label>
+                @if (store.contextInfo()) {
+                    <button class="ctl" type="button" (click)="store.clearContext()">
+                        {{ t.contextRemove }}
+                    </button>
+                }
+            </div>
+
+            <div aria-live="polite" class="status" [attr.data-tone]="contextTone()">{{ contextStatus() }}</div>
+        </div>
+
+        @if (store.analysis()) {
+            <button class="ctl intake__hide" type="button" (click)="expandedByUser.set(false)">
+                {{ t.intakeHide }}
+            </button>
+        }
+    </div>
+}

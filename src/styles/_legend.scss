@@ -1,0 +1,28 @@
+/* ---------- legend ---------- */
+
+/*
+   What each colour means, spelled out next to the table that uses it. Shared because the same
+   three swatches appear in more than one panel, and a legend that drifts between panels is worse
+   than none: the reader learns one colour code and then finds it contradicted.
+*/
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    margin-bottom: 0.6rem;
+
+    span {
+        display: inline-flex;
+        gap: 0.4rem;
+        align-items: center;
+
+        font-size: var(--fs-body);
+        color: var(--muted);
+    }
+
+    i {
+        width: 11px;
+        height: 11px;
+        border-radius: 2px;
+    }
+}

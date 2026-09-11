@@ -1,0 +1,267 @@
+:host {
+    display: block;
+}
+
+/*
+   The figure the whole tab exists to produce, at the top, in the size of a headline. It is the one
+   thing here that is arithmetic rather than an opinion, and the level it is at decides its tone —
+   the same three colours the rest of the report rates with, so nobody has to learn a fourth scale.
+*/
+.cost {
+    margin: 0.9rem 0;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line-strong);
+    border-radius: var(--radius);
+
+    background: var(--surface);
+
+    &[data-level='high'] {
+        border-left-color: var(--crit);
+        background: var(--crit-soft);
+    }
+
+    &[data-level='moderate'] {
+        border-left-color: var(--warn);
+        background: var(--warn-soft);
+    }
+
+    &[data-level='low'] {
+        border-left-color: var(--ok);
+        background: var(--ok-soft);
+    }
+}
+
+.cost__line {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.45;
+
+    /* Nothing answered yet is not a failure, so it does not read as one: it reads as a note. */
+    &--none {
+        font-size: 0.9rem;
+        font-weight: 400;
+        color: var(--muted);
+    }
+}
+
+.cost__note {
+    margin: 0.35rem 0 0;
+    font-size: var(--fs-note);
+    color: var(--muted);
+}
+
+.asymmetry {
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
+
+    max-width: 78ch;
+    margin: 0.6rem 0;
+
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.panel-note {
+    max-width: 78ch;
+    margin: 0.4rem 0 1.2rem;
+    font-size: 0.85rem;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.warn {
+    max-width: 78ch;
+    margin: 0.6rem 0;
+    font-size: 0.85rem;
+    color: var(--warn);
+}
+
+/*
+   One question per row: what is being asked on the left, how it is answered on the right. They
+   stack on a narrow screen, and the question keeps its full width there — a wrapped question with
+   the options beside it was the layout that made this read like a form to get through rather than
+   five things to think about.
+*/
+.q {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 1rem 1.6rem;
+
+    padding: 1rem 0;
+    border-top: 1px solid var(--line);
+
+    @media (width <= 60rem) {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.7rem;
+    }
+}
+
+.q__title {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: baseline;
+
+    margin: 0;
+
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/*
+   An open question is marked and not alarmed about: leaving all five open is a perfectly good
+   state, and the report says so. What it must not be is invisible, which is what it became when
+   "I don't know" stopped being drawn as an answer.
+*/
+.q--open .q__title .tag {
+    font-weight: 400;
+}
+
+.q__technical {
+    display: grid;
+    gap: 0.2rem;
+
+    max-width: 60ch;
+    margin: 0.4rem 0 0;
+
+    font-size: var(--fs-note);
+    color: var(--muted);
+}
+
+/* What the question really asks, in the unit an analytics query answers in. */
+.q__metric {
+    font-family: var(--font-ui);
+    color: var(--ink);
+}
+
+.q__howto {
+    font-style: italic;
+}
+
+.q__answer {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+}
+
+.opts {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.opt {
+    cursor: pointer;
+
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--ink);
+    text-align: left;
+
+    background: var(--surface);
+
+    &:hover {
+        border-color: var(--line-strong);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+
+    &--on {
+        border-color: var(--accent);
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--surface-sunk);
+    }
+
+    /*
+       "I don't know" is a real answer and looks like one: it is not hidden and it is not styled as
+       a failure. What it must not be is the easiest thing on the list to click — it changes
+       nothing about the report — so it is quieter than the answers that do.
+    */
+    &--dunno {
+        font-size: 0.8rem;
+        color: var(--muted);
+    }
+}
+
+.q__imported {
+    margin: 0;
+    padding: 0.5rem 0.7rem;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius);
+
+    font-size: 0.85rem;
+    color: var(--muted);
+
+    background: var(--surface);
+}
+
+.raw {
+    font-size: var(--fs-note);
+}
+
+.raw__field {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.raw__label {
+    color: var(--muted);
+}
+
+.raw__unit {
+    color: var(--muted);
+}
+
+.raw__note {
+    display: block;
+    max-width: 60ch;
+    color: var(--muted);
+}
+
+.rum {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+
+    font-size: 0.85rem;
+    color: var(--muted);
+
+    input {
+        cursor: pointer;
+    }
+}
+
+.who {
+    margin-top: 1.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+}
+
+.who__fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+
+    label {
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+
+        font-size: 0.85rem;
+        color: var(--muted);
+    }
+}

@@ -1,0 +1,90 @@
+/* ==========================================================================
+   Print.
+
+   This report is exactly the kind of thing somebody prints or saves as a PDF to put in front of a
+   room, and until now that produced the tab strip, the buttons and the drop zone on paper. What is
+   left here is the figures, the tab that was open and where they came from.
+
+   The palette is forced to the light one: a reader in dark mode was getting a page of ink.
+   ========================================================================== */
+
+@media print {
+    :root {
+        --ground: #fff;
+        --surface: #fff;
+        --surface-sunk: #f2f4f7;
+        --ink: #000;
+        --muted: #454d5a;
+        --line: #d5dae1;
+        --line-strong: #aab2bd;
+        --accent: #175656;
+        --accent-soft: #eaf3f2;
+        --shadow: none;
+
+        color-scheme: light;
+    }
+
+    body {
+        padding: 0;
+        font-size: 10pt;
+        background: #fff;
+    }
+
+    /*
+       Controls do not print. Neither does the drop zone: on paper it is an instruction to do
+       something that cannot be done there.
+    */
+    .tabs,
+    .controls,
+    .toolbar,
+    .summary__tools,
+    .finding__actions,
+    .tile__go,
+    .sort-th__dir,
+    .twist,
+    app-intake-page {
+        display: none !important;
+    }
+
+    /*
+       The reading notes fold themselves open: on paper there is nothing to press. A closed
+       `details` hides its content through `::details-content`, not by hiding the children, so that
+       is what has to be undone; the `display` rule underneath is for engines that do it the old way.
+    */
+    details::details-content {
+        content-visibility: visible;
+        block-size: auto;
+    }
+
+    details:not([open]) > *:not(summary) {
+        display: revert;
+    }
+
+    summary {
+        list-style: none;
+    }
+
+    /* A row split across two pages is a row read twice and understood neither time. */
+    tr,
+    .screen,
+    .finding,
+    .tile,
+    .crit {
+        break-inside: avoid;
+    }
+
+    .panel {
+        min-height: 0;
+    }
+
+    .scroller--tall {
+        border: none;
+    }
+
+    /* Sticky headers on paper pin nothing and hide the first row of every page. */
+    .scroller--tall thead th,
+    .screen-row--head,
+    .tree-head {
+        position: static;
+    }
+}

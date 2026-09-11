@@ -1,0 +1,8 @@
+{
+    "name": "loadline-vite-fixture",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build"
+    }
+}

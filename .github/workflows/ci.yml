@@ -1,0 +1,125 @@
+# What stops the tool being wrong in silence.
+#
+# The order is deliberate: the cheap checks that fail on a typo run first, then the tests, then a
+# real build — and then Loadline is pointed at that build. That last pair is the only part of this
+# file that is about *this* project rather than about any TypeScript repository:
+#
+#   * `--self-check` works the bootstrap out twice, once from the import graph and once from the
+#     index.html the compiler wrote, and fails when the two disagree. It is the one check that can
+#     notice Angular changing the shape of its output, which is how the figures went wrong before.
+#   * the report afterwards is the end-to-end run: reading a real stats.json and a real folder,
+#     compressing it, and printing. A crash there is a crash a user would have hit.
+
+name: CI
+
+on:
+    push:
+        branches: [main, master]
+    pull_request:
+
+# A new push to the same branch makes the previous run pointless.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: Formatting
+              run: pnpm run format:check
+
+            - name: Lint
+              run: pnpm run lint:ci
+
+            - name: Lint styles
+              run: pnpm run lint-styles:ci
+
+            - name: Types
+              run: pnpm run typecheck
+
+            - name: Tests
+              run: pnpm test
+
+            # Informs rather than blocks, the same as the pre-push hook: an unused export is worth
+            # seeing and is not worth stopping a merge for.
+            - name: Dead code
+              continue-on-error: true
+              run: pnpm run knip
+
+            # The production build, its stats file, and the single self-contained page the tool is
+            # actually distributed as. One `ng build` produces all three.
+            - name: Build
+              run: |
+                  pnpm run build:ci
+                  node scripts/inline-build.mjs
+                  pnpm run build:cli
+
+            # Two independent readings of the same build have to agree about which chunks everybody
+            # downloads. This is the check that does not depend on a fixture somebody wrote.
+            - name: Loadline checks itself
+              run: node bin/loadline.js dist/loadline-app/stats.json --dist dist/loadline-app/browser --self-check
+
+            # And the whole thing end to end, on a real build, with the project's own budgets read
+            # from angular.json and this very file.
+            - name: Loadline analyses itself
+              run: node bin/loadline.js dist/loadline-app/stats.json --dist dist/loadline-app/browser --project .
+
+            # The same build read the other way: the folder alone, with no stats file, which is the
+            # path everything that is not Angular takes. It is here because it broke once and the
+            # step above did not notice — a rule for spotting webpack output matched this project's
+            # own code, and Loadline refused its own build while still analysing its stats.json.
+            - name: Loadline reads its own folder
+              run: node bin/loadline.js dist/loadline-app/browser
+
+            - name: Keep the page
+              uses: actions/upload-artifact@v4
+              with:
+                  name: loadline.html
+                  path: loadline.html
+                  if-no-files-found: error
+
+    # `engines.node` in package.json promises 20.19, and the job above proves nothing about it:
+    # it runs on 24. A floor nobody exercises is a promise to whoever installs this on the oldest
+    # Node it claims to support, kept by hope.
+    #
+    # It is a separate job and not a matrix on purpose. Only the command is published — the page
+    # is a build artifact and its toolchain can want whatever it wants — so what has to hold on
+    # 20.19 is: the command compiles, and the command runs. Doing the Angular build twice to
+    # learn that would double the slowest job on the repository for nothing.
+    floor:
+        name: The oldest Node package.json promises
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            # Pinned exactly, not `20.x`. The point is the number written in `engines`; a minor
+            # bump on the runner would quietly start testing something else.
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20.19.0
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: The command compiles
+              run: pnpm run build:cli
+
+            - name: The command runs
+              run: node bin/loadline.js fixtures/vite-app/dist
+
+            - name: And its tests pass
+              run: pnpm run test:cli

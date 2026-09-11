@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Tokens. Three theme states: explicit light, explicit dark, and the system's
+   (which stamps nothing on the document and is what most people get).
+   No colour is defined only inside a `@media` or a `[data-theme]`.
+   ========================================================================== */
+
+:root {
+    --ground: #f7f8fa;
+    --surface: #fff;
+    --surface-sunk: #eef0f4;
+    --ink: #171b21;
+
+    /*
+    4.58:1 on the page background was scraping the floor, and whole paragraphs are painted with it.
+    This is 5.63:1 there and 5.24:1 on the sunk surface, which is the worst ground it lands on.
+    */
+    --muted: #5b6472;
+    --line: #dfe4ea;
+    --line-strong: #c3cad4;
+
+    /* These three ARE the data, not decoration: bootstrap / shared / own. */
+    --seg-boot: #5b6473;
+    --seg-shared: #c2622c;
+    --seg-own: #2c8080;
+    --accent: #226a6a;
+    --accent-soft: #e2f0ef;
+
+    /* Rating: vivid text on a pastel background. Good / fair / bad. */
+    --ok: #15964f;
+    --ok-soft: #d9f5e3;
+    --warn: #e07d12;
+    --warn-soft: #fff0d6;
+    --crit: #e0443a;
+    --crit-soft: #ffe2de;
+    --radius: 6px;
+    --shadow: 0 1px 2px rgb(23 27 33 / 0.06), 0 8px 24px -12px rgb(23 27 33 / 0.14);
+    --font-ui: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+    --font-data: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', menlo, monospace;
+
+    /*
+    Two sizes, and the choice between them is a question about the text, not about the space:
+    is it meant to be READ, or is it a label on something else?
+
+    Everything that is read — table cells, notes, buttons, help — is `--fs-body`, 14 px.
+    Only what names another thing — column headers, tile labels, tags, counters — is `--fs-note`,
+    12 px. Before this the page ran from 11.5 px to 13.6 px in a dozen steps and the difference
+    between a step and the next one said nothing.
+    */
+    --fs-body: 0.875rem;
+    --fs-note: 0.75rem;
+
+    /*
+    The same two sizes under the names the newer blocks were already written against, plus the one
+    step above them that a section heading inside a panel takes.
+
+    They were being used — the ranked actions and the kept measurements are both written in
+    `--sp-*` and `--fs-*` — and they were never defined anywhere, so every one of those rules was
+    invalid at computed-value time: the margins came out as zero and the sizes as whatever they
+    inherited. Defining them is the fix, and it is also what the compact mode needs to exist,
+    because that mode is these values and nothing else.
+    */
+    --fs-0: var(--fs-note);
+    --fs-1: var(--fs-body);
+    --fs-2: 0.9rem;
+    --sp-1: 0.25rem;
+    --sp-2: 0.5rem;
+    --sp-3: 0.75rem;
+    --sp-4: 1rem;
+    --sp-5: 1.5rem;
+
+    /*
+    The vertical padding of a row, in every list of the report. A token rather than a number in
+    nine stylesheets because the compact mode is exactly this figure and there is no other way to
+    change it in one place.
+    */
+    --row-y: 0.4rem;
+    --row-y-head: 0.45rem;
+
+    /*
+    Height of the sticky tab strip. Long lists no longer scroll inside a box of their own, so their
+    column headers pin to the page — and they have to stop under the tabs, not behind them.
+    */
+    --tabs-h: 2.85rem;
+}
+
+@mixin dark-tokens {
+    --ground: #12151a;
+    --surface: #1a1f26;
+    --surface-sunk: #141920;
+    --ink: #e5e9ef;
+    --muted: #949dab;
+    --line: #272d36;
+    --line-strong: #39424e;
+    --seg-boot: #6f7a8b;
+    --seg-shared: #d97b40;
+    --seg-own: #3fa0a0;
+    --accent: #4fb0ae;
+    --accent-soft: #16302f;
+    --ok: #46d47f;
+    --ok-soft: #143b27;
+    --warn: #f6a53a;
+    --warn-soft: #3f2d12;
+    --crit: #ff6f63;
+    --crit-soft: #4a1f1c;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -14px rgb(0 0 0 / 0.6);
+}
+
+/* System in dark, unless light was chosen by hand. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+        @include dark-tokens;
+    }
+}
+
+/* Explicit choice: it also wins over a system in light. */
+:root[data-theme='dark'] {
+    @include dark-tokens;
+}
+
+/*
+   Compact mode.
+
+   The audience is developers reading tables of a hundred and sixty rows on wide screens, where more
+   rows on screen is more information and not less. It is one control for the whole page and it
+   changes no colour, no column and no figure — only the air between the rows — so nothing can be
+   hidden by pressing it. That is what makes it a density switch rather than a second layout.
+*/
+:root[data-density='compact'] {
+    --row-y: 0.15rem;
+    --row-y-head: 0.25rem;
+    --sp-1: 0.15rem;
+    --sp-2: 0.3rem;
+    --sp-3: 0.45rem;
+    --sp-4: 0.65rem;
+    --sp-5: 0.9rem;
+}

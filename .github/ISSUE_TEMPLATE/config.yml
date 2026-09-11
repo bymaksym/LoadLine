@@ -1,0 +1,12 @@
+# `blank_issues_enabled: false` is deliberate. The two forms above ask for the one thing that
+# makes a report about this tool actionable — which build produced the figure — and a blank box
+# reliably arrives without it.
+
+blank_issues_enabled: false
+contact_links:
+    - name: Security vulnerability
+      url: https://github.com/bymaksym/LoadLine/security/advisories/new
+      about: Report it privately here, never as a public issue.
+    - name: How it works
+      url: https://github.com/bymaksym/LoadLine/blob/main/docs/HOW-IT-WORKS.md
+      about: The algorithm, the signals, and why a figure is what it is. Most "is this a bug?" questions are answered here.

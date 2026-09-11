@@ -1,0 +1,121 @@
+# What turns a tag into a release on npm.
+#
+# The command half of Loadline is only worth anything if it can be installed, and publishing it by
+# hand from whatever a laptop happened to have checked out is how a package ends up shipping a
+# `dist/` nobody can reproduce. So the tag is the trigger and the runner is the only thing that ever
+# talks to the registry.
+#
+# One secret is needed, `NPM_TOKEN`: an npm automation token for the account that owns the name.
+# Nothing else is configured here — `publishConfig.access`, `files` and `prepublishOnly` already
+# live in package.json, so this file only has to check the tag and hand over.
+
+name: Publish
+
+on:
+    push:
+        tags: ['v*']
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        permissions:
+            # `contents: write` is for the GitHub Release at the end, not for the code: nothing
+            # here pushes. `id-token: write` is what lets the runner prove to npm which workflow
+            # of which repository it is, which is what `--provenance` attests to.
+            contents: write
+            id-token: write
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: pnpm
+                  registry-url: https://registry.npmjs.org
+
+            - run: pnpm install --frozen-lockfile
+
+            # A tag that disagrees with package.json publishes a version nobody will find again by
+            # the tag they were given. Stopping here is cheap; unpublishing is not.
+            - name: The tag is the version
+              run: |
+                  tag="${GITHUB_REF_NAME#v}"
+                  version="$(node -p "require('./package.json').version")"
+                  test "$tag" = "$version" || {
+                      echo "tag $tag does not match package.json $version"
+                      exit 1
+                  }
+
+            # `npm pack` takes the working tree, not the index, so a Windows checkout that turned
+            # the executable into CRLF would publish a shebang no Linux shell can read —
+            # `env: node\r: No such file or directory`, on the machine of whoever installed it.
+            # .gitattributes pins the file; this is what notices if that ever stops holding.
+            - name: The executable is still LF
+              run: |
+                  if grep -qU $'\r' bin/loadline.js; then
+                      echo 'bin/loadline.js carries CRLF: the shebang would not survive Linux'
+                      exit 1
+                  fi
+
+            - name: Tests
+              run: pnpm test
+
+            # `prepublishOnly` compiles the command again on the way out. This step is here so a
+            # type error fails the run before anything has been uploaded.
+            - name: Build the command
+              run: pnpm run build:cli
+
+            # pnpm and not npm: `prepare` carries the guard that keeps this repository on pnpm, it
+            # runs on the way out of a publish too, and npm would walk straight into it.
+            # `--no-git-checks` because the runner is on a detached tag rather than on a branch,
+            # which pnpm refuses by default. The token is read from the .npmrc setup-node wrote.
+            #
+            # `--provenance` puts on the npm page which commit and which run built the tarball, so
+            # somebody who installed it can check with `npm audit signatures` instead of trusting
+            # the name. It needs the repository to be public and `id-token: write` above; it had
+            # neither when this file was written.
+            #
+            # The token is still here, and it is the weakest part of this file: a credential that
+            # can publish `loadline` to every machine that installs it. The replacement is npm's
+            # trusted publishing, where the runner exchanges its OIDC identity for a short-lived
+            # token and there is nothing left in GitHub to steal. Two things stopped that being
+            # the first move, and both are worth rechecking rather than assuming:
+            #   * npm configures a trusted publisher from a package's settings page, which implies
+            #     the package exists — so the first publish of a new name probably needs a token
+            #     whatever else is true;
+            #   * pnpm documents `--provenance` and does not document the OIDC exchange, and this
+            #     publish has to stay on pnpm because of the `prepare` guard.
+            # Until then: a granular token scoped to this package alone, with an expiry, and
+            # deleted the day trusted publishing works here.
+            - name: Publish
+              run: pnpm publish --access public --no-git-checks --provenance
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            # Last, and only if the publish worked. A release that points at a version npm never
+            # received sends people to an install command that fails — and the tag is already
+            # pushed by then, so the cheap order is: registry first, announcement second.
+            #
+            # It checks first because there are two ways a tag gets here and only one of them
+            # arrives without a release attached:
+            #   * release-please tagged it, having already written the release from the changelog
+            #     — nothing to do, and `gh release create` would fail the run over it;
+            #   * somebody tagged by hand, which is how v0.1.0 goes out and how a release gets
+            #     made from a machine when the automation is broken.
+            # `--verify-tag` then refuses to invent a release for a tag that is not really there.
+            - name: GitHub Release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+                      echo "release $GITHUB_REF_NAME already exists — release-please wrote it"
+                      exit 0
+                  fi
+                  gh release create "$GITHUB_REF_NAME" \
+                      --verify-tag \
+                      --title "$GITHUB_REF_NAME" \
+                      --notes "Published to npm as \`loadline@${GITHUB_REF_NAME#v}\`.
+
+                  See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md) for what changed."

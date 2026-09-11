@@ -1,0 +1,201 @@
+:host {
+    display: block;
+}
+
+/* Computed, measured and the gap between them, side by side: the comparison IS the panel. */
+.summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+}
+
+.figure {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    background: var(--surface);
+
+    &__label {
+        font-size: var(--fs-note);
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    &__value {
+        font-family: var(--font-data);
+        font-size: 1.15rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--ink);
+
+        &[data-tone='up'] {
+            color: var(--crit);
+        }
+
+        &[data-tone='down'] {
+            color: var(--ok);
+        }
+    }
+
+    &__sub {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
+}
+
+.pick {
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+.block-title {
+    margin: 1.2rem 0 0.2rem;
+    font-size: 0.92rem;
+    color: var(--ink);
+}
+
+.note {
+    max-width: 84ch;
+    margin: 0 0 0.5rem;
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+.status {
+    margin: 0.4rem 0;
+    font-family: var(--font-data);
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    &[data-tone='error'] {
+        color: var(--crit);
+    }
+}
+
+/* Intake: three steps, the snippet and the paste box. */
+.steps {
+    max-width: 84ch;
+    margin: 0 0 0.8rem;
+    padding-left: 1.2rem;
+
+    font-size: var(--fs-body);
+    color: var(--ink);
+
+    li + li {
+        margin-top: 0.6rem;
+    }
+}
+
+/*
+   The line to paste into the console. It used to be cut off on the right with no wrap and no visible
+   scrollbar — the one thing on the panel that has to be read whole was the one thing that could not
+   be — and the Copy button floated outside the box, to its right and at half its height.
+*/
+.snippet {
+    position: relative;
+    margin-top: 0.4rem;
+
+    pre {
+        margin: 0;
+        padding: 0.6rem 6.5rem 0.6rem 0.7rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+
+        font-family: var(--font-data);
+        font-size: var(--fs-body);
+        line-height: 1.5;
+        color: var(--ink);
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+
+        background: var(--surface-sunk);
+    }
+
+    .ctl {
+        position: absolute;
+        top: 0.4rem;
+        right: 0.4rem;
+    }
+}
+
+/* What gets pasted here is a long JSON. `.field` caps at 22 rem, which left it in the left half. */
+.paste {
+    resize: vertical;
+
+    width: 100%;
+    max-width: none;
+    min-height: 11rem;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-body);
+}
+
+.actions {
+    display: flex;
+    gap: 0.7rem;
+    align-items: center;
+    margin: 0.6rem 0;
+}
+
+.chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.chip {
+    cursor: pointer;
+
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-note);
+    color: var(--ink);
+
+    background: var(--surface);
+
+    &:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+}
+
+.dot {
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+    margin-right: 0.3rem;
+    border-radius: 2px;
+
+    vertical-align: middle;
+
+    background: var(--line-strong);
+
+    &[data-zone='boot'] {
+        background: var(--seg-boot);
+    }
+
+    &[data-zone='shared'] {
+        background: var(--seg-shared);
+    }
+
+    &[data-zone='own'] {
+        background: var(--seg-own);
+    }
+}

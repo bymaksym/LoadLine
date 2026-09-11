@@ -1,0 +1,9 @@
+{
+    // The settings in settings.json rely on these four.
+    "recommendations": [
+        "angular.ng-template",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "stylelint.vscode-stylelint"
+    ]
+}

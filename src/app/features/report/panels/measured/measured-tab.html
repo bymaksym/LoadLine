@@ -1,0 +1,307 @@
+@let t = i18n.ui();
+@let report = store.measured();
+
+<app-panel-header [howTo]="t.howToMeasured" [subtitle]="t.secMeasuredSub" [title]="t.secMeasured" />
+
+@if (store.measurementStale()) {
+    <p class="status" data-tone="error">{{ t.measureStale }}</p>
+}
+
+@if (report) {
+    <div class="summary">
+        <div class="figure">
+            <span class="figure__label">
+                {{ t.measureComputed }}
+                <!-- The two figures next to each other come from different places, and until now
+                     nothing on the page said which was which. -->
+                <span class="tag" [attr.data-source]="'derived'"
+                    >{{ t.dataSource.derived }}<app-explain [text]="t.dataSourceHelp.derived"
+                /></span>
+            </span>
+            <span class="figure__value">{{ report.computed | bytes }}</span>
+            <span class="figure__sub">{{ t.measureFiles(report.computedFiles) }}</span>
+        </div>
+        <div class="figure">
+            <span class="figure__label">
+                {{ t.measureMeasured }}
+                <span class="tag" [attr.data-source]="'measured'"
+                    >{{ t.dataSource.measured }}<app-explain [text]="t.dataSourceHelp.measured"
+                /></span>
+            </span>
+            <span class="figure__value">{{ report.measured | bytes }}</span>
+            <span class="figure__sub">{{ t.measureFiles(report.measuredFiles) }}</span>
+        </div>
+        <div class="figure">
+            <span class="figure__label">{{ t.measureDiff }}</span>
+            <span class="figure__value" [attr.data-tone]="diffTone()">{{ diffText() }}</span>
+            <span class="figure__sub">{{ diffFiles() }}</span>
+        </div>
+        @if (report.transferred !== null) {
+            <div class="figure">
+                <span class="figure__label">{{ t.measureTransfer }}<app-explain [text]="t.measureTransferHelp" /></span>
+                <span class="figure__value">{{ report.transferred | bytes }}</span>
+            </div>
+        }
+    </div>
+
+    <div class="toolbar">
+        <div class="toolbar__group">
+            <label class="pick" for="measuredScreen">{{ t.measureScreen }}</label>
+            <select
+                class="field"
+                id="measuredScreen"
+                [value]="store.measurementPick() ?? ''"
+                (change)="pick($any($event.target).value)"
+            >
+                <option value="">{{ autoLabel() }}</option>
+                @for (screen of screens(); track screen.source) {
+                    <option [value]="screen.source">{{ screen.label }}</option>
+                }
+            </select>
+            <!-- Only when it was picked: the "auto" option already says so, and its screen. -->
+            @if (store.measurementPick()) {
+                <span class="toolbar__count">{{ t.measurePicked }}</span>
+            }
+        </div>
+
+        <div class="toolbar__group">
+            <button class="ctl" type="button" (click)="store.clearMeasurement()">{{ t.measureClear }}</button>
+        </div>
+    </div>
+
+    @if (url(); as address) {
+        <p class="note">{{ t.measureFrom(address) }}</p>
+    }
+    @if (report.foreign.length > 0) {
+        <p class="status" data-tone="error">
+            {{ t.measureForeign(report.foreign.length) }}
+            <!-- All of them: the one that explains the mismatch is as likely to be the fifth. -->
+            <span class="mono">{{ report.foreign.join(', ') }}</span>
+        </p>
+    }
+    @if (report.otherFiles > 0) {
+        <p class="note">{{ t.measureOther(report.otherFiles) }}</p>
+    }
+
+    <!-- What is served, as opposed to what was built. Everything here is one paste from one
+         machine, and every label says so: it is context for reading the rest, never a threshold. -->
+    @if (observed(); as env) {
+        <h3 class="block-title">{{ t.measureObserved }}<app-explain [text]="t.measureObservedHelp" /></h3>
+        <p class="note">
+            {{ t.measureObservedHelp }}
+            @if (env.takenAt) {
+                <span class="mono">{{ t.measureTakenAt(env.takenAt.slice(0, 10)) }}</span>
+            }
+        </p>
+        @if (staleFact()) {
+            <p class="status" data-tone="error">{{ t.measureStaleFact(freshDays) }}</p>
+        }
+        <div class="summary">
+            <div class="figure">
+                <span class="figure__label">
+                    {{ t.measureProtocol }}
+                    <span class="tag" [attr.data-source]="env.protocol.value === null ? 'unknown' : 'measured'">{{
+                        env.protocol.value === null ? t.dataSource.unknown : t.dataSource.measured
+                    }}</span>
+                </span>
+                <span class="figure__value">{{ env.protocol.value ?? t.measureUnknown }}</span>
+                @if (env.protocol.seen.length > 1) {
+                    <span class="figure__sub">{{ env.protocol.seen.join(', ') }}</span>
+                }
+            </div>
+            <div class="figure">
+                <span class="figure__label">
+                    {{ t.measureRtt }}
+                    <span class="tag" [attr.data-source]="env.rttMs === null ? 'unknown' : 'measured'">{{
+                        env.rttMs === null ? t.dataSource.unknown : t.dataSource.measured
+                    }}</span>
+                </span>
+                <span class="figure__value">{{ env.rttMs === null ? t.measureUnknown : env.rttMs + ' ms' }}</span>
+            </div>
+            <div class="figure">
+                <span class="figure__label">
+                    {{ t.measureTtfb }}
+                    <span class="tag" [attr.data-source]="env.ttfbMs === null ? 'unknown' : 'measured'">{{
+                        env.ttfbMs === null ? t.dataSource.unknown : t.dataSource.measured
+                    }}</span>
+                </span>
+                <span class="figure__value">{{ env.ttfbMs === null ? t.measureUnknown : env.ttfbMs + ' ms' }}</span>
+            </div>
+            <div class="figure">
+                <span class="figure__label">{{ t.measureCompression }}</span>
+                <span class="figure__value" [attr.data-tone]="env.compression.uncompressed.length > 0 ? 'up' : null">
+                    {{ env.compression.ratio === null ? t.measureUnknown : env.compression.ratio.toFixed(1) + ':1' }}
+                </span>
+                @if (env.compression.uncompressed.length > 0) {
+                    <span class="figure__sub">
+                        {{ t.measureCompressionOff(env.compression.uncompressed.length) }}
+                    </span>
+                }
+            </div>
+            <div class="figure">
+                <span class="figure__label">{{ t.measureCacheState }}</span>
+                <span class="figure__value">
+                    {{ t.measureCacheSplit(env.cache.fromCache, env.cache.revalidated, env.cache.network) }}
+                </span>
+            </div>
+            <div class="figure">
+                <span class="figure__label">{{ t.measureConnections }}</span>
+                <span class="figure__value">{{ env.connections.opened }}</span>
+            </div>
+            <div class="figure">
+                <span class="figure__label">{{ t.measureThird }}</span>
+                <span class="figure__value">
+                    {{ t.measureThirdValue(env.thirdParty.requests, env.thirdParty.origins.length) }}
+                </span>
+                <span class="figure__sub">{{ env.thirdParty.total }}</span>
+            </div>
+            @if (env.serviceWorker !== null) {
+                <div class="figure">
+                    <span class="figure__label">{{ t.measureSw }}</span>
+                    <span class="figure__value">{{ env.serviceWorker ? t.measureSwOn : t.measureSwOff }}</span>
+                </div>
+            }
+            @if (env.modulepreloads !== null) {
+                <div class="figure">
+                    <span class="figure__label">{{ t.measurePreloads }}</span>
+                    <span class="figure__value">{{ env.modulepreloads }}</span>
+                </div>
+            }
+            @if (env.waves.length > 0) {
+                <div class="figure">
+                    <span class="figure__label">{{ t.measureBatches }}</span>
+                    <span class="figure__value">
+                        {{ t.measureBatchesValue(env.waves.length, widest(env.waves)) }}
+                    </span>
+                </div>
+            }
+        </div>
+    }
+
+    <h3 class="block-title">{{ t.measureExtra }}</h3>
+    <p class="note">{{ t.measureExtraHelp }}</p>
+    <div class="scroller">
+        <table>
+            <thead>
+                <tr>
+                    <th>{{ t.thChunk }}</th>
+                    <th>{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
+                    <th>{{ t.measureBelongs }}</th>
+                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (chunk of report.extra; track chunk.file) {
+                    <tr>
+                        <td class="path">
+                            <!-- An unpredicted chunk that turns out to be shared is the interesting
+                                 case: the Shared tab says which screens pull it in. -->
+                            @if (chunk.zone === 'shared') {
+                                <button
+                                    class="link-btn"
+                                    type="button"
+                                    [title]="t.seeInShared"
+                                    (click)="nav.go('shared', chunk.file)"
+                                >
+                                    {{ chunk.name }}
+                                </button>
+                            } @else {
+                                {{ chunk.name }}
+                            }
+                        </td>
+                        <td>
+                            <i aria-hidden="true" class="dot" [attr.data-zone]="chunk.zone"></i>
+                            {{ t.measureZone[chunk.zone] }}
+                            <span class="tag" [title]="deliveryHelp(chunk.zone)">{{ deliveryLabel(chunk.zone) }}</span>
+                        </td>
+                        <td class="path">
+                            @if (chunk.screens.length > 0) {
+                                <span class="chips">
+                                    @for (screen of chunk.screens; track screen) {
+                                        <button
+                                            class="chip"
+                                            type="button"
+                                            [title]="screen"
+                                            (click)="nav.go('screens', screen)"
+                                        >
+                                            {{ labelOf(screen) }}
+                                        </button>
+                                    }
+                                </span>
+                            } @else {
+                                {{ t.measureNobody }}
+                            }
+                        </td>
+                        <td class="num">{{ chunk.bytes | bytes }}</td>
+                    </tr>
+                } @empty {
+                    <tr>
+                        <td class="empty" colspan="4">{{ t.measureExtraNone }}</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="block-title">{{ t.measureMissing }}</h3>
+    <p class="note">{{ t.measureMissingHelp }}</p>
+    <div class="scroller">
+        <table>
+            <thead>
+                <tr>
+                    <th>{{ t.thChunk }}</th>
+                    <th>{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
+                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (chunk of report.missing; track chunk.file) {
+                    <tr>
+                        <td class="path">{{ chunk.name }}</td>
+                        <td>
+                            <i aria-hidden="true" class="dot" [attr.data-zone]="chunk.zone"></i>
+                            {{ t.measureZone[chunk.zone] }}
+                            <span class="tag" [title]="deliveryHelp(chunk.zone)">{{ deliveryLabel(chunk.zone) }}</span>
+                        </td>
+                        <td class="num">{{ chunk.bytes | bytes }}</td>
+                    </tr>
+                } @empty {
+                    <tr>
+                        <td class="empty" colspan="3">{{ t.measureMissingNone }}</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+} @else {
+    <ol class="steps">
+        <li>{{ t.measureStep1 }}</li>
+        <li>
+            {{ t.measureStep2 }}
+            <div class="snippet">
+                <pre>{{ snippet }}</pre>
+                <button class="ctl" type="button" (click)="copySnippet()">
+                    {{ copied() ? t.measureCopied : t.measureCopy }}
+                </button>
+            </div>
+        </li>
+        <li>{{ t.measureStep3 }}</li>
+    </ol>
+
+    <label class="sr-only" for="measuredPaste">{{ t.measurePlaceholder }}</label>
+    <textarea
+        class="field paste"
+        id="measuredPaste"
+        rows="6"
+        [placeholder]="t.measurePlaceholder"
+        [value]="text()"
+        (input)="text.set($any($event.target).value)"
+    ></textarea>
+
+    <div class="actions">
+        <button class="ctl ctl--active" type="button" (click)="run()">{{ t.measureRun }}</button>
+        <span aria-live="polite" class="status" data-tone="error">{{ store.measurementError() }}</span>
+    </div>
+
+    <p class="note">{{ t.measureNotes }}</p>
+}

@@ -1,0 +1,202 @@
+:host {
+    display: block;
+}
+
+/* Two figures and a bar: how much of the bootstrap is npm and how much is project code. */
+.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 1.5rem;
+
+    margin-bottom: 0.9rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    background: var(--surface);
+
+    &__item {
+        display: grid;
+        gap: 0.05rem;
+    }
+
+    &__item:last-of-type {
+        text-align: right;
+    }
+
+    &__label {
+        font-size: var(--fs-note);
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    &__figure {
+        font-family: var(--font-data);
+        font-size: 1.2rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__sub {
+        font-family: var(--font-data);
+        font-size: var(--fs-body);
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+    }
+
+    &__track {
+        grid-column: 1 / -1;
+        height: 8px;
+        background: var(--seg-own);
+    }
+
+    &__pkg {
+        background: var(--seg-boot);
+    }
+
+    /* Below the bar: the rated total and, in small type, the criterion it is rated with. */
+    &__total {
+        grid-column: 1 / -1;
+        margin: 0.2rem 0 0;
+        font-size: var(--fs-body);
+        color: var(--muted);
+
+        strong {
+            font-family: var(--font-data);
+            font-size: 0.95rem;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    &__rule {
+        margin-left: 0.6rem;
+        font-size: var(--fs-body);
+    }
+}
+
+/*
+   The name column is capped and the bar comes right after it. With the bar at the far end of the
+   row there were some 700 px of empty cell between the two, and a bar that far from what it
+   measures stops reading as a comparison with the row above.
+*/
+.name-col {
+    width: 30%;
+    max-width: 24rem;
+}
+
+.bar-col {
+    width: 26%;
+}
+
+.track--own i {
+    background: var(--seg-own);
+}
+
+.track--bad i {
+    background: var(--crit);
+}
+
+.who {
+    font-size: var(--fs-body);
+    color: var(--ink);
+
+    .tag {
+        margin-left: 0.4rem;
+        white-space: normal;
+    }
+}
+
+.muted {
+    color: var(--muted);
+}
+
+tr.is-lazy td.path {
+    font-weight: 700;
+}
+
+.twist {
+    display: inline-block;
+    width: 1rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.detail-title {
+    margin: 0.4rem 0 0.45rem;
+
+    font-size: var(--fs-note);
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+}
+
+/* Detail: how the package enters and who imports it on the left, its files on the right. */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem 2rem;
+
+    &--single {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (width >= 900px) {
+    .detail-grid:not(.detail-grid--single) {
+        grid-template-columns: 2fr 3fr;
+    }
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+/* The way out of this tab: the same entry, seen across the whole bundle. */
+.detail-more {
+    margin: 0.5rem 0 0;
+    font-size: var(--fs-body);
+}
+
+.chip {
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-note);
+    color: var(--ink);
+
+    background: var(--surface);
+
+    &--screen {
+        cursor: pointer;
+        border-color: var(--accent);
+
+        &:hover {
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+    }
+}
+
+/* What the bar above adds up to, written out: it used to be the bar's `title`. */
+.split__barnote {
+    grid-column: 1 / -1;
+    font-size: var(--fs-note);
+    color: var(--muted);
+}
+
+/* Where the row's own figures come from, at the top of the detail it already opens. */
+.detail-figures {
+    margin: 0 0 0.6rem;
+    font-size: var(--fs-body);
+    color: var(--muted);
+}

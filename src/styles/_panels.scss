@@ -1,0 +1,111 @@
+/* ---------- panel header and help ---------- */
+
+.panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+
+    margin-bottom: 0.8rem;
+
+    h2 {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    p {
+        max-width: 62ch;
+        margin: 0;
+        font-size: var(--fs-body);
+        color: var(--muted);
+    }
+}
+
+.howto {
+    margin-bottom: 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    font-size: var(--fs-body);
+
+    background: var(--surface);
+
+    summary {
+        cursor: pointer;
+
+        padding: 0.5rem 0.9rem;
+
+        font-size: var(--fs-body);
+        font-weight: 500;
+        color: var(--accent);
+        list-style: none;
+
+        &::-webkit-details-marker {
+            display: none;
+        }
+
+        &::before {
+            content: '?';
+
+            display: inline-block;
+
+            width: 1.15rem;
+            height: 1.15rem;
+            margin-right: 0.5rem;
+            border-radius: 50%;
+
+            font-family: var(--font-data);
+            font-weight: 700;
+            line-height: 1.15rem;
+            text-align: center;
+
+            background: var(--accent-soft);
+        }
+
+        &:focus-visible {
+            border-radius: var(--radius);
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+    }
+
+    &[open] summary {
+        border-bottom: 1px solid var(--line);
+    }
+
+    /* The "what to do" note answers a different question from the reading notes, and the two can
+       end up one under the other: a different marker is what tells them apart at a glance. */
+    &--act summary::before {
+        content: '→';
+    }
+
+    &__body {
+        padding: 0.7rem 0.95rem 0.2rem;
+        color: var(--muted);
+
+        p {
+            max-width: 84ch;
+            margin: 0 0 0.6rem;
+        }
+
+        strong {
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        /* Only the "what can be done" note uses lists: four options read as four, not as prose. */
+        ol,
+        ul {
+            max-width: 84ch;
+            margin: 0 0 0.6rem;
+            padding-left: 1.3rem;
+        }
+
+        li {
+            margin-bottom: 0.3rem;
+        }
+    }
+}

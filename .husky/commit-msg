@@ -1,0 +1,3 @@
+echo -e "\nRunning commitlint...\n"
+
+pnpm exec commitlint --edit $1

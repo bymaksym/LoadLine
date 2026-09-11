@@ -1,0 +1,150 @@
+{
+    "name": "loadline",
+    "version": "0.1.0",
+    "description": "Weight per screen: what each screen of your app actually downloads.",
+    "keywords": [
+        "bundle-size",
+        "bundle-analyzer",
+        "performance",
+        "angular",
+        "vite",
+        "esbuild",
+        "code-splitting",
+        "lazy-loading",
+        "webperf",
+        "cli"
+    ],
+    "license": "MIT",
+    "author": "bymaksym",
+    "homepage": "https://github.com/bymaksym/LoadLine#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/bymaksym/LoadLine.git"
+    },
+    "bugs": {
+        "url": "https://github.com/bymaksym/LoadLine/issues"
+    },
+    "engines": {
+        "node": ">=20.19.0"
+    },
+    "packageManager": "pnpm@12.3.4",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "bin/",
+        "dist/cli/",
+        "loadline.html",
+        "docs/HOW-IT-WORKS.md",
+        "README.md",
+        "LICENSE"
+    ],
+    "exports": {
+        "./loadline.html": "./loadline.html",
+        "./package.json": "./package.json"
+    },
+    "bin": {
+        "loadline": "bin/loadline.js"
+    },
+    "scripts": {
+        "ng": "ng",
+        "start": "ng serve",
+        "build": "ng build && node scripts/inline-build.mjs",
+        "build:cli": "tsc --project tsconfig.cli.json",
+        "fonts": "node scripts/embed-fonts.mjs",
+        "build:ci": "ng build --configuration production --stats-json",
+        "test": "ng test --watch=false && pnpm run test:cli",
+        "test:cli": "vitest run --dir cli",
+        "test:watch": "ng test --watch=true",
+        "test:coverage": "ng test --watch=false --coverage",
+        "prepare": "npx only-allow pnpm && (husky || exit 0)",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "lint": "eslint --fix",
+        "lint:ci": "eslint",
+        "lint-styles:ci": "stylelint src/**/*.scss",
+        "lint-styles": "stylelint --fix src/**/*.scss",
+        "fix-all": "pnpm run lint & pnpm run lint-styles & pnpm run format",
+        "lint:all": "lint-staged",
+        "typecheck": "tsc --noEmit --skipLibCheck --project tsconfig.app.json && tsc --noEmit --skipLibCheck --project tsconfig.cli.json",
+        "knip": "knip",
+        "knip:deps": "knip --include dependencies,unlisted,duplicates",
+        "deps:check": "ncu --cooldown 1d --format group,time,cooldown",
+        "deps:update": "ncu --cooldown 1d --interactive --format group,time,cooldown",
+        "deps:audit": "pnpm audit --audit-level high",
+        "loadline": "node bin/loadline.js",
+        "prepublishOnly": "tsc --project tsconfig.cli.json"
+    },
+    "prettier": {
+        "bracketSpacing": true,
+        "arrowParens": "avoid",
+        "quoteProps": "as-needed",
+        "semi": true,
+        "singleQuote": true,
+        "tabWidth": 4,
+        "printWidth": 120,
+        "bracketSameLine": false,
+        "useTabs": false,
+        "endOfLine": "auto",
+        "overrides": [
+            {
+                "files": "*.html",
+                "options": {
+                    "parser": "angular"
+                }
+            }
+        ]
+    },
+    "lint-staged": {
+        "*.ts": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.html": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.scss": [
+            "stylelint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md,mjs,js}": [
+            "prettier --write"
+        ]
+    },
+    "devDependencies": {
+        "@angular/build": "^22.1.7",
+        "@angular/cli": "^22.1.7",
+        "@angular/common": "^22.1.5",
+        "@angular/compiler": "^22.1.5",
+        "@angular/compiler-cli": "^22.1.5",
+        "@angular/core": "^22.1.5",
+        "@angular/platform-browser": "^22.1.5",
+        "@commitlint/cli": "^21.2.2",
+        "@commitlint/config-conventional": "^21.2.2",
+        "@eslint/js": "^10.0.1",
+        "@types/node": "^26.4.1",
+        "angular-eslint": "^22.2.0",
+        "eslint": "^10.10.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-import-x": "^4.17.1",
+        "eslint-plugin-simple-import-sort": "^14.0.0",
+        "eslint-plugin-unicorn": "^74.0.0",
+        "eslint-plugin-unused-imports": "^4.4.1",
+        "husky": "^9.1.7",
+        "jsdom": "^30.0.1",
+        "knip": "^6.34.0",
+        "lint-staged": "^17.5.0",
+        "npm-check-updates": "^23.1.0",
+        "prettier": "^3.9.6",
+        "rxjs": "~7.8.2",
+        "stylelint": "^17.15.0",
+        "stylelint-config-clean-order": "^10.0.0",
+        "stylelint-config-standard-scss": "^17.0.0",
+        "stylelint-scss": "^7.2.0",
+        "tslib": "^2.8.1",
+        "typescript": "~6.0.3",
+        "typescript-eslint": "^8.69.0",
+        "vitest": "^5.0.0"
+    }
+}

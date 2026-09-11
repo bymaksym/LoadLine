@@ -1,0 +1,126 @@
+@let t = i18n.ui();
+@let tally = counts();
+
+<app-panel-header [howTo]="t.howToFindings" [subtitle]="t.secFindingsSub" [title]="t.secFindings" />
+
+<!--
+Ten cards in a row with no way to tell them apart. The front page says "3 important · 6 to review"
+and that split did not exist here: these are the same three numbers, and they filter.
+-->
+<div class="toolbar">
+    <div class="toolbar__group" role="group" [attr.aria-label]="t.secFindings">
+        @for (option of filters; track option) {
+            <button
+                class="ctl"
+                type="button"
+                [attr.aria-pressed]="filter() === option"
+                [class.ctl--active]="filter() === option"
+                [disabled]="tally[option] === 0 && option !== 'all'"
+                (click)="filter.set(option)"
+            >
+                {{ filterLabel(option) }}
+                <span class="ctl__n">{{ tally[option] }}</span>
+            </button>
+        }
+    </div>
+
+    @if (seen().size > 0) {
+        <div class="toolbar__group">
+            <span class="toolbar__count">{{ t.findingsSeenCount(seen().size) }}</span>
+            <button class="ctl" type="button" (click)="clearSeen()">{{ t.findingsSeenReset }}</button>
+        </div>
+    }
+</div>
+
+<!--
+The order somebody would do them in, and what doing all of it is worth. It sits above the cards
+rather than replacing any of them: thirty-seven signals in no order are thirty-seven signals nobody
+reads, and thirty-seven signals with five of them shown is a list that has to be checked elsewhere.
+-->
+@if (actions().length > 0) {
+    @let total = saving();
+
+    <section class="actions">
+        <h3 class="actions__title">{{ t.actionsTitle }}</h3>
+        <p class="actions__note">{{ t.actionsNote }}</p>
+
+        <ol class="actions__list">
+            @for (action of actions(); track action.finding.title) {
+                <li class="actions__row">
+                    <button class="actions__go" type="button" (click)="goToCard(action.finding)">
+                        {{ action.finding.title }}
+                    </button>
+                    <span class="actions__saving">
+                        @if (action.saving > 0) {
+                            {{ action.saving | bytes }}
+                        } @else {
+                            <span class="muted">—</span>
+                        }
+                    </span>
+                    <span class="actions__effort">{{ effortLabel(action.effort) }}</span>
+                </li>
+            }
+        </ol>
+
+        @if (total && total.counted > 0) {
+            <p class="actions__total">
+                {{ t.actionsTotal(total.counted) }}
+                <strong>{{ total.bytes | bytes }}</strong>
+                {{ t.actionsTotalAfter }} <strong>{{ total.after | bytes }}</strong
+                >. <span class="actions__note">{{ t.actionsTotalNote }}</span>
+            </p>
+        }
+    </section>
+}
+
+<div class="findings">
+    @for (finding of rows(); track finding.title) {
+        @let isSeen = seen().has(finding.title);
+
+        <article
+            class="finding"
+            [attr.data-sev]="finding.severity"
+            [attr.data-title]="finding.title"
+            [class.is-seen]="isSeen"
+        >
+            <div class="finding__top">
+                <span class="tag" [class]="'tag ' + sevClass(finding.severity)">{{ sevLabel(finding.severity) }}</span>
+                <span class="finding__kind">{{ finding.chip }}</span>
+
+                <!--
+                The action is next to the title, not five paragraphs below it: it is what somebody
+                came to this card to press, and it used to be the last thing on the way out.
+                -->
+                <span class="finding__actions">
+                    @if (finding.target; as target) {
+                        <button
+                            class="ctl ctl--active"
+                            type="button"
+                            (click)="nav.go(target.tab, target.key || undefined)"
+                        >
+                            {{ targetLabel(target) }} →
+                        </button>
+                    }
+                    <button
+                        class="ctl"
+                        type="button"
+                        [attr.aria-pressed]="isSeen"
+                        [title]="t.findingsSeenHelp"
+                        (click)="toggleSeen(finding.title)"
+                    >
+                        {{ isSeen ? t.findingsUnsee : t.findingsSee }}
+                    </button>
+                </span>
+            </div>
+
+            <h3 class="finding__title">{{ finding.title }}</h3>
+            <p class="finding__body" [innerHTML]="finding.body"></p>
+
+            <p class="finding__fix">
+                <span class="fix-label">{{ t.fixLabel }} — </span><span [innerHTML]="finding.fix"></span>
+            </p>
+        </article>
+    } @empty {
+        <p class="empty">{{ t.findingsNoneHere }}</p>
+    }
+</div>

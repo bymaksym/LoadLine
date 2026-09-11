@@ -1,0 +1,274 @@
+@let t = i18n.ui();
+@let found = rows();
+@let text = query().trim();
+
+<app-panel-header [howTo]="t.howToSearch" [subtitle]="t.secSearchSub" [title]="t.secSearch" />
+
+<div class="toolbar">
+    <div class="toolbar__group">
+        <!-- The only control of the tab, and it used to be 175 px wide, cutting its own placeholder. -->
+        <input
+            #box
+            class="field field--wide"
+            type="search"
+            [attr.aria-label]="t.searchPlaceholder"
+            [placeholder]="t.searchPlaceholder"
+            [value]="query()"
+            (input)="search($any($event.target).value)"
+        />
+    </div>
+    <span aria-live="polite" class="toolbar__count">{{ status() }}</span>
+</div>
+
+<!--
+Before anything is typed this was a blank page with one line on it. The ten heaviest names are
+already computed, they are the ones anybody would look for first, and they cost nothing to show.
+-->
+@if (showing() === 'heaviest') {
+    <p class="note">{{ t.searchHeaviest(found.length, index().total) }}</p>
+}
+
+@if (found.length === 0) {
+    <p class="empty empty--pad">
+        @if (text.length < 2) {
+            {{ t.searchTooShort }}
+        } @else {
+            {{ t.searchNoMatch(text) }}
+        }
+    </p>
+} @else {
+    <div class="scroller--tall">
+        <table>
+            <thead>
+                <tr>
+                    <th>{{ t.thSource }}</th>
+                    <th>{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
+                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                    <th class="num">{{ t.thChunk }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (row of found; track row.key) {
+                    @let isOpen = expanded() === row.key;
+
+                    <tr
+                        class="row-btn"
+                        role="button"
+                        tabindex="0"
+                        [attr.aria-expanded]="isOpen"
+                        [attr.data-key]="row.key"
+                        (click)="toggle(row)"
+                        (keydown.enter)="toggle(row)"
+                        (keydown.space)="toggle(row); $event.preventDefault()"
+                    >
+                        <!-- The matching part is marked: three long paths and finding the word by eye. -->
+                        @let hit = parts(row.key);
+                        <td class="path">
+                            <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
+                            <span>{{ hit.before }}</span
+                            ><mark [hidden]="!hit.hit">{{ hit.hit }}</mark
+                            ><span>{{ hit.after }}</span>
+                            <span class="tag">{{
+                                row.kind === 'package' ? t.searchKindPackage : t.searchKindFile
+                            }}</span>
+                            @if (row.copies.length > 1) {
+                                <span class="tag tag--crit">{{ t.searchCopiesTag(row.copies.length) }}</span>
+                            }
+                            @if (row.matchedFiles.length > 0) {
+                                <span class="tag">{{ t.searchMatchedIn(row.matchedFiles.length) }}</span>
+                            }
+                        </td>
+                        <td>
+                            <i aria-hidden="true" class="dot" [attr.data-zone]="row.zone"></i>
+                            {{ zoneLabel(row.zone) }}
+                            <span class="who">
+                                @if (row.bootBytes === row.bytes) {
+                                    {{ t.searchInBoot }}
+                                } @else {
+                                    @if (row.bootBytes > 0) {
+                                        {{ t.searchPartlyBoot(row.bootBytes | bytes) }} ·
+                                    }
+                                    {{ t.searchScreensCount(row.screens.length) }}
+                                }
+                            </span>
+                        </td>
+                        <td class="num">{{ row.bytes | bytes }}</td>
+                        <td class="num">{{ row.places.length }}</td>
+                    </tr>
+
+                    @if (isOpen) {
+                        <tr class="detail">
+                            <td colspan="4">
+                                <div class="detail-grid">
+                                    <div>
+                                        <h4 class="detail-title">{{ t.searchChain }}</h4>
+                                        <app-chain [steps]="row.chain" />
+
+                                        <!--
+                                        What a change to this file costs. It is the question that
+                                        follows every finding, and the answer is about where the file
+                                        landed rather than about the file.
+                                        -->
+                                        @if (blast(row); as radius) {
+                                            <h4 class="detail-title">{{ t.blastTitle }}</h4>
+                                            <p class="muted">
+                                                {{
+                                                    t.blastBody(
+                                                        radius.places.length,
+                                                        radius.everyScreen ? 0 : radius.screens.length,
+                                                        radius.everyScreen
+                                                    )
+                                                }}
+                                                <strong>{{ radius.invalidatedBytes | bytes }}</strong>
+                                            </p>
+                                            <!--
+                                            The cascade, and only ever underneath the figure above.
+                                            On its own "87 % of the build" reads as an accusation;
+                                            under "3 chunks, 40 kB" it reads as what it is, which is
+                                            the bundler's way of writing specifiers.
+                                            -->
+                                            @if (radius.cascade.chunks.length > 0) {
+                                                <p class="muted">
+                                                    {{
+                                                        t.blastCascade(
+                                                            radius.cascade.chunks.length,
+                                                            radius.cascade.screens.length,
+                                                            radius.everyScreen ||
+                                                                radius.cascade.screens.length +
+                                                                    radius.screens.length ===
+                                                                    screenCount(),
+                                                            pct(radius.cascade.share)
+                                                        )
+                                                    }}<app-explain [text]="t.blastCascadeHelp" />
+                                                    <strong>{{
+                                                        radius.invalidatedBytes + radius.cascade.bytes | bytes
+                                                    }}</strong>
+                                                </p>
+                                                <!-- The amplifier with its own name on it. "This
+                                                     file names 42 others" points somewhere; "87 %
+                                                     invalidated" does not. -->
+                                                @if (radius.cascade.hub; as hub) {
+                                                    <p class="muted">
+                                                        {{ t.blastHub(fileName(hub.chunk), hub.names) }}
+                                                    </p>
+                                                }
+                                            }
+                                        }
+
+                                        @if (row.copies.length > 1) {
+                                            <h4 class="detail-title">
+                                                {{ t.searchCopiesTag(row.copies.length) }}
+                                            </h4>
+                                            @for (copy of row.copies; track copy.at) {
+                                                <div class="copy">
+                                                    <p class="copy__head">
+                                                        <strong>{{ t.dupCopy(copy) }}</strong>
+                                                        <span class="tag" [class.tag--crit]="copy.zone === 'boot'">{{
+                                                            t.dupZone[copy.zone]
+                                                        }}</span>
+                                                        <span class="mono">{{ copy.bytes | bytes }}</span>
+                                                    </p>
+                                                    <p class="copy__brought">{{ t.dupBroughtBy }}:</p>
+                                                    <app-chain [steps]="steps(copy.chain)" />
+                                                    <p class="copy__who">
+                                                        {{ t.dupImportedBy }}:
+                                                        @if (copy.importers.length > 0) {
+                                                            <span class="mono">{{ copy.importers.join(', ') }}</span>
+                                                        } @else if (copy.viaPackages.length > 0) {
+                                                            <span class="mono">{{ copy.viaPackages.join(', ') }}</span>
+                                                        } @else {
+                                                            {{ t.dupNobody }}
+                                                        }
+                                                    </p>
+                                                </div>
+                                            }
+                                        }
+
+                                        <h4 class="detail-title">{{ t.searchPlaces }}</h4>
+                                        @if (row.places.length > 1) {
+                                            <p class="note">{{ t.searchTwice }}</p>
+                                        }
+                                        <table class="inner">
+                                            <tbody>
+                                                @for (place of row.places; track place.chunk) {
+                                                    <tr>
+                                                        <td class="path">
+                                                            @if (place.zone === 'shared') {
+                                                                <button
+                                                                    class="link-btn"
+                                                                    type="button"
+                                                                    [title]="t.seeInShared"
+                                                                    (click)="nav.go('shared', place.chunk)"
+                                                                >
+                                                                    {{ place.chunkName }}
+                                                                </button>
+                                                            } @else if (place.zone === 'boot') {
+                                                                <!-- The bootstrap tab groups by package and folder, so it is that name it is asked for, not the chunk's. -->
+                                                                <button
+                                                                    class="link-btn"
+                                                                    type="button"
+                                                                    [title]="t.seeInBoot"
+                                                                    (click)="nav.go('boot', bootKey(row))"
+                                                                >
+                                                                    {{ place.chunkName }}
+                                                                </button>
+                                                            } @else {
+                                                                {{ place.chunkName }}
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <i
+                                                                aria-hidden="true"
+                                                                class="dot"
+                                                                [attr.data-zone]="place.zone"
+                                                            ></i>
+                                                            {{ zoneLabel(place.zone) }}
+                                                        </td>
+                                                        <td class="num">{{ place.bytes | bytes }}</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+
+                                        @if (row.screens.length > 0) {
+                                            <h4 class="detail-title">{{ t.loadedBy(row.screens.length) }}</h4>
+                                            <div class="chips">
+                                                @for (screen of row.screens; track screen.source) {
+                                                    <button
+                                                        class="chip"
+                                                        type="button"
+                                                        [title]="screen.source"
+                                                        (click)="nav.go('screens', screen.source)"
+                                                    >
+                                                        {{ screen.label }}
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div>
+                                        @if (row.matchedFiles.length > 0) {
+                                            <h4 class="detail-title">
+                                                {{ t.searchMatchedIn(row.matchedFiles.length) }}
+                                            </h4>
+                                            <div class="chips">
+                                                @for (file of row.matchedFiles; track file) {
+                                                    <span class="chip">{{ file }}</span>
+                                                }
+                                            </div>
+                                        }
+                                        @if (row.contents.length > 0) {
+                                            <h4 class="detail-title">{{ t.contents }}</h4>
+                                            <app-path-tree [items]="row.contents" />
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}

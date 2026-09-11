@@ -1,0 +1,236 @@
+:host {
+    display: block;
+}
+
+.tree {
+    padding: 0.5rem 0.5rem 0.5rem 0.25rem;
+}
+
+/* The header of the list, on the same columns as every row (`--tree-cols`). */
+.tree-head {
+    position: sticky;
+    z-index: 1;
+    top: var(--tabs-h);
+
+    display: grid;
+    grid-template-columns: var(--tree-cols);
+    gap: 0.5rem;
+    align-items: center;
+
+    margin-bottom: 0.2rem;
+    padding: 0.35rem 0.5rem 0.3rem 0;
+    border-bottom: 1px solid var(--line-strong);
+
+    font-size: var(--fs-note);
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+
+    background: var(--surface);
+
+    &__zone {
+        width: 9px;
+    }
+
+    &__size {
+        text-align: right;
+    }
+}
+
+/* The crumbs, as one row: how many there are and what they add up to. */
+.tree-tail {
+    cursor: pointer;
+
+    display: block;
+
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border: none;
+    border-radius: 3px;
+
+    font-family: var(--font-ui);
+    font-size: var(--fs-body);
+    color: var(--muted);
+    text-align: left;
+
+    background: none;
+
+    &:hover {
+        color: var(--ink);
+        background: var(--surface-sunk);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+
+    .twist {
+        display: inline-block;
+        width: 1.3rem;
+        font-family: var(--font-data);
+        font-weight: 700;
+    }
+}
+
+.dot {
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+    margin-right: 0.3rem;
+    border-radius: 2px;
+
+    vertical-align: middle;
+
+    background: var(--line-strong);
+
+    &[data-zone='boot'] {
+        background: var(--seg-boot);
+    }
+
+    &[data-zone='shared'] {
+        background: var(--seg-shared);
+    }
+
+    &[data-zone='own'] {
+        background: var(--seg-own);
+    }
+
+    &[data-zone='all'] {
+        background: linear-gradient(90deg, var(--seg-boot) 33%, var(--seg-shared) 33% 66%, var(--seg-own) 66%);
+    }
+
+    /* The lazy half is the two zones under it, so its square carries both of their colours. */
+    &[data-zone='lazy'] {
+        background: linear-gradient(90deg, var(--seg-shared) 50%, var(--seg-own) 50%);
+    }
+}
+
+.empty--pad {
+    padding: 1.5rem 0.85rem;
+}
+
+/*
+   How the build divides, above the list: a bar, two groups and one sentence. It is the only reading
+   of the bundle that does not depend on which chunk happens to be open.
+*/
+.shape {
+    max-width: 84ch;
+    margin-bottom: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    background: var(--surface);
+
+    &__title {
+        margin: 0 0 0.5rem;
+
+        font-size: var(--fs-note);
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0.01em;
+    }
+
+    /* One bar on the report's three colours, cut where eager ends. */
+    &__bar {
+        overflow: hidden;
+        display: flex;
+
+        height: 10px;
+        border-radius: 999px;
+
+        background: var(--surface-sunk);
+
+        i {
+            display: block;
+            height: 100%;
+
+            &[data-zone='boot'] {
+                background: var(--seg-boot);
+            }
+
+            &[data-zone='shared'] {
+                background: var(--seg-shared);
+            }
+
+            &[data-zone='own'] {
+                background: var(--seg-own);
+            }
+        }
+
+        /* The one gap in the bar is the eager/lazy boundary, and the only one. */
+        &--break {
+            margin-left: 3px;
+        }
+    }
+
+    &__split {
+        margin: 0.4rem 0 0.7rem;
+        font-size: var(--fs-body);
+        color: var(--muted);
+    }
+
+    &__rows {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        gap: 0.25rem 1.2rem;
+        align-items: baseline;
+
+        font-size: var(--fs-body);
+    }
+
+    &__label {
+        display: inline-flex;
+        gap: 0.45rem;
+        align-items: baseline;
+
+        /* The two zones are nested under "lazy": the indent is what says they add up to it. */
+        &--sub {
+            padding-left: 1.1rem;
+            color: var(--muted);
+        }
+    }
+
+    /* The dictionary holds these as tags, in lower case; here they open a line. */
+    &__name::first-letter {
+        text-transform: uppercase;
+    }
+
+    &__sep {
+        color: var(--line-strong);
+    }
+
+    &__size {
+        font-family: var(--font-data);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+
+    &__files {
+        font-family: var(--font-data);
+        font-size: var(--fs-body);
+        color: var(--muted);
+    }
+
+    &__note {
+        margin: 0.6rem 0 0;
+        font-size: var(--fs-body);
+        color: var(--muted);
+    }
+}
+
+/*
+   The pinned rows, held above the list. The rule under them is what says the list restarts below:
+   without it two chunks with nothing to do with each other read as the top two of one ordering.
+*/
+.tree-pins {
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px dashed var(--line-strong);
+    border-radius: 3px;
+
+    background: var(--surface-sunk);
+}

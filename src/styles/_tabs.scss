@@ -1,0 +1,112 @@
+/* ---------- tabs ---------- */
+
+.tabs {
+    /*
+    The strip's own scrollbar would change its height, and long lists now pin their column headers
+    right under it. Where it scrolls, the fade at the edge is what says so — see below.
+    */
+    scrollbar-width: none;
+
+    position: sticky;
+    z-index: 5;
+    top: 0;
+
+    overflow-x: auto;
+    display: flex;
+    gap: 0.15rem;
+
+    height: var(--tabs-h);
+    margin: 1.4rem 0 1rem;
+    padding-top: 0.4rem;
+    border-bottom: 1px solid var(--line);
+
+    background: var(--ground);
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/*
+   Narrow: the strip scrolls sideways and nothing used to say it did, so "Project" and "Criteria"
+   simply were not there. The mask softens both ends, so a tab cut off by the edge reads as cut off
+   rather than as the last one.
+
+   The breakpoint is the width at which the nine of them stop fitting inside the 1180 px column.
+   CSS cannot ask whether a box actually overflows, so between 1180 px and this figure the fade is
+   on with nothing behind it: forty pixels of a slightly softer edge, against a tab that simply was
+   not there before.
+*/
+@media (width < 1220px) {
+    .tabs {
+        mask-image: linear-gradient(90deg, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
+    }
+}
+
+/*
+   Nine tabs in one row read as nine things of the same kind, and they are three kinds: the report
+   (signals, screens, measured), the detail behind it, and the configuration. Two gaps say it.
+*/
+.tab--detail {
+    margin-left: 1.1rem;
+}
+
+.tab--aside {
+    margin-left: auto;
+    padding-left: 1.1rem;
+}
+
+.tab {
+    cursor: pointer;
+
+    display: inline-flex;
+    flex: none;
+    gap: 0.45rem;
+    align-items: center;
+
+    margin-bottom: -1px;
+    padding: 0.55rem 0.9rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+
+    font-family: var(--font-ui);
+    font-size: var(--fs-body);
+    font-weight: 500;
+    color: var(--muted);
+    white-space: nowrap;
+
+    background: none;
+
+    &:hover {
+        color: var(--ink);
+    }
+
+    &:focus-visible {
+        border-radius: 3px;
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+
+    &[aria-selected='true'] {
+        border-bottom-color: var(--accent);
+        color: var(--ink);
+    }
+
+    &__n {
+        padding: 0 0.42rem;
+        border-radius: 999px;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.6;
+        color: var(--muted);
+
+        background: var(--surface-sunk);
+    }
+
+    &[aria-selected='true'] &__n {
+        color: var(--accent);
+        background: var(--accent-soft);
+    }
+}

@@ -1,0 +1,174 @@
+@let t = i18n.ui();
+
+<app-panel-header [howTo]="t.howToTree" [subtitle]="t.secTreeSub" [title]="t.secTree" />
+
+<!--
+Before the list of chunks: how the build divides. Every other figure judges one row at a time; this
+one is the only reading that does not depend on which row happens to be open.
+-->
+@if (shape(); as shape) {
+    <div class="shape">
+        <h3 class="shape__title">{{ t.shapeTitle }}</h3>
+
+        <!--
+        The gap in the bar is where eager ends. It carries no figures of its own — the rows under it
+        do — so it is hidden from the reader who is being read to rather than said twice.
+        -->
+        <span aria-hidden="true" class="shape__bar">
+            @for (part of shape.bar; track part.zone) {
+                <i
+                    [attr.data-zone]="part.zone"
+                    [class.shape__bar--break]="part.break"
+                    [style.width.%]="part.percent"
+                ></i>
+            }
+        </span>
+        <p class="shape__split">{{ shape.split }}</p>
+
+        <div class="shape__rows">
+            @for (row of shape.rows; track row.key) {
+                <span class="shape__label" [class.shape__label--sub]="row.sub">
+                    <i aria-hidden="true" class="dot" [attr.data-zone]="row.dot"></i>
+                    @if (row.name) {
+                        <b class="shape__name">{{ row.name }}</b>
+                    }
+                    @if (row.name && row.who) {
+                        <span aria-hidden="true" class="shape__sep">·</span>
+                    }
+                    @if (row.who) {
+                        <span class="shape__who">{{ row.who }}</span>
+                    }
+                </span>
+                <span class="shape__size">{{ row.size }}</span>
+                <span class="shape__files">{{ t.filesCount(row.files) }}</span>
+            }
+        </div>
+
+        @if (shapeNote(); as note) {
+            <p class="shape__note">{{ note }}</p>
+        }
+    </div>
+}
+
+<div class="toolbar">
+    <div class="toolbar__group">
+        <input
+            class="field"
+            type="search"
+            [attr.aria-label]="t.filterTree"
+            [placeholder]="t.filterTree"
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+        />
+        <span class="toolbar__count">{{ visibleTree().length }} / {{ tree().length }}</span>
+    </div>
+
+    <div class="toolbar__group" role="group" [attr.aria-label]="t.secTree">
+        @for (option of zones; track option) {
+            <button
+                class="ctl"
+                type="button"
+                [attr.aria-pressed]="zone() === option"
+                [class.ctl--active]="zone() === option"
+                [title]="zoneHelp(option)"
+                (click)="zone.set(option)"
+            >
+                <i aria-hidden="true" class="dot" [attr.data-zone]="option"></i>
+                {{ zoneLabel(option) }}
+            </button>
+        }
+    </div>
+</div>
+
+<div class="scroller--tall tree">
+    <div class="tree-head">
+        <span></span>
+        <span
+            app-sort
+            [active]="order().key === 'name'"
+            [dir]="order().dir"
+            [sortLabel]="t.sortByColumn"
+            (pick)="pick('name')"
+            >{{ t.thChunk }}</span
+        >
+        <span class="tree-head__zone"></span>
+        <span></span>
+        <span
+            app-sort
+            class="tree-head__size"
+            [active]="order().key === 'bytes'"
+            [dir]="order().dir"
+            [help]="t.helpSize"
+            [sortLabel]="t.sortByColumn"
+            (pick)="pick('bytes')"
+            >{{ t.thSize }}</span
+        >
+        <span></span>
+    </div>
+
+    <!--
+    The rows somebody asked to keep on screen, above the list and outside its filter. This is what
+    makes row 2 and row 41 comparable: the bars already share a scale, what was missing was having
+    both of them visible at once.
+    -->
+    @if (pinnedRows(); as pins) {
+        @if (pins.length > 0) {
+            <div class="tree-pins">
+                @for (node of pins; track node.id) {
+                    <app-tree-node
+                        [node]="node"
+                        [pinned]="true"
+                        [scale]="treeScale()"
+                        [zoneBytes]="zoneBytesOf(node.zone)"
+                        (pinToggled)="togglePin(node)"
+                    />
+                }
+            </div>
+        }
+    }
+
+    @for (node of head(); track node.id) {
+        <app-tree-node
+            [node]="node"
+            [pinned]="isPinned(node)"
+            [scale]="treeScale()"
+            [zoneBytes]="zoneBytesOf(node.zone)"
+            (pinToggled)="togglePin(node)"
+        />
+    } @empty {
+        @if (tail().length === 0 && pinnedRows().length === 0) {
+            <p class="empty empty--pad">{{ t.treeNoMatch }}</p>
+        }
+    }
+
+    <!--
+    The tail of crumbs, as one row. Forty chunks under the crumb line all draw the same minimum bar
+    and say the same thing forty times; what they have to say together is how many they are and what
+    they add up to. It is still one press away.
+    -->
+    @if (tail(); as crumbs) {
+        @if (crumbs.length > 0) {
+            <button
+                class="tree-tail"
+                type="button"
+                [attr.aria-expanded]="tailOpen()"
+                (click)="tailOpen.set(!tailOpen())"
+            >
+                <span aria-hidden="true" class="twist">{{ tailOpen() ? '−' : '+' }}</span>
+                {{ t.treeCrumbs(crumbs.length, crumbBytes(), crumbLine()) }}
+            </button>
+
+            @if (tailOpen()) {
+                @for (node of crumbs; track node.id) {
+                    <app-tree-node
+                        [node]="node"
+                        [pinned]="isPinned(node)"
+                        [scale]="treeScale()"
+                        [zoneBytes]="zoneBytesOf(node.zone)"
+                        (pinToggled)="togglePin(node)"
+                    />
+                }
+            }
+        }
+    }
+</div>

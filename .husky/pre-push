@@ -1,0 +1,6 @@
+# Report, NOT a gate: the `|| true` is intentional and the push goes through regardless.
+# It lives in pre-push rather than pre-commit because knip scans the whole repo (not the
+# staged files): on every commit it would be the same report over and over.
+
+echo -e "\nDead code (knip)...\n"
+pnpm exec knip --cache || true

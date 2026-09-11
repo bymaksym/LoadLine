@@ -1,0 +1,58 @@
+<div class="row">
+    <button
+        class="twist"
+        type="button"
+        [attr.aria-expanded]="open()"
+        [attr.aria-label]="node().label"
+        (click)="open.set(!open())"
+    >
+        {{ open() ? '−' : '+' }}
+    </button>
+
+    <span class="label-cell">
+        <span class="label" [title]="node().label">{{ node().label }}</span>
+        <span class="tag" [attr.data-zone]="node().zone">{{ whoPays() }}<app-explain [text]="zoneHelp()" /></span>
+        @if (share(); as share) {
+            <span class="tag"
+                >{{ i18n.ui().treeShare(share, node().zone ?? 'own') }}<app-explain [text]="i18n.ui().treeShareHelp"
+            /></span>
+        }
+    </span>
+
+    <span aria-hidden="true" class="zone" [class]="'zone zone--' + (node().zone ?? 'none')"></span>
+
+    <span class="share" [title]="barHelp()">
+        <i [style.background]="barColour()" [style.width.%]="sharePercent()"></i>
+    </span>
+
+    <span class="size">
+        {{ node().bytes | bytes }}
+        @if (rawSize(); as raw) {
+            <small class="size__raw"
+                >{{ raw | bytes }} {{ i18n.ui().unitRaw }}<app-explain [text]="i18n.ui().treeRawHelp"
+            /></small>
+        }
+    </span>
+
+    <!--
+    Keeps this row at the top while the rest is scrolled, filtered or searched. Two bars on one
+    common scale say everything; what costs is getting them onto the screen at the same time.
+    -->
+    <button
+        class="pin"
+        type="button"
+        [attr.aria-pressed]="pinned()"
+        [class.pin--on]="pinned()"
+        [title]="pinned() ? i18n.ui().treeUnpin : i18n.ui().treePin"
+        (click)="pinToggled.emit()"
+    >
+        <span aria-hidden="true">{{ pinned() ? '★' : '☆' }}</span>
+        <span class="sr-only">{{ pinned() ? i18n.ui().treeUnpin : i18n.ui().treePin }}</span>
+    </button>
+</div>
+
+@if (open()) {
+    <div class="inside">
+        <app-path-tree [items]="files()" [rawTotal]="node().rawBytes ?? null" />
+    </div>
+}

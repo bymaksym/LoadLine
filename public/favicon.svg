@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Loadline: tres pantallas, cada una con su barra de arranque / compartido / propio. El tramo compartido alineado en todas las filas es el hallazgo. -->
+  <rect width="64" height="64" rx="14" fill="#171b21"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#fff" stroke-opacity="0.09" stroke-width="1.5"/>
+  <rect x="10" y="13" width="11" height="10" rx="2" fill="#6f7a8b"/>
+  <rect x="23" y="13" width="15" height="10" rx="2" fill="#d97b40"/>
+  <rect x="40" y="13" width="14" height="10" rx="2" fill="#3fa0a0"/>
+  <rect x="10" y="27" width="11" height="10" rx="2" fill="#6f7a8b"/>
+  <rect x="23" y="27" width="15" height="10" rx="2" fill="#d97b40"/>
+  <rect x="40" y="27" width="5" height="10" rx="2" fill="#3fa0a0"/>
+  <rect x="10" y="41" width="11" height="10" rx="2" fill="#6f7a8b"/>
+  <rect x="23" y="41" width="15" height="10" rx="2" fill="#d97b40"/>
+  <rect x="40" y="41" width="9" height="10" rx="2" fill="#3fa0a0"/>
+</svg>

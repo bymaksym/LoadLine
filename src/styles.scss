@@ -1,0 +1,29 @@
+/* ==========================================================================
+   The global stylesheet: what every component can count on being there.
+
+   Split by what each part styles. Components add only what is theirs, so a class
+   used by more than one panel belongs in one of these partials, not in a component.
+
+   Two conventions the whole page holds to, because breaking them once costs more than they save:
+
+   · **Size.** Two steps, `--fs-body` (14 px) and `--fs-note` (12 px). Anything meant to be read is
+     the first; only what names another thing is the second. See `assets/_tokens.scss`.
+   · **Spaced uppercase.** Two uses and no more: a table's column headers, and the label of a
+     figure (a tile, a split, a measured figure). It used to mark five different things at once —
+     the brand, the labels, the headers, the section titles and the lead line — and marking
+     everything marks nothing.
+   ========================================================================== */
+
+@use './assets/tokens' as *;
+
+@use './styles/fonts';
+@use './styles/base';
+@use './styles/controls';
+@use './styles/tags';
+@use './styles/summary';
+@use './styles/tabs';
+@use './styles/panels';
+@use './styles/tables';
+@use './styles/rating';
+@use './styles/legend';
+@use './styles/print';

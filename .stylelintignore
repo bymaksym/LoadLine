@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.angular/
+
+# Self-contained build artifact (CSS inlined by scripts/inline-build.mjs)
+loadline.html
+
+# Generated from the .woff2 files by scripts/embed-fonts.mjs.
+src/styles/_fonts.scss

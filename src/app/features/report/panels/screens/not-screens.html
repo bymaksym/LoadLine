@@ -1,0 +1,29 @@
+@let t = i18n.ui();
+
+@for (group of groups(); track group.key) {
+    <p class="caveat">{{ group.note }}<app-explain [text]="group.help" /></p>
+
+    <ul class="asides">
+        @for (item of group.items; track item.source) {
+            <li class="aside">
+                <span class="aside__name" [title]="item.source">{{ item.label }}</span>
+                <span class="aside__size">{{ item.bytes | bytes }}</span>
+                <button
+                    class="link-btn"
+                    type="button"
+                    [title]="t.markScreenHelp"
+                    (click)="store.markAs(item.source, 'screen')"
+                >
+                    {{ t.markScreen }}
+                </button>
+            </li>
+        }
+    </ul>
+}
+
+@if (marked(); as marks) {
+    <p class="caveat">
+        {{ t.marksNote(marks) }}
+        <button class="link-btn" type="button" (click)="store.clearMarks()">{{ t.marksReset }}</button>
+    </p>
+}

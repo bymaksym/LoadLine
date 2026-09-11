@@ -1,0 +1,36 @@
+{
+    // Project-level dead-code detector: files, exports and dependencies nothing reaches from the
+    // entry points. Run by hand (`pnpm knip`) and as a report in .husky/pre-push: it informs, it
+    // does not block.
+    //
+    // It is .jsonc rather than .json so every silence can carry its reason: an ignore without a
+    // motive ends up hiding a real finding.
+    "$schema": "https://unpkg.com/knip@6/schema.json",
+
+    // The Angular plugin already derives src/main.ts and the assets from angular.json. Only what
+    // lives outside that graph goes here.
+    "entry": [
+        "src/**/*.spec.ts",
+        "scripts/*.mjs", // post-build inliner, run from the `build` script
+        "cli/main.ts", // the command, reached from bin/loadline.js and not from src/main.ts
+        "cli/**/*.spec.ts",
+    ],
+
+    // Config file its tool reads by naming convention, without anyone importing it. To knip it is
+    // a module no entry point reaches.
+    //
+    // `fixtures/` is a whole application and its compiled output, read as data by
+    // `cli/read-build.spec.ts`. Nothing imports it and nothing should: what it tests is a folder,
+    "ignore": [".ncurc.js", "fixtures/**"],
+
+    "ignoreDependencies": [
+        // Provided by the `angular-eslint` meta-package; angular.json references it as the builder of
+        // the lint target, but it is deliberately not declared on its own.
+        "@angular-eslint/builder",
+    ],
+
+    // "Nobody imports it" has two causes and only one is debt: a symbol used INSIDE its own file
+    // (a constant feeding the function next to it, an interface composing another) is not dead
+    // code — at most the `export` keyword is superfluous.
+    "ignoreExportsUsedInFile": true,
+}

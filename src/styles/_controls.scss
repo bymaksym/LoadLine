@@ -1,0 +1,141 @@
+/* ---------- controls ---------- */
+
+.ctl {
+    cursor: pointer;
+
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+
+    font-family: var(--font-ui);
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    background: var(--surface);
+
+    &:hover {
+        border-color: var(--accent);
+        color: var(--ink);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    &--active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft);
+    }
+
+    &:disabled {
+        cursor: default;
+        opacity: 0.5;
+    }
+
+    /* Counter inside a filter button: "Bad 3". */
+    &__n {
+        margin-left: 0.3rem;
+        font-family: var(--font-data);
+        font-variant-numeric: tabular-nums;
+        opacity: 0.8;
+    }
+}
+
+/* Button that looks like text: to link a cell with another tab. */
+.link-btn {
+    cursor: pointer;
+
+    padding: 0;
+    border: none;
+
+    font: inherit;
+    color: var(--accent);
+    text-decoration: underline dotted;
+    text-underline-offset: 0.18em;
+
+    background: none;
+
+    &:hover {
+        text-decoration-style: solid;
+    }
+
+    &:focus-visible {
+        border-radius: 2px;
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}
+
+/* Text field. Sunk (darker than the surface) so it reads as "type here". */
+.field {
+    width: 100%;
+    max-width: 22rem;
+    padding: 0.42rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    font-family: var(--font-ui);
+    font-size: var(--fs-body);
+    color: var(--ink);
+
+    background: var(--surface-sunk);
+
+    &::placeholder {
+        color: var(--muted);
+    }
+
+    &:focus {
+        background: var(--surface);
+        outline: 2px solid var(--accent);
+        outline-offset: -1px;
+    }
+}
+
+/* Toolbar above a table: filter on the left, sort on the right. */
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 0.7rem;
+
+    &__group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        align-items: center;
+
+        font-size: var(--fs-body);
+        color: var(--muted);
+
+        /*
+           A search box is not a shrinkable decoration: as a plain flex item, inside a group that
+           was itself shrinking, it collapsed to its minimum and cut its own placeholder in half
+           ("Package name or f…"). The group takes the free space and the field takes the group.
+        */
+        &:has(.field) {
+            flex: 1 1 20rem;
+        }
+
+        .field {
+            flex: 1 1 18rem;
+            min-width: 12rem;
+        }
+
+        .field--wide {
+            flex-basis: 26rem;
+            max-width: 32rem;
+        }
+    }
+
+    &__count {
+        font-family: var(--font-data);
+        font-size: var(--fs-body);
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+    }
+}

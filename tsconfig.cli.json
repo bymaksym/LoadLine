@@ -1,0 +1,27 @@
+/*
+ * The command, compiled on its own.
+ *
+ * CommonJS on purpose: the analysis is written with extensionless relative imports, which is what
+ * the Angular build expects and what Node's ESM loader rejects. Emitting CommonJS means the same
+ * source files run in the browser and in Node without a bundler and without a second dependency.
+ *
+ * `include` names only `cli/`: TypeScript follows the imports from there, so exactly the part of
+ * `src/app/core` the command uses gets compiled, and nothing that touches the DOM comes along.
+ */
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "node18",
+        "moduleResolution": "node16",
+        "esModuleInterop": true,
+        "lib": ["ES2023"],
+        "types": ["node"],
+        "importHelpers": false,
+        "outDir": "dist/cli",
+        "rootDir": ".",
+        "declaration": false,
+        "sourceMap": false
+    },
+    "include": ["cli/**/*.ts"],
+    "exclude": ["cli/**/*.spec.ts"]
+}

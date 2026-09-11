@@ -1,0 +1,41 @@
+:host {
+    display: block;
+}
+
+.head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.8rem;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 0.3rem;
+
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+/* The unit of the breakdown and what is left unattributed: said, not left to be guessed. */
+.unit {
+    margin-left: 0.25rem;
+    border-bottom: 1px dotted var(--line);
+    font-size: var(--fs-note);
+    color: var(--muted);
+}
+
+.head__btns {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.head .ctl {
+    padding: 0.2rem 0.55rem;
+    font-size: var(--fs-note);
+}
+
+.roots {
+    padding: 0.25rem 0.35rem 0.25rem 0.15rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+}

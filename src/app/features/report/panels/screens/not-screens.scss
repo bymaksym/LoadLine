@@ -1,0 +1,54 @@
+:host {
+    display: block;
+    margin-top: 1rem;
+}
+
+/* Same line as the panel's other footnotes: this is one more thing the table does not say. */
+.caveat {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+
+    max-width: 84ch;
+    margin: 0 0 0.35rem;
+
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+.asides {
+    overflow-y: auto;
+
+    max-height: 11rem;
+    margin: 0 0 0.7rem;
+    padding: 0;
+
+    list-style: none;
+}
+
+.aside {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.6rem;
+    align-items: baseline;
+
+    padding: 0.2rem 0.35rem;
+
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    &:hover {
+        background: var(--surface-sunk);
+    }
+
+    &__name {
+        font-family: var(--font-data);
+        color: var(--ink);
+    }
+
+    &__size {
+        font-family: var(--font-data);
+        font-variant-numeric: tabular-nums;
+    }
+}

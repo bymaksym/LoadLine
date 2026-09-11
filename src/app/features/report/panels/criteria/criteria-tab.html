@@ -1,0 +1,121 @@
+@let t = i18n.ui();
+@let c = store.criteria();
+@let mode = store.mode();
+@let custom = criteria.customCount(mode);
+
+<app-panel-header [howTo]="t.howToCriteria" [subtitle]="t.secCriteriaSub" [title]="t.secCriteria" />
+
+<div class="toolbar">
+    <p class="mode-note">
+        {{ t.criteriaModeNote(mode) }}
+        @if (store.hasBrotli()) {
+            <span class="mode-note__pick">
+                {{ t.criteriaFigures }}:
+                <button
+                    class="ctl"
+                    type="button"
+                    [attr.aria-pressed]="!store.preferBrotli()"
+                    [class.ctl--active]="!store.preferBrotli()"
+                    (click)="store.preferBrotli.set(false)"
+                >
+                    {{ t.criteriaGzipBtn }}
+                </button>
+                <button
+                    class="ctl"
+                    type="button"
+                    [attr.aria-pressed]="store.preferBrotli()"
+                    [class.ctl--active]="store.preferBrotli()"
+                    (click)="store.preferBrotli.set(true)"
+                >
+                    {{ t.criteriaBrotliBtn }}
+                </button>
+            </span>
+        } @else if (mode === 'gzip') {
+            <span class="mode-note__warn">{{ t.criteriaBrotliMissing }}</span>
+        }
+    </p>
+    <div class="toolbar__group">
+        <span class="toolbar__count">{{ custom ? t.criteriaStatusCustom(custom) : t.criteriaStatusRec }}</span>
+        <button class="ctl" type="button" [title]="t.criteriaExportHelp" (click)="exports.criteria()">
+            {{ t.criteriaExport }}
+        </button>
+        <button class="ctl" type="button" [disabled]="!custom" (click)="criteria.reset(mode)">
+            {{ t.criteriaReset }}
+        </button>
+    </div>
+</div>
+
+@for (group of groups; track group) {
+    <section class="crit-group">
+        <h3>{{ groupTitle(group) }}</h3>
+
+        @for (field of fieldsOf(group); track field.key) {
+            @let isCustom =
+                criteria.isCustom(mode, field.key) ||
+                (field.pairWith ? criteria.isCustom(mode, field.pairWith) : false);
+
+            <div class="crit" [class.is-custom]="isCustom">
+                <div class="crit__text">
+                    <span class="crit__label">
+                        {{ t.critLabel[field.key] }}
+                        @if (scaleNote(field); as note) {
+                            <span class="tag">{{ note }}</span>
+                        }
+                        <!--
+                        On every field, conventions included. Hiding it on those would defeat the
+                        point: what the label is for is letting somebody see how much of this list
+                        is a line drawn by hand rather than a figure with a source behind it.
+                        -->
+                        <span class="tag" [attr.data-from]="field.from"
+                            >{{ fromLabel(field) }}<app-explain [text]="fromHelp(field)"
+                        /></span>
+                    </span>
+                    <span class="crit__help">{{ t.critHelp[field.key] }}</span>
+                </div>
+
+                <div class="crit__inputs">
+                    @if (field.pairWith; as pair) {
+                        <label>
+                            <span>{{ t.critOkUpTo }}</span>
+                            <input
+                                class="field field--num"
+                                min="0"
+                                type="number"
+                                [value]="toField(c[field.key], field.unit)"
+                                (change)="set(field.key, field.unit, $event)"
+                            />
+                            <span class="crit__unit">{{ unitLabel(field.unit) }}</span>
+                        </label>
+                        <label>
+                            <span>{{ t.critBadAbove }}</span>
+                            <input
+                                class="field field--num"
+                                min="0"
+                                type="number"
+                                [value]="toField(c[pair], field.unit)"
+                                (change)="set(pair, field.unit, $event)"
+                            />
+                            <span class="crit__unit">{{ unitLabel(field.unit) }}</span>
+                        </label>
+                    } @else {
+                        <label>
+                            <input
+                                class="field field--num"
+                                min="0"
+                                type="number"
+                                [max]="field.unit === 'pct' ? 100 : null"
+                                [value]="toField(c[field.key], field.unit)"
+                                (change)="set(field.key, field.unit, $event)"
+                            />
+                            <span class="crit__unit">{{ unitLabel(field.unit) }}</span>
+                        </label>
+                    }
+                    <!-- Only where the value was changed: under all fourteen it was the same note. -->
+                    @if (isCustom) {
+                        <span class="crit__rec">{{ t.criteriaRecommended(recommendedText(field)) }}</span>
+                    }
+                </div>
+            </div>
+        }
+    </section>
+}

@@ -1,0 +1,396 @@
+{
+  "tool": "loadline",
+  "version": 1,
+  "stats": "sample-stats.json",
+  "project": null,
+  "mode": "raw",
+  "unit": "raw",
+  "splitSource": "metafile",
+  "serverOutputs": 0,
+  "pageCss": null,
+  "firstTrip": null,
+  "assets": null,
+  "boot": {
+    "bytes": 568140,
+    "rawBytes": 568140,
+    "files": 4,
+    "verdict": "ok"
+  },
+  "screens": [
+    {
+      "label": "reports",
+      "source": "src/app/features/reports/reports.page.ts",
+      "files": 7,
+      "boot": 568140,
+      "shared": 171080,
+      "own": 439660,
+      "total": 1178880,
+      "verdict": "ok",
+      "delta": null
+    },
+    {
+      "label": "invoices",
+      "source": "src/app/features/invoices/invoices.page.ts",
+      "files": 7,
+      "boot": 568140,
+      "shared": 171080,
+      "own": 171660,
+      "total": 910880,
+      "verdict": "good",
+      "delta": null
+    },
+    {
+      "label": "dashboard",
+      "source": "src/app/features/dashboard/dashboard.page.ts",
+      "files": 7,
+      "boot": 568140,
+      "shared": 0,
+      "own": 249340,
+      "total": 817480,
+      "verdict": "good",
+      "delta": null
+    },
+    {
+      "label": "orders",
+      "source": "src/app/features/orders/orders.page.ts",
+      "files": 6,
+      "boot": 568140,
+      "shared": 171080,
+      "own": 14380,
+      "total": 753600,
+      "verdict": "good",
+      "delta": null
+    },
+    {
+      "label": "customers",
+      "source": "src/app/features/customers/customers.page.ts",
+      "files": 6,
+      "boot": 568140,
+      "shared": 171080,
+      "own": 10080,
+      "total": 749300,
+      "verdict": "good",
+      "delta": null
+    },
+    {
+      "label": "users",
+      "source": "src/app/features/admin/users.page.ts",
+      "files": 6,
+      "boot": 568140,
+      "shared": 171080,
+      "own": 8980,
+      "total": 748200,
+      "verdict": "good",
+      "delta": null
+    },
+    {
+      "label": "settings",
+      "source": "src/app/features/settings/settings.page.ts",
+      "files": 5,
+      "boot": 568140,
+      "shared": 0,
+      "own": 8280,
+      "total": 576420,
+      "verdict": "good",
+      "delta": null
+    },
+    {
+      "label": "audit",
+      "source": "src/app/features/admin/audit.page.ts",
+      "files": 5,
+      "boot": 568140,
+      "shared": 0,
+      "own": 7380,
+      "total": 575520,
+      "verdict": "good",
+      "delta": null
+    }
+  ],
+  "deferred": [
+    {
+      "label": "heatmap.widget",
+      "source": "src/app/features/dashboard/heatmap.widget.ts",
+      "bytes": 25780
+    }
+  ],
+  "groupers": [
+    {
+      "label": "admin",
+      "source": "src/app/features/admin/admin.routes.ts",
+      "bytes": 820
+    }
+  ],
+  "data": [],
+  "shared": [
+    {
+      "file": "chunk-GRID-5NPX7J.js",
+      "name": "chunk-GRID-5NPX7J.js",
+      "bytes": 171080,
+      "screens": 5,
+      "mainContent": "ag-grid-community/dist/package/main.esm.mjs"
+    }
+  ],
+  "findings": [
+    {
+      "kind": "shared",
+      "severity": "high",
+      "chip": "common code marked as lazy",
+      "title": "167 kB downloaded by 5 of your 8 screens",
+      "body": "The chunk chunk-GRID-5NPX7J.js shows up in your bundler’s lazy list, so it looks like only the screens that need it pay for it. 5 screens import it: in practice it always downloads. Its main contents are ag-grid-community/dist/package/main.esm.mjs.",
+      "fix": "This is usually one barrel file re-exporting a whole UI folder that every screen imports. Before splitting the whole thing, check the breakdown: if most of the weight really is used everywhere, splitting only moves it elsewhere. What does pay off is pulling out the components a single screen uses."
+    },
+    {
+      "kind": "bootLazy",
+      "severity": "high",
+      "chip": "bootstrap for a lazy screen",
+      "title": "date-fns weighs 28 kB in the bootstrap, and the code using it is in a lazy screen",
+      "body": "Every load of the app downloads it, even though its screen is lazy and many people never open it. The real consumer is in orders.page.ts, and 2 files import it in total. It enters the bootstrap through src/main.ts › src/app/app.ts › src/app/core/http/api.service.ts › date-fns: the import to look at is the one in src/app/core/http/api.service.ts.",
+      "fix": "Move its registration out of the bootstrap config and into that route’s providers, in src/app/app.routes.ts, where the screen is loaded from. One side effect to keep in mind: if you have guards comparing against routeConfig.path, keep the guard on the parent route, because once nested the child gets path: '' and the guard stops recognising it.",
+      "saving": 28400,
+      "sources": [
+        "node_modules/.pnpm/date-fns@3.6.0/node_modules/date-fns/index.js"
+      ]
+    },
+    {
+      "kind": "bigFile",
+      "severity": "mid",
+      "chip": "large source file",
+      "title": "countries.data.ts takes 47 kB of the bootstrap",
+      "body": "A file of yours this heavy is usually a constants table — translation keys, catalogues, routes — that comes in whole because it is referenced from everywhere. src/app/core/countries.data.ts (47 kB)",
+      "fix": "Check the compressed size before touching it: repetitive text compresses very well and the change may not pay off. If it grows with every new entry, at least put a size budget on it.",
+      "saving": 48600,
+      "sources": [
+        "src/app/core/countries.data.ts"
+      ]
+    },
+    {
+      "kind": "dupes",
+      "severity": "mid",
+      "chip": "duplicate copies",
+      "title": "1 package shipped more than once",
+      "body": "You pay the weight twice because two dependencies ask for incompatible ranges. One of the copies is in the bootstrap, so everybody downloads that extra weight. date-fns — version 3.6.0 · 28 kB · in the bootstrap. Comes in through src/main.ts › src/app/app.ts › src/app/core/http/api.service.ts › date-fns; your own code imports it in src/app/core/http/api.service.ts, src/app/features/orders/orders.page.ts. copy nested inside ag-grid-community · 23 kB · in a shared chunk. Comes in through src/main.ts › src/app/app.config.ts › src/app/app.routes.ts › src/app/features/orders/orders.page.ts › src/app/shared/grid/grid.ts › ag-grid-community › date-fns; ag-grid-community imports it.",
+      "fix": "At least one copy is not one you asked for: another dependency imports it, so aligning your package.json is not enough. Force the resolution with pnpm.overrides, overrides (npm) or resolutions (yarn), and check that the version you keep works for both."
+    },
+    {
+      "kind": "heavy",
+      "severity": "mid",
+      "chip": "expensive screens",
+      "title": "3 screens carry far more code of their own than the rest, worst of them reports with 429 kB",
+      "body": "The median screen carries 14 kB of its own code. reports carries 429 kB, so it pulls a heavy library just for itself. Behind it come dashboard (243 kB), invoices (168 kB).",
+      "fix": "If that library is only needed once you open something inside the screen (a viewer, an editor, a chart), move it into a lazy block so people who merely pass through do not pay for it. With several screens on the list, check first whether it is the same library in all of them: then there is one fix, not five."
+    },
+    {
+      "kind": "bootWaves",
+      "severity": "mid",
+      "chip": "bootstrap in several round trips",
+      "title": "The first load takes 2 round trips before anything is painted",
+      "body": "A chunk index.html names — the entry script or a modulepreload link — is asked for straight away; one it does not name is only discovered once the chunk importing it has arrived and been parsed. 1 bootstrap chunk is not named: chunk-ICONS-8PLM3D.js. Same bytes, one round trip later, in the one moment every visitor pays for.",
+      "fix": "The chain that actually costs round trips is chunk-CORE-4H8BTZ.js → chunk-ICONS-8PLM3D.js (414 kB): those are the ones that, named in the page, remove a wait. Naming in the page what is currently discovered by parsing is what removes the wait, and the number of tags is part of the cost, not part of the fix. Here that is one tag. Almost nobody writes them by hand: Angular emits them for the initial chunks and Vite has build.modulePreload — if it is switched off, this is the bill. What is worth avoiding is making it a habit: a page carrying dozens of modulepreload tags competes for bandwidth with the CSS that blocks rendering, and teams have measured first paint getting worse after adding them. Put the tags after the <link rel=\"stylesheet\"> lines so the stylesheet keeps its priority, and keep them to the bootstrap: a chunk for a route nobody has navigated to yet wants prefetching on intent or in idle time, never a modulepreload every visitor pays for. And if it turns out they are not needed before the first paint, the other way out is to defer them, and then the first load weighs less as well."
+    },
+    {
+      "kind": "slowScreens",
+      "severity": "mid",
+      "chip": "discovery depth",
+      "title": "dashboard takes 3 round trips to be complete: 450 ms of pure waiting",
+      "body": "A browser does not know a chunk exists until it has downloaded and parsed the one importing it, so a screen split across several levels of static imports costs that many requests in a row, however little it weighs. The threshold here is a formula, not a number: every round trip is at least one latency, so 3 × 150 ms = 450 ms that no size figure shows. And it holds under every protocol: no compression touches a round trip, and neither does multiplexing, because what limits this is sequential discovery rather than transport. One screen takes 3 or more: dashboard (3). Its widest trip brings a single file: it is a chain end to end, and every level flattened removes a whole wait.",
+      "fix": "Look at the chain in the Screens tab: each level is one file statically importing another. It shortens by importing from the screen what reaches it today through an intermediary, or — where the bundler allows it — by having the loader ask for the whole list at once, which is what Vite does with its preload list. This is not a question of size: merging chunks does not fix it while the chain is as deep."
+    },
+    {
+      "kind": "unstableChunk",
+      "severity": "mid",
+      "chip": "chunk mixing what changes with what does not",
+      "title": "3 chunks mix dependencies with your own code: 233 kB is re-invalidated on every deploy",
+      "body": "Dependencies do not change for months and your code changes daily. A chunk holding both gets a new hash every time you touch a line, and everything third-party inside it is downloaded again for nothing. And it is in the bootstrap, so every returning visit pays for it. chunk-THEME-QW19MC.js — 83 % 43 kB (bootstrap) · main-K7QW2X.js — 32 % 28 kB (bootstrap) · chunk-GRID-5NPX7J.js — 97 % 162 kB.",
+      "fix": "Split them: in Rollup and Vite with a manualChunks rule sending everything from node_modules to its own chunk. Angular already does this by default, so if something shows up here, look for a static import dragging a dependency into a chunk of yours. Watch the opposite extreme: one enormous vendor chunk is invalidated whole when a single library is updated, so what is wanted is a split by how often things change, not by where they came from."
+    },
+    {
+      "kind": "unhashable",
+      "severity": "mid",
+      "chip": "names that cannot be cached",
+      "title": "1 file carries no hash in the name",
+      "body": "A file without a hash in its name cannot be cached for good: the browser has to ask whether it changed on every visit, and that question costs a round trip even when the answer is no. 1 of them are asked for by the page itself (88 kB). main-K7QW2X.js (88 kB, in the page).",
+      "fix": "Almost always informative: a favicon.ico or a manifest.webmanifest carry no hash and do not need one. When it fires on something large the page asks for, hash the name in the build configuration. The version-in-the-query case (?v=3) is the one that is nearly always a mistake: it changes the URL of every file at once on every deploy, which is the opposite of what a per-file hash does."
+    },
+    {
+      "kind": "cascadeShape",
+      "severity": "info",
+      "chip": "hash cascade: medium risk",
+      "title": "The names are spread about: main-K7QW2X.js carries the most, 9 of 19",
+      "body": "A bundler writes the hashed name of every chunk it imports inside the importing chunk, so a change travels along those edges. What decides how far it travels is not which bundler it is, it is the topology — which is why this is measured rather than quoted. Here no single file concentrates the names: main-K7QW2X.js names 9 of 19. A change travels, but it does not reach the whole build.",
+      "fix": "Every way out has a price and none is automatic: import maps move the specifiers into the HTML (at the cost of an uncacheable HTML, which it usually already is), breaking the hub with manualChunks is paid for with a bigger first load — Rollup’s own documentation says so — and compression dictionaries make the re-download cheap rather than rarer. And one citation worth reading in full: tooling.report's tests say Rollup should not have this problem, and they cover a two-level case. A real application with one shared chunk every route imports fails all the same. The citation is correct and does not mean what it looks like. What is not said here is whether this shape matters: that depends on how often you deploy and how many people come back, which are two of the five questions about the situation. Until they are answered, the topology is shown and the colour withheld."
+    },
+    {
+      "kind": "commonJs",
+      "severity": "info",
+      "chip": "CommonJS package",
+      "title": "One package shipped as CommonJS (419 kB): the bundler cannot tree-shake it",
+      "body": "A CommonJS package cannot be analysed at build time, so every file of it you import comes in whole, even for a single function. It is what Angular warns about with “CommonJS or AMD dependencies can cause optimization bailouts”. Raw sizes, inside the chunk: xlsx (419 kB, in a single screen; imported by src/app/features/reports/reports.page.ts).",
+      "fix": "Check whether the package ships an ES modules build or whether an alternative does. If not, import only the file you need (crypto-js/md5 instead of crypto-js) so the minimum comes in. Adding it to allowedCommonJsDependencies in angular.json only silences the warning: the weight stays."
+    },
+    {
+      "kind": "theirs",
+      "severity": "info",
+      "chip": "whose first load this is",
+      "title": "87 % of your first load is code you did not write",
+      "body": "485 kB of packages against 69 kB of your own code. It is not a fault: a framework is somebody else's code too. What it changes is where to look, because \"optimise my code\" and \"review my dependencies\" are different weeks of work and the kilobytes are usually in the second. @angular/core (178 kB) · @angular/router (94 kB) · @angular/common (60 kB) · rxjs (52 kB) · @angular/cdk (43 kB) · lucide-angular (31 kB) · date-fns (28 kB).",
+      "fix": "Before touching anything of yours, go down that list with the exclusive-weight column in front of you: it is the only one that says what each package really costs. A package whose exclusive weight is a fraction of its total shares nearly everything with something else, and removing it saves less than it looks."
+    },
+    {
+      "kind": "situationMissing",
+      "severity": "info",
+      "chip": "questions that would change this report",
+      "title": "5 unanswered questions would change what this report says",
+      "body": "Nobody has answered yet, and of the five questions these are the ones this report needs: how people move around the application; how often a new version reaches production; how many of the people opening it had already opened it this week; where they connect from and on what; which is worse, a slow first screen or a slow move between screens. They are not here because a form is waiting to be filled in: each one is on the list because there is a signal in this very report whose reading depends on it. The ones that would change nothing are not asked.",
+      "fix": "They are answered in the situation tab of the page, or by hand in the situation block of loadline.json, which is where the command reads them from. They are options rather than numbers, and each one says where to look when nobody knows it off the top of their head: route-change events per session, the tags of the last quarter, the returning-visitor share in your analytics. And one worth not answering from memory: the connection question is the one that lies most, because people answer it the way they would like it to be. If you have RUM, that one is not answered, it is imported. Nothing bad happens while they stay open: the report shows the raw facts and withholds the colour, which is what it has been doing all along."
+    }
+  ],
+  "actions": [
+    {
+      "kind": "bootLazy",
+      "title": "date-fns weighs 28 kB in the bootstrap, and the code using it is in a lazy screen",
+      "saving": 28400,
+      "effort": "import"
+    },
+    {
+      "kind": "bigFile",
+      "title": "countries.data.ts takes 47 kB of the bootstrap",
+      "saving": 48600,
+      "effort": "refactor"
+    },
+    {
+      "kind": "shared",
+      "title": "167 kB downloaded by 5 of your 8 screens",
+      "saving": 0,
+      "effort": "refactor"
+    },
+    {
+      "kind": "dupes",
+      "title": "1 package shipped more than once",
+      "saving": 0,
+      "effort": "config"
+    },
+    {
+      "kind": "heavy",
+      "title": "3 screens carry far more code of their own than the rest, worst of them reports with 429 kB",
+      "saving": 0,
+      "effort": "import"
+    },
+    {
+      "kind": "bootWaves",
+      "title": "The first load takes 2 round trips before anything is painted",
+      "saving": 0,
+      "effort": "config"
+    },
+    {
+      "kind": "slowScreens",
+      "title": "dashboard takes 3 round trips to be complete: 450 ms of pure waiting",
+      "saving": 0,
+      "effort": "refactor"
+    },
+    {
+      "kind": "unstableChunk",
+      "title": "3 chunks mix dependencies with your own code: 233 kB is re-invalidated on every deploy",
+      "saving": 0,
+      "effort": "config"
+    },
+    {
+      "kind": "unhashable",
+      "title": "1 file carries no hash in the name",
+      "saving": 0,
+      "effort": "config"
+    },
+    {
+      "kind": "cascadeShape",
+      "title": "The names are spread about: main-K7QW2X.js carries the most, 9 of 19",
+      "saving": 0,
+      "effort": "config"
+    },
+    {
+      "kind": "commonJs",
+      "title": "One package shipped as CommonJS (419 kB): the bundler cannot tree-shake it",
+      "saving": 0,
+      "effort": "import"
+    }
+  ],
+  "saving": {
+    "bytes": 77000,
+    "before": 567420,
+    "after": 490420,
+    "counted": 2
+  },
+  "timing": [
+    {
+      "profile": "slow4g",
+      "transferMs": 3156,
+      "latencyMs": 300,
+      "scriptMs": 555,
+      "totalMs": 4011
+    },
+    {
+      "profile": "fast4g",
+      "transferMs": 561,
+      "latencyMs": 170,
+      "scriptMs": 555,
+      "totalMs": 1286
+    },
+    {
+      "profile": "cable",
+      "transferMs": 168,
+      "latencyMs": 56,
+      "scriptMs": 555,
+      "totalMs": 779
+    }
+  ],
+  "budget": null,
+  "caching": {
+    "update": null,
+    "unstable": [
+      {
+        "name": "chunk-THEME-QW19MC.js",
+        "bytes": 53580,
+        "vendorRatio": 0.8258426966292135,
+        "vendorBytes": 44100,
+        "inBoot": true
+      },
+      {
+        "name": "main-K7QW2X.js",
+        "bytes": 90300,
+        "vendorRatio": 0.31513537505548156,
+        "vendorBytes": 28400,
+        "inBoot": true
+      },
+      {
+        "name": "chunk-GRID-5NPX7J.js",
+        "bytes": 171080,
+        "vendorRatio": 0.973083674663546,
+        "vendorBytes": 166300,
+        "inBoot": false
+      }
+    ],
+    "unhashable": [
+      {
+        "name": "main-K7QW2X.js",
+        "path": "main-K7QW2X.js",
+        "bytes": 90300,
+        "reason": "none",
+        "inPage": true
+      }
+    ]
+  },
+  "scan": null,
+  "deps": {
+    "lockRead": false,
+    "auditRead": false,
+    "shipped": [],
+    "notShipped": [],
+    "transitive": [],
+    "multipleVersions": []
+  },
+  "comparison": null,
+  "comparable": true,
+  "gates": {
+    "asked": false,
+    "violations": []
+  },
+  "ok": true
+}

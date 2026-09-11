@@ -1,0 +1,27 @@
+@let t = i18n.ui();
+
+<div class="head">
+    <span class="num-text">
+        {{ t.filesCount(total().files) }} · {{ total().bytes | bytes }}
+        @if (note(); as note) {
+            <span class="unit">{{ note.text }}<app-explain [text]="note.help" /></span>
+        }
+    </span>
+    <span class="head__btns">
+        <button class="ctl" type="button" (click)="forceAll(true)">{{ t.pathExpandAll }}</button>
+        <button class="ctl" type="button" (click)="forceAll(false)">{{ t.pathCollapseAll }}</button>
+    </span>
+</div>
+
+<div class="roots">
+    @for (node of roots(); track node.id) {
+        <app-path-node
+            [autoOpenDepth]="autoOpenDepth()"
+            [depth]="0"
+            [force]="force()"
+            [node]="node"
+            [scale]="scale()"
+            [siblings]="roots().length"
+        />
+    }
+</div>

@@ -1,0 +1,66 @@
+:host {
+    display: block;
+}
+
+.summary {
+    /* The sentence the big figure means nothing without: read as a sentence, in the reading colour. */
+    &__lead {
+        max-width: 62ch;
+        margin: 0 0 0.15rem;
+        font-size: 1rem;
+        color: var(--ink);
+    }
+
+    /* Everything that is not the framing: which criteria, where the split came from, what was left out. */
+    &__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.15rem 0.4rem;
+        align-items: baseline;
+
+        margin: 0 0 0.7rem;
+
+        font-size: var(--fs-body);
+        color: var(--muted);
+    }
+
+    &__dot {
+        color: var(--line-strong);
+    }
+
+    &__help {
+        cursor: help;
+        text-decoration: underline dotted;
+        text-decoration-color: var(--line-strong);
+        text-underline-offset: 0.25em;
+    }
+
+    &__tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        justify-content: flex-end;
+
+        margin-top: 1.5rem;
+        padding-top: 0.9rem;
+        border-top: 1px solid var(--line);
+    }
+}
+
+/* Movement against the baseline, under the bootstrap figure. Up is the bad direction here. */
+.tile__delta {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+
+    &[data-tone='up'] {
+        color: var(--crit);
+    }
+
+    &[data-tone='down'] {
+        color: var(--ok);
+    }
+}
+
+.panel {
+    min-height: 40vh;
+}

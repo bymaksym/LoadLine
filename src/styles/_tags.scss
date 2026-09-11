@@ -1,0 +1,60 @@
+/* ---------- tags ---------- */
+
+.tag {
+    display: inline-block;
+
+    padding: 0.08rem 0.45rem;
+    border-radius: 999px;
+
+    font-family: var(--font-ui);
+    font-size: var(--fs-note);
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--muted);
+    white-space: nowrap;
+    vertical-align: middle;
+
+    background: var(--surface-sunk);
+
+    &--crit {
+        color: var(--crit);
+        background: var(--crit-soft);
+    }
+
+    &--warn {
+        color: var(--warn);
+        background: var(--warn-soft);
+    }
+
+    &--ok {
+        color: var(--ok);
+        background: var(--ok-soft);
+    }
+
+    /*
+       Where a criterion's number came from. Only the two kinds that have something behind them are
+       marked, and they are marked by reading *darker* rather than by a colour: most of that list is
+       conventions, the plain muted tag is the honest look for a convention, and dimming them
+       further would take contrast off the majority of the tags to make a point about the minority.
+    */
+    &[data-from='external'],
+    &[data-from='derived'] {
+        color: var(--ink);
+    }
+
+    /*
+       Which of the four states a figure is in. Measured and derived read as facts; `unknown` is
+       the one that has to stand out, because the failure this whole label exists to prevent is a
+       missing figure quietly becoming an assumed one. It borrows the warning colour rather than a
+       new one: nobody needs a fifth palette to learn.
+    */
+    &[data-source='unknown'] {
+        color: var(--warn);
+        background: var(--warn-soft);
+    }
+
+    &[data-source='measured'],
+    &[data-source='declared'] {
+        color: var(--ink);
+    }
+}

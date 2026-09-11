@@ -1,0 +1,47 @@
+# What decides the next version number, so nobody has to remember to.
+#
+# The shape is deliberate and it is not "publish on every merge". release-please reads the
+# Conventional Commits that landed on main — the ones `commitlint` already enforces — works out
+# whether they add up to a patch or a minor, and **opens a pull request** that bumps
+# package.json and writes the CHANGELOG entry. Nothing is published by that.
+#
+# Merging that pull request is the release. It creates the `vX.Y.Z` tag and the GitHub Release,
+# and the tag is what `publish.yml` has always watched, so npm is reached by the path that was
+# already there and already tested.
+#
+#     commits on main  →  release PR (bump + changelog)  →  you merge  →  tag  →  publish.yml  →  npm
+#
+# The merge is the point. A version number is permanent and cannot be reused, and the list of
+# changes that do not look like breaking changes is long — a `feat:` on top of something that
+# actually breaks callers is a mistake a machine cannot see and a human reading the diff can.
+# So the counting is automated and the decision is not.
+#
+# Below 1.0.0 this bumps the minor for a feature and the patch for a fix, and a breaking change
+# is a minor too. That is semver for 0.x, and it is the reason to stay on 0.x while the command's
+# flags are still moving.
+#
+# The first release, v0.1.0, is tagged by hand: release-please continues from the last release it
+# can find, and there is none yet.
+
+name: Release please
+
+on:
+    push:
+        branches: [main]
+
+permissions:
+    contents: write
+    pull-requests: write
+
+# Two pushes to main would otherwise race to write the same release pull request.
+concurrency:
+    group: release-please
+    cancel-in-progress: false
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: googleapis/release-please-action@v4
+              with:
+                  release-type: node

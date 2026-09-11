@@ -1,0 +1,146 @@
+@let t = i18n.ui();
+@let s = screen();
+@let loaders = loadersOf(s.source);
+
+<p class="detail-origin">
+    {{ t.origin }}: <span class="mono">{{ s.source }}</span> ·
+    {{ t.filesCount(s.files) }}
+    @if (loaders.length > 0) {
+        · {{ t.loadedFrom }}: <span class="mono">{{ loaders.join(', ') }}</span>
+    }
+    <!-- Two clicks beat an issue when the rules got this row wrong. -->
+    ·
+    <button class="link-btn" type="button" [title]="t.markBlockHelp" (click)="markBlock(s)">
+        {{ t.markBlock }}
+    </button>
+    <!--
+    The report exports the whole table as Markdown, and the whole table is not what anybody pastes
+    into a thread about one screen. This is that one row, tab-separated.
+    -->
+    ·
+    <button class="link-btn" type="button" [title]="t.copyRowHelp" (click)="copyRow(s)">
+        {{ copied() ? t.exportCopied : t.copyRow }}
+    </button>
+</p>
+
+<!--
+Why this screen is in the build at all: the chain of imports from the entry
+point down to it. The search tab has answered this since it existed, and
+getting there meant leaving the row and retyping the name.
+-->
+<p class="detail-why">{{ t.whyHere }}</p>
+<app-chain [none]="t.whyHereNone" [steps]="chainOf(s.source)" />
+
+<!--
+The three parts of the total, each one leading to the tab that can do
+something about it. Two thirds of an expensive screen are usually not the
+screen's, and this line is where that becomes obvious.
+-->
+<p class="detail-parts">
+    {{ t.screenParts }}:
+    <button class="link-btn" type="button" [title]="t.helpZoneBoot" (click)="nav.go('boot')">
+        {{ t.treeBoot }} {{ s.boot | bytes }}
+    </button>
+    <span class="tag">{{ t.tagDelivery.eager }}<app-explain [text]="t.helpDelivery.eager" /></span>
+    <span aria-hidden="true" class="detail-parts__op">+</span>
+    @if (s.shared > 0) {
+        <button class="link-btn" type="button" [title]="t.helpZoneShared" (click)="nav.go('shared')">
+            {{ t.colShared }} {{ s.shared | bytes }}
+        </button>
+    } @else {
+        <span>{{ t.colShared }} {{ s.shared | bytes }}</span>
+    }
+    <span class="tag">{{ t.tagDelivery.lazy }}</span>
+    <span aria-hidden="true" class="detail-parts__op">+</span>
+    <span>{{ t.colOwn }} {{ s.own | bytes }}</span>
+    <span class="tag">{{ t.tagDelivery.lazy }}</span>
+    <span aria-hidden="true" class="detail-parts__op">=</span>
+    <strong>{{ s.total | bytes }}</strong>
+</p>
+
+<!-- And in how many pieces that total arrives, which is the other half. -->
+<p class="detail-origin">{{ granularity(s) }}</p>
+
+<!--
+In how many round trips, which is the half no size figure can show: the same
+bytes chained across three requests land later than the same bytes in one.
+-->
+<p class="detail-origin">{{ t.screenWaves(s.waves) }}<app-explain [text]="t.helpWaves" /></p>
+
+@for (
+    group of [
+        { heading: t.thOwn, files: s.ownChunks, empty: t.noExclusive, shared: false },
+        {
+            heading: t.thSharedWith,
+            files: s.sharedChunks,
+            empty: t.noSharedRow,
+            shared: true,
+        },
+    ];
+    track group.heading
+) {
+    <div class="scroller">
+        <table>
+            <thead>
+                <tr>
+                    <th>{{ group.heading }}</th>
+                    <th class="num">{{ t.thScreens }}<app-explain [text]="t.helpScreens" /></th>
+                    <th class="num">{{ t.colWaves }}<app-explain [text]="t.helpWaves" /></th>
+                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                    <th>{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (chunk of chunkRows(group.files); track chunk.file) {
+                    @let chunkOpen = expandedChunk() === chunk.file;
+
+                    <tr
+                        class="row-btn"
+                        role="button"
+                        tabindex="0"
+                        [attr.aria-expanded]="chunkOpen"
+                        (click)="toggleChunk(chunk.file)"
+                        (keydown.enter)="toggleChunk(chunk.file)"
+                        (keydown.space)="toggleChunk(chunk.file); $event.preventDefault()"
+                    >
+                        <td class="path">
+                            <span aria-hidden="true" class="twist">{{ chunkOpen ? '−' : '+' }}</span>
+                            {{ chunk.name }}
+                        </td>
+                        <td class="num">
+                            @if (group.shared) {
+                                <button
+                                    class="link-btn"
+                                    type="button"
+                                    [title]="t.whichScreens"
+                                    (click)="nav.go('shared', chunk.file); $event.stopPropagation()"
+                                >
+                                    {{ chunk.screens }}
+                                </button>
+                            } @else {
+                                {{ chunk.screens }}
+                            }
+                        </td>
+                        <td class="num">
+                            {{ waveOf(s, chunk.file) }}
+                        </td>
+                        <td class="num">{{ chunk.bytes | bytes }}</td>
+                        <td class="path">{{ chunk.mainContent }}</td>
+                    </tr>
+
+                    @if (chunkOpen) {
+                        <tr class="detail">
+                            <td colspan="5">
+                                <app-path-tree [items]="filesOf(chunk.file)" />
+                            </td>
+                        </tr>
+                    }
+                } @empty {
+                    <tr>
+                        <td class="empty" colspan="5">{{ group.empty }}</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

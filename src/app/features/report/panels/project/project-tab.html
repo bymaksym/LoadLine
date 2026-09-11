@@ -1,0 +1,247 @@
+@let t = i18n.ui();
+@let ctx = store.context();
+
+<app-panel-header [howTo]="t.howToProject" [subtitle]="t.secProjectSub" [title]="t.secProject" />
+
+@if (!store.contextInfo()) {
+    <div class="empty-state">
+        <p>{{ t.projectEmpty }}</p>
+        <button class="file-btn file-btn--ghost" type="button" (click)="chooseFiles()">
+            {{ t.projectEmptyBtn }}
+        </button>
+    </div>
+} @else {
+    <div class="facts">
+        @if (ctx.pkg?.angularVersion; as version) {
+            <span class="fact">{{ t.projectAngular(version) }}</span>
+        }
+        <span class="fact" [attr.data-zone]="zone()">
+            {{ t.projectZone }}:
+            @switch (zone()) {
+                @case ('zoneless') {
+                    {{ t.zoneNo }}
+                }
+                @case ('zone') {
+                    {{ t.zoneYes }}
+                }
+                @default {
+                    {{ t.zoneUnknown }}
+                }
+            }
+        </span>
+        <!-- The figure the budgets of this table are compared against: it is shown in another tab. -->
+        <button class="fact mono fact--link" type="button" [title]="t.seeInBoot" (click)="nav.go('boot')">
+            {{ t.projectBootRaw(store.analysis()?.bootRawBytes ?? 0 | bytes) }} →
+        </button>
+    </div>
+
+    @if (ctx.angular; as angular) {
+        <h3 class="sub">{{ t.projectBudgets(angular.project) }}</h3>
+
+        @if (angular.applications.length > 1) {
+            <p class="muted">
+                <label>
+                    {{ t.projectPick }}:
+                    <select
+                        class="field"
+                        [title]="t.projectPickHelp(angular.applications.length)"
+                        (change)="pickProject($event)"
+                    >
+                        @for (name of angular.applications; track name) {
+                            <option [selected]="name === angular.project" [value]="name">{{ name }}</option>
+                        }
+                    </select>
+                </label>
+                {{ t.projectPickHelp(angular.applications.length) }}
+            </p>
+        }
+
+        @if (rows().length) {
+            <div class="scroller">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.thConfiguration }}</th>
+                            <th class="num">{{ t.thWarning }}</th>
+                            <th class="num">{{ t.thError }}</th>
+                            <th>{{ t.thBuiltBy }}<app-explain [text]="t.helpBuiltBy" /></th>
+                            <th>{{ t.thAgainstBoot }}<app-explain [text]="t.helpAgainstBoot" /></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (row of rows(); track row.name) {
+                            <tr [attr.data-key]="row.name" [class.is-built]="row.builtBy.length > 0">
+                                <td class="path">
+                                    {{ row.name }}
+                                    @if (row.isDefault) {
+                                        <span class="tag">{{ t.budgetDefaultTag }}</span>
+                                    }
+                                </td>
+                                <td class="num">{{ row.warning === null ? '—' : (row.warning | bytes) }}</td>
+                                <td class="num">
+                                    @if (row.error === null) {
+                                        <span class="muted">—</span>
+                                    } @else {
+                                        {{ row.error | bytes }}
+                                    }
+                                    @if (row.inherited) {
+                                        <span class="tag">{{ t.budgetInherited }}</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!pipelineKnown()) {
+                                        <span class="muted">{{ t.builtByUnknown }}</span>
+                                    } @else if (row.builtBy.length === 0) {
+                                        <span class="muted">{{ t.builtByNone }}</span>
+                                    } @else {
+                                        <span class="chips">
+                                            @for (job of row.builtBy; track job) {
+                                                <span class="tag tag--ok mono">{{ job }}</span>
+                                            }
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!row.hasBudget) {
+                                        <span class="tag" [class.tag--crit]="row.builtBy.length > 0">{{
+                                            t.budgetNoneRow
+                                        }}</span>
+                                    } @else if (row.headroom !== null) {
+                                        <span [attr.data-v]="row.tone">
+                                            {{
+                                                row.headroom < 0
+                                                    ? t.budgetOver(-row.headroom)
+                                                    : t.budgetHeadroom(row.headroom)
+                                            }}
+                                        </span>
+                                    } @else {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        } @else {
+            <p class="empty">{{ t.projectNoBudgets }}</p>
+        }
+    }
+
+    @for (pipeline of ctx.pipelines; track pipeline.file) {
+        <h3 class="sub">{{ t.projectPipeline(pipeline.file) }}</h3>
+
+        @if (pipeline.builds.length) {
+            <div class="scroller">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.thJob }}</th>
+                            <th>{{ t.thCommand }}</th>
+                            <th>{{ t.thResolvesTo }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (build of pipeline.builds; track $index) {
+                            <tr>
+                                <td class="path">{{ build.job ?? '—' }}</td>
+                                <td class="path">
+                                    {{ build.command }}
+                                    @if (build.resolved) {
+                                        <span class="muted"> → {{ build.resolved }}</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (build.unresolved) {
+                                        <span class="tag tag--warn">{{ t.buildUnresolved }}</span>
+                                    } @else {
+                                        <span class="chips">
+                                            @for (name of targetsOf(build); track name) {
+                                                <span class="tag mono">{{ name }}</span>
+                                            }
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        } @else {
+            <p class="empty">{{ t.projectNoBuilds }}</p>
+        }
+    }
+}
+
+<!--
+The measurements this browser has kept.
+
+It is here, under the project, rather than next to the headline: it is history and not a figure
+about this build. The line is drawn as a sparkline of bars rather than a chart — twenty points do
+not need axes, and a chart would look like a dashboard, which invites reading one machine's memory
+as the team's. The sentence under it says which it is.
+-->
+<section class="history">
+    <h3 class="history__title">{{ t.historyTitle }}</h3>
+    <p class="history__note">{{ t.historyNote }}</p>
+
+    @if (historyPoints().length > 0) {
+        <app-spark [bars]="bootBars()" [label]="historyLabel(bootBars())" />
+
+        <!--
+        The same line for one screen, under the bootstrap one and on its own scale.
+
+        A screen is a fraction of a bootstrap, so drawing the two against one axis would flatten the
+        screen into the floor and say it never moved. The list is every screen the history has ever
+        held rather than the ones this build has: the one worth looking up is usually the one that
+        stopped appearing.
+        -->
+        @if (historyScreens(); as screens) {
+            @if (screens.length > 0) {
+                <p class="history__pick">
+                    <label for="historyScreen">{{ t.historyScreenPick }}</label>
+                    <select
+                        class="field"
+                        id="historyScreen"
+                        [value]="historyScreen()"
+                        (change)="pickHistoryScreen($event)"
+                    >
+                        <option value="">{{ t.historyScreenNone }}</option>
+                        @for (screen of screens; track screen.source) {
+                            <option [value]="screen.source">{{ screen.label }}</option>
+                        }
+                    </select>
+                </p>
+
+                @if (screenBars(); as bars) {
+                    @if (bars.length > 0) {
+                        <app-spark tone="var(--seg-own)" [bars]="bars" [label]="historyLabel(bars)" />
+                    }
+                }
+            }
+        }
+
+        <ol class="history__list">
+            @for (point of historyPoints(); track point.date) {
+                <li>
+                    <span class="mono">{{ point.date.slice(0, 10) }}</span>
+                    <span>{{ point.name }}</span>
+                    <strong>{{ point.boot | bytes }}</strong>
+                    <span class="muted">{{ t.historySignals(point.signals.high, point.signals.mid) }}</span>
+                </li>
+            }
+        </ol>
+    } @else {
+        <p class="empty">{{ t.historyEmpty }}</p>
+    }
+
+    <div class="toolbar">
+        <button class="ctl" type="button" [disabled]="!store.analysis()" (click)="keep()">{{ t.historyKeep }}</button>
+        <button class="ctl" type="button" [disabled]="historyPoints().length === 0" (click)="historyService.export()">
+            {{ t.historyExport }}
+        </button>
+        <button class="ctl" type="button" [disabled]="historyPoints().length === 0" (click)="forget()">
+            {{ t.historyForget }}
+        </button>
+    </div>
+</section>

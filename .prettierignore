@@ -1,0 +1,23 @@
+node_modules
+coverage
+dist
+public
+.angular
+pnpm-lock.yaml
+*.yml
+*.yaml
+
+# Self-contained build artifact (JS and CSS inlined by scripts/inline-build.mjs)
+loadline.html
+
+# The compiled half of the Vite fixture. It is a bundler's output, byte for byte: reformatting it
+# would move the columns its source maps point at and change the sizes the tests assert.
+fixtures/vite-app/dist
+
+# Generated from the .woff2 files by scripts/embed-fonts.mjs: one base64 line per family.
+src/styles/_fonts.scss
+
+# The golden file of the sample build: vitest writes it (`toMatchFileSnapshot`), and a formatter
+# rewriting it would make the test fail on whitespace nobody chose.
+fixtures/sample-report.json
+

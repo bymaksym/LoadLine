@@ -1,0 +1,341 @@
+:host {
+    display: block;
+}
+
+/*
+   The one line above the table. It used to be three paragraphs — the colour legend, the round trips
+   of the first load, and "this is computed, not measured" — between the toolbar and the first row.
+   The legend moved into the header row, on top of the bars; these two are one sentence.
+*/
+.caveat {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.5rem;
+    align-items: baseline;
+
+    max-width: 96ch;
+    margin: 0 0 0.7rem;
+
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    /* A clause with the separator that introduces it: the two never end up on different lines. */
+    &__item {
+        display: inline;
+
+        span[aria-hidden] {
+            color: var(--line-strong);
+        }
+    }
+}
+
+.screens {
+    padding: 0 0.35rem 0.35rem;
+}
+
+.screen {
+    border-radius: var(--radius);
+
+    &.is-open {
+        box-shadow: inset 0 0 0 1px var(--accent);
+    }
+}
+
+.screen-row {
+    cursor: pointer;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 5rem;
+    gap: 0.25rem 0.6rem;
+
+    width: 100%;
+    padding: calc(var(--row-y) * 1.4) 0.6rem;
+    border: none;
+    border-radius: var(--radius);
+
+    font: inherit;
+    color: inherit;
+    text-align: left;
+
+    background: transparent;
+
+    &:hover {
+        background: var(--surface-sunk);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+
+    /* Column header pinned at the top of the scroll area. */
+    &--head {
+        cursor: default;
+
+        position: sticky;
+        z-index: 1;
+        top: 0;
+
+        padding-top: 0.5rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid var(--line-strong);
+        border-radius: 0;
+
+        font-size: var(--fs-note);
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+
+        background: var(--surface);
+
+        &:hover {
+            background: var(--surface);
+        }
+    }
+
+    /* The colour legend, in the header cell that sits over the bars. */
+    &__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.15rem 0.9rem;
+
+        font-size: var(--fs-note);
+        text-transform: none;
+        letter-spacing: 0;
+
+        > span {
+            display: inline-flex;
+            gap: 0.35rem;
+            align-items: center;
+        }
+
+        i {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+    }
+
+    &__name {
+        overflow: hidden;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-body);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__num {
+        font-family: var(--font-data);
+        font-size: var(--fs-body);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    &__num--shared,
+    &__num--own,
+    &__num--waves,
+    &__legend {
+        display: none;
+    }
+
+    /* Only "shared" is dimmed: own and total carry the colour of their rating. */
+    &__num--shared {
+        color: var(--muted);
+    }
+
+    /* Narrow: name and total on the first line, the bar below at full width. */
+    &__total {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    /*
+       Narrow, the column name travels with the figure: this cell drops to its own line under the
+       bar, where a bare `+12 kB` had no header anywhere near it. Wide, the header row says it and
+       this goes back to being for screen readers only.
+    */
+    .col-label {
+        color: var(--muted);
+    }
+
+    /* Change against the baseline: up is the bad direction. `=` and "new" stay neutral. */
+    &__delta {
+        grid-column: 1 / -1;
+        font-size: var(--fs-body);
+        color: var(--muted);
+        text-align: left;
+
+        &[data-tone='up'] {
+            color: var(--crit);
+        }
+
+        &[data-tone='down'] {
+            color: var(--ok);
+        }
+    }
+
+    .bar {
+        grid-column: 1 / -1;
+    }
+}
+
+/*
+   The numeric columns are as wide as their own headers, which is what decides them: a header that
+   does not fit overflows its cell to the left and lands on top of the one before it.
+*/
+@media (width >= 860px) {
+    .screen-row {
+        /*
+           The template comes from the component, built from the columns actually drawn: there are
+           sixteen ways to tick four boxes, and the header and the rows have to agree on all of them.
+           The fallback is the full set, for the moment before the binding lands.
+        */
+        grid-template-columns: var(--screen-cols, 13rem minmax(0, 1fr) 5rem 7rem 6rem 7rem);
+        gap: 0.9rem;
+        align-items: center;
+
+        &__num--shared,
+        &__num--own,
+        &__num--waves {
+            display: block;
+        }
+
+        &__legend {
+            display: flex;
+        }
+
+        &__total {
+            grid-column: auto;
+            grid-row: auto;
+        }
+
+        &__delta {
+            grid-column: auto;
+            font-size: var(--fs-body);
+            text-align: right;
+        }
+
+        .col-label {
+            position: absolute;
+
+            overflow: hidden;
+
+            width: 1px;
+            height: 1px;
+
+            white-space: nowrap;
+
+            clip-path: inset(50%);
+        }
+
+        .bar {
+            grid-column: auto;
+        }
+    }
+}
+
+/* The rating marker rides after the figure, so the shape reads as part of it. */
+.dot-v--after {
+    margin-right: 0;
+    margin-left: 0.35rem;
+}
+
+/* Three segments with a 2 px gap: where one ends and the next begins shows without reading the figure. */
+.bar {
+    position: relative;
+
+    overflow: hidden;
+    display: flex;
+    gap: 2px;
+
+    height: 16px;
+    border-radius: 3px;
+
+    background: var(--surface-sunk);
+
+    i {
+        display: block;
+        height: 100%;
+    }
+
+    /*
+     * Where the verdict changes, drawn on the bar itself. A hairline and not a band: it has to be
+     * readable against every one of the three segment colours, and it must never look like a fourth
+     * segment. It sits above the bars, which is why the stacking context is here.
+     */
+    &__mark {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+
+        width: 1px;
+
+        /* `--ink`: there is no `--fg` token and there never was, so this line was drawn in
+           `transparent` — the "good up to" mark existed in the markup and on no screen. */
+        opacity: 0.45;
+        background: var(--ink);
+    }
+
+    &__mark--bad {
+        width: 2px;
+        opacity: 0.8;
+        background: var(--crit);
+    }
+}
+
+.screen-detail {
+    padding: 0.5rem 0.75rem 1rem;
+}
+
+.empty--pad {
+    padding: 1.5rem 0.85rem;
+}
+
+/*
+   Which columns are drawn. A `details` and not five toggles in the toolbar: it is set once and
+   read never, so it costs one line of the bar until somebody opens it.
+*/
+.cols {
+    position: relative;
+
+    summary {
+        cursor: pointer;
+        list-style: none;
+
+        &::-webkit-details-marker {
+            display: none;
+        }
+    }
+
+    &__menu {
+        position: absolute;
+        z-index: 3;
+        right: 0;
+
+        display: grid;
+        gap: 0.15rem;
+
+        min-width: 12rem;
+        margin-top: 0.3rem;
+        padding: 0.5rem 0.7rem;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+
+        background: var(--surface);
+        box-shadow: var(--shadow);
+    }
+
+    &__row {
+        cursor: pointer;
+
+        display: flex;
+        gap: 0.45rem;
+        align-items: center;
+
+        font-size: var(--fs-body);
+    }
+}

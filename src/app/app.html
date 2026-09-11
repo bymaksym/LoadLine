@@ -1,0 +1,90 @@
+@let t = i18n.ui();
+@let loaded = !!store.analysis();
+
+<div class="wrap">
+    <header class="masthead" [class.masthead--slim]="loaded">
+        <div>
+            <div class="brand">
+                <!-- Three screens, each with its bar: boot / shared / own. Same drawing as the report rows. -->
+                <svg aria-hidden="true" class="brand__mark" focusable="false" viewBox="0 0 64 64">
+                    <rect class="brand__tile" height="64" rx="14" width="64" />
+                    <rect fill="#6f7a8b" height="10" rx="2" width="11" x="10" y="13" />
+                    <rect fill="#d97b40" height="10" rx="2" width="15" x="23" y="13" />
+                    <rect fill="#3fa0a0" height="10" rx="2" width="14" x="40" y="13" />
+                    <rect fill="#6f7a8b" height="10" rx="2" width="11" x="10" y="27" />
+                    <rect fill="#d97b40" height="10" rx="2" width="15" x="23" y="27" />
+                    <rect fill="#3fa0a0" height="10" rx="2" width="5" x="40" y="27" />
+                    <rect fill="#6f7a8b" height="10" rx="2" width="11" x="10" y="41" />
+                    <rect fill="#d97b40" height="10" rx="2" width="15" x="23" y="41" />
+                    <rect fill="#3fa0a0" height="10" rx="2" width="9" x="40" y="41" />
+                </svg>
+                <h1>Loadline</h1>
+                <!--
+                Which build this is talking about comes before the slogan: the slogan says the same
+                thing on every visit, the project name is the one word that changes.
+                -->
+                @if (store.projectName(); as project) {
+                    <span class="brand__project" [title]="t.projectNameHelp">{{ project }}</span>
+                }
+                <span class="brand__tagline">{{ t.tagline }}</span>
+            </div>
+            @if (!loaded) {
+                <p class="lede">{{ t.lede }}</p>
+            }
+        </div>
+
+        <div class="controls">
+            <button class="ctl ctl--lang" type="button" (click)="i18n.toggle()">
+                {{ i18n.lang() === 'es' ? 'EN' : 'ES' }}
+            </button>
+            <!--
+            How much air the rows get, for the whole page. It changes spacing and nothing else — no
+            column, no figure, no colour — so there is nothing it can hide, and it only appears once
+            there is a table to squeeze.
+            -->
+            @if (loaded) {
+                <button
+                    class="ctl"
+                    type="button"
+                    [attr.aria-pressed]="density.density() === 'compact'"
+                    [title]="t.densityHelp"
+                    (click)="density.toggle()"
+                >
+                    {{ density.density() === 'compact' ? t.densityComfortable : t.densityCompact }}
+                </button>
+            }
+            <button class="ctl" type="button" (click)="theme.toggle()">{{ t.themeBtn }}</button>
+        </div>
+    </header>
+
+    <!--
+    Jump anywhere: Ctrl/Cmd + K, `/` to search, `?` for the shortcuts. It has no button on the page
+    on purpose — the audience already has that gesture, and a control in the header would be one
+    more thing on screen for everybody who does not use it.
+    -->
+    @if (palette.open()) {
+        <app-palette />
+    }
+
+    <app-intake-page />
+
+    @if (loaded) {
+        <app-report-page />
+    }
+
+    <!--
+    Where the figures come from is a five-line answer, and it belongs to the front page: under a
+    report it sat below all nine tabs, saying the same thing every time. Once there is something to
+    read it folds into the question, which is one line.
+    -->
+    <footer>
+        @if (loaded) {
+            <details>
+                <summary>{{ t.footerSummary }}</summary>
+                <p>{{ t.footer }}</p>
+            </details>
+        } @else {
+            <p>{{ t.footer }}</p>
+        }
+    </footer>
+</div>

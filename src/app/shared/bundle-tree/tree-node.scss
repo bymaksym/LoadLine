@@ -1,0 +1,181 @@
+:host {
+    display: block;
+}
+
+/*
+   The columns are a global custom property (`src/styles/_tables.scss`), because the header row of
+   the tree tab has to line up with them and it lives in another component: two grid templates that
+   must agree drift the day one of them is edited.
+*/
+.row {
+    display: grid;
+    grid-template-columns: var(--tree-cols);
+    gap: 0.5rem;
+    align-items: center;
+
+    padding: calc(var(--row-y) * 0.5) 0.5rem calc(var(--row-y) * 0.5) 0;
+    border-radius: 3px;
+
+    &:hover {
+        background: var(--surface-sunk);
+    }
+}
+
+.twist {
+    cursor: pointer;
+
+    width: 1.3rem;
+    padding: 0;
+    border: none;
+
+    font-family: var(--font-data);
+    font-size: 0.9rem;
+    line-height: 1;
+    color: var(--muted);
+
+    background: none;
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+}
+
+.label-cell {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.label {
+    overflow: hidden;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Who pays for the chunk, in words, tinted like its zone. */
+.tag {
+    flex-shrink: 0;
+
+    &[data-zone='shared'] {
+        color: var(--warn);
+        background: var(--warn-soft);
+    }
+
+    &[data-zone='own'] {
+        color: var(--accent);
+        background: var(--accent-soft);
+    }
+}
+
+.zone {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+
+    &--boot {
+        background: var(--seg-boot);
+    }
+
+    &--shared {
+        background: var(--seg-shared);
+    }
+
+    &--own {
+        background: var(--seg-own);
+    }
+
+    &--none {
+        background: transparent;
+    }
+}
+
+/*
+   One scale for the whole list, so the bars compare. What the scale cannot do is make a 4 kB chunk
+   next to a 900 kB one visible: below the minimum every bar was the same 2 px sliver. The minimum
+   is a floor, not a distortion — the figure next to it is still the truth, and the crumbs at the
+   bottom of the list are grouped into one row rather than drawn forty times.
+*/
+.share {
+    display: block;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--surface-sunk);
+
+    i {
+        display: block;
+        min-width: 3px;
+        height: 100%;
+        border-radius: 2px;
+    }
+}
+
+.size {
+    font-family: var(--font-data);
+    font-size: var(--fs-body);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* The same chunk uncompressed: the unit the breakdown inside it is in. */
+.size__raw {
+    display: block;
+
+    font-size: var(--fs-note);
+    line-height: 1.2;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/*
+   Keeping a row on screen. Grey and unfilled until it is on, so a list of forty rows does not gain
+   forty marks competing with the bars: what it has to say is "this one", and only once it is said.
+*/
+.pin {
+    cursor: pointer;
+
+    padding: 0;
+    border: none;
+
+    font-size: 0.85rem;
+    line-height: 1;
+    color: var(--muted);
+
+    opacity: 0.35;
+    background: none;
+
+    .row:hover &,
+    &:focus-visible,
+    &--on {
+        opacity: 1;
+    }
+
+    &--on {
+        color: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+}
+
+/* The chunk's file tree, indented under its row. */
+.inside {
+    margin: 0.2rem 0 0.6rem 1.8rem;
+}
+
+@media (width < 600px) {
+    .share {
+        display: none;
+    }
+
+    .inside {
+        margin-left: 0.6rem;
+    }
+}

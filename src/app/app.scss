@@ -1,0 +1,148 @@
+.wrap {
+    max-width: 1180px;
+    margin-inline: auto;
+}
+
+.masthead {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    padding: 2.5rem 0 1.5rem;
+
+    /* With a report loaded the masthead takes the minimum: the report starts as early as possible. */
+    &--slim {
+        align-items: center;
+        padding: 1.1rem 0 0.9rem;
+    }
+}
+
+.brand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+    align-items: center;
+
+    /* The mark: same drawing as the favicon. The tile follows the theme (dark on light, light on dark);
+       the bars keep the fixed colours of the icon, which read on both. */
+    &__mark {
+        flex: none;
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+
+    &__tile {
+        fill: var(--ink);
+    }
+
+    h1 {
+        margin: 0;
+        font-size: clamp(1.7rem, 3.6vw, 2.25rem);
+        font-weight: 700;
+        letter-spacing: -0.035em;
+    }
+
+    span {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        font-weight: 500;
+        color: var(--seg-shared);
+        letter-spacing: 0.04em;
+
+        /* Which project the report is about. Reads as a name, not as a label: no uppercasing. */
+        &.brand__project {
+            padding: 0.12rem 0.5rem;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+
+            font-size: var(--fs-body);
+            font-weight: 700;
+            color: var(--ink);
+            text-transform: none;
+            letter-spacing: 0;
+
+            background: var(--surface-sunk);
+        }
+    }
+}
+
+.masthead--slim .brand {
+    h1 {
+        font-size: 1.45rem;
+    }
+
+    .brand__mark {
+        width: 1.6rem;
+        height: 1.6rem;
+    }
+}
+
+.lede {
+    max-width: 58ch;
+    margin: 0.5rem 0 0;
+    color: var(--muted);
+}
+
+.controls {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.5rem;
+}
+
+/*
+   Narrow: the header used to break into three rows — mark, project name, buttons — for two buttons
+   and a slogan. The slogan is the one thing that says the same on every visit, so it is the one
+   that goes; what is left fits on a single row.
+*/
+@media (width < 620px) {
+    .masthead {
+        flex-wrap: nowrap;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .brand__tagline {
+        display: none;
+    }
+
+    .brand {
+        flex-wrap: nowrap;
+        min-width: 0;
+    }
+
+    .brand__project {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.ctl--lang {
+    font-family: var(--font-data);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+}
+
+footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    p {
+        max-width: 78ch;
+    }
+
+    summary {
+        cursor: pointer;
+        color: var(--accent);
+    }
+
+    details p {
+        margin-top: 0.6rem;
+    }
+}

@@ -1,0 +1,191 @@
+@let t = i18n.ui();
+@let report = matrix();
+@let list = builds();
+
+<app-panel-header [howTo]="t.howToCompare" [subtitle]="t.secCompareSub" [title]="t.secCompare" />
+
+<div class="toolbar">
+    <div class="toolbar__group">
+        <input class="hidden-input" id="compareInput" multiple type="file" (change)="onFiles($event)" />
+        <label class="file-btn file-btn--ghost" for="compareInput" tabindex="0">{{ t.compareAdd }}</label>
+        <button class="ctl" type="button" [disabled]="!store.analysis()" (click)="compare.addCurrent()">
+            {{ t.compareAddCurrent }}
+        </button>
+        @if (list.length > 0) {
+            <button class="ctl" type="button" (click)="compare.clear()">{{ t.compareClear }}</button>
+        }
+    </div>
+</div>
+
+@if (compare.error(); as error) {
+    <p class="status" data-tone="error">{{ error }}</p>
+}
+
+@if (list.length === 0) {
+    <p class="empty empty--pad">{{ t.compareEmpty }}</p>
+} @else {
+    <!-- Every build with what it weighs, on one scale. Raw figures: a stats.json has no folder. -->
+    <div class="scroller--tall">
+        <table>
+            <thead>
+                <tr>
+                    <th>{{ t.compareBuild }}</th>
+                    <th class="num">{{ t.tileBoot }}<app-explain [text]="t.compareRaw" /></th>
+                    <th class="num">{{ t.tileScreens }}</th>
+                    <th class="num">{{ t.compareTotal }}</th>
+                    <th class="bar-col"></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (total of report.totals; track total.name; let i = $index) {
+                    <tr>
+                        <td class="path">{{ total.name }}</td>
+                        <td class="num">{{ total.boot | bytes }}</td>
+                        <td class="num">{{ total.screens }}</td>
+                        <td class="num">{{ total.total | bytes }}</td>
+                        <td>
+                            <span aria-hidden="true" class="track">
+                                <i [style.width.%]="percent(total.total)"></i>
+                            </span>
+                        </td>
+                        <td>
+                            <button class="link-btn" type="button" (click)="compare.remove(i)">
+                                {{ t.compareRemove }}
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (list.length < 2) {
+        <p class="note">{{ t.compareNeedsTwo }}</p>
+    } @else {
+        <!--
+        The headline of this view, and the answer to the question it exists for: what a shared
+        package could take off the total. Everything past the largest copy of each thing, because
+        one copy of a dependency is not waste — it is the dependency.
+        -->
+        <p class="lead-figure">
+            <strong>{{ report.duplicatedBytes | bytes }}</strong>
+            {{ t.compareDuplicatedLead(list.length) }}
+            <app-explain [text]="t.compareDuplicatedHelp" />
+        </p>
+
+        <!--
+        Idea 39: the expensive case of all of this. The framework two or three times, and in two or
+        three versions, is where the kilobytes are in a microfrontend.
+        -->
+        @if (report.frameworks.length > 0) {
+            <h3 class="sub">{{ t.compareFrameworks }}</h3>
+            <p class="note">{{ t.compareFrameworksNote }}</p>
+            <div class="scroller">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.compareBuild }}</th>
+                            <th class="num">{{ t.compareIn }}</th>
+                            <th class="num">{{ t.compareCost }}<app-explain [text]="t.compareCostHelp" /></th>
+                            <th>{{ t.compareVersions }}<app-explain [text]="t.compareVersionsHelp" /></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (entry of report.frameworks; track entry.name) {
+                            <tr [class.is-bad]="entry.versions.length > 1">
+                                <td class="path">{{ entry.name }}</td>
+                                <td class="num">{{ t.compareOfN(entry.builds, list.length) }}</td>
+                                <td class="num">{{ entry.duplicatedBytes | bytes }}</td>
+                                <td class="path">{{ versionsOf(entry) }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <!-- Everything else that ships more than once, by what the extra copies cost. -->
+        <h3 class="sub">{{ t.comparePackages }}</h3>
+        @if (sharedHead().length === 0) {
+            <p class="empty">{{ t.compareNoShared }}</p>
+        } @else {
+            <div class="scroller">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.thSource }}</th>
+                            @for (total of report.totals; track total.name) {
+                                <th class="num">{{ total.name }}</th>
+                            }
+                            <th class="num">{{ t.compareCost }}<app-explain [text]="t.compareCostHelp" /></th>
+                            <th class="num">{{ t.treeBoot }}<app-explain [text]="t.compareInBootHelp" /></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (entry of sharedHead(); track entry.name) {
+                            <tr>
+                                <td class="path">{{ entry.name }}</td>
+                                @for (bytes of entry.bytes; track $index) {
+                                    <td class="num">
+                                        @if (bytes) {
+                                            {{ bytes | bytes }}
+                                        } @else {
+                                            <span class="muted">—</span>
+                                        }
+                                    </td>
+                                }
+                                <td class="num">
+                                    <strong>{{ entry.duplicatedBytes | bytes }}</strong>
+                                </td>
+                                <td class="num">{{ t.compareOfN(entry.inBoot, entry.builds) }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (sharedRest() > 0) {
+                <p class="note">{{ t.compareRest(sharedRest()) }}</p>
+            }
+        }
+
+        <!--
+        Own code shipped by more than one of them. The same path in two applications is the same
+        file: maintained twice and downloaded twice, which is the other half of "is a shared package
+        worth it".
+        -->
+        <h3 class="sub">{{ t.compareOwn }}</h3>
+        @if (ownHead().length === 0) {
+            <p class="empty">{{ t.compareNoOwn }}</p>
+        } @else {
+            <div class="scroller">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t.thSource }}</th>
+                            <th class="num">{{ t.compareIn }}</th>
+                            <th class="num">{{ t.compareCost }}<app-explain [text]="t.compareCostHelp" /></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (entry of ownHead(); track entry.path) {
+                            <tr>
+                                <td class="path">{{ entry.path }}</td>
+                                <td class="num">{{ t.compareOfN(entry.builds, list.length) }}</td>
+                                <td class="num">{{ entry.duplicatedBytes | bytes }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (ownRest() > 0) {
+                <p class="note">{{ t.compareRest(ownRest()) }}</p>
+            }
+        }
+
+        <!-- The coverage caveat, said where the empty column is rather than in a footnote. -->
+        @if (!report.versionsKnown) {
+            <p class="note">{{ t.compareVersionsNote }}</p>
+        }
+    }
+}

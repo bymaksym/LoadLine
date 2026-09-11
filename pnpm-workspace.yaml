@@ -1,0 +1,12 @@
+# Quarantine for freshly published versions (in MINUTES): pnpm resolves nothing published less than
+# 24 h ago, direct or transitive. That is the window in which a compromised package gets detected
+# and unpublished. It does not touch an already written lockfile: only the resolution of new versions.
+minimumReleaseAge: 1440
+
+# Packages allowed to run install scripts. Everything else is installed without running them.
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  unrs-resolver: true

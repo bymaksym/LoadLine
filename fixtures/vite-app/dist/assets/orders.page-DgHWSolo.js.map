@@ -1,0 +1,1 @@
+{"version":3,"file":"orders.page-DgHWSolo.js","names":[],"sources":["../../src/orders.page.js"],"sourcesContent":["import { table } from './table.js';\n\nexport const render = () => `<h1>Orders</h1>${table([12.5, 99, 1234.5])}`;\n"],"mappings":"wCAEA,IAAa,MAAe,kBAAkB,EAAM,CAAC,KAAM,GAAI,MAAM,CAAC"}

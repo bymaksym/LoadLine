@@ -1,0 +1,68 @@
+@let t = i18n.ui();
+
+<!--
+The backdrop is what closes it, along with Escape. There is no close button: this opens from the
+keyboard and it is the keyboard that puts it away.
+-->
+<div class="scrim" role="presentation" (click)="onBackdrop($event)">
+    <div
+        aria-modal="true"
+        class="palette"
+        role="dialog"
+        [attr.aria-label]="palette.mode() === 'keys' ? t.keysTitle : t.paletteTitle"
+    >
+        @if (palette.mode() === 'keys') {
+            <h2 class="palette__title">{{ t.keysTitle }}</h2>
+            <dl class="keys">
+                @for (row of shortcuts(); track row.keys) {
+                    <dt>
+                        <kbd>{{ row.keys }}</kbd>
+                    </dt>
+                    <dd>{{ row.what }}</dd>
+                }
+            </dl>
+        } @else {
+            <input
+                #box
+                class="palette__box"
+                type="search"
+                [attr.aria-label]="t.paletteTitle"
+                [placeholder]="t.palettePlaceholder"
+                [value]="query()"
+                (input)="type($any($event.target).value)"
+                (keydown)="onKey($event)"
+            />
+
+            @let hits = rows();
+            @if (hits.length === 0) {
+                <p class="palette__empty">{{ t.paletteNone }}</p>
+            } @else {
+                <ul class="palette__list">
+                    @for (entry of hits; track entry.key; let i = $index) {
+                        <li>
+                            <button
+                                class="palette__row"
+                                type="button"
+                                [class.is-on]="cursor() === i"
+                                (click)="pick(entry)"
+                            >
+                                <span class="palette__label">{{ entry.label }}</span>
+                                <span class="palette__hint">{{ entry.hint }}</span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <!--
+            How many matched against how many are drawn. The palette is a way of getting somewhere,
+            not a view: the tab that names every match is one of the rows above.
+            -->
+            <p class="palette__foot">
+                {{ t.paletteCount(hits.length, total()) }}
+                <span aria-hidden="true">·</span>
+                {{ t.paletteKeysHint }}
+            </p>
+        }
+    </div>
+</div>

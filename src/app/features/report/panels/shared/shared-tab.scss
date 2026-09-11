@@ -1,0 +1,165 @@
+:host {
+    display: block;
+}
+
+.sum {
+    max-width: 84ch;
+    margin: 0 0 0.8rem;
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    strong {
+        font-family: var(--font-data);
+        font-variant-numeric: tabular-nums;
+        color: var(--ink);
+    }
+}
+
+/* The tab as three numbers: how many chunks lead somewhere and how many do not. */
+.triage {
+    max-width: 96ch;
+    margin: -0.4rem 0 0.9rem;
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    &__dot {
+        color: var(--line-strong);
+    }
+}
+
+.cov-col {
+    width: 30%;
+    min-width: 13rem;
+}
+
+/*
+   "Is it worth touching?" opens the detail of a row: the answer, why, and what it costs today.
+   Its tag is tinted on a different axis from the rating — this one is about whether there is
+   anything to do, not about good or bad — so it borrows the accent, never the red or the green.
+*/
+.worth {
+    max-width: 84ch;
+    margin: 0 0 0.9rem;
+
+    &__line {
+        margin: 0 0 0.35rem;
+        font-size: var(--fs-body);
+        line-height: 1.5;
+        color: var(--muted);
+
+        &--note {
+            font-size: var(--fs-body);
+            color: var(--muted);
+            opacity: 0.85;
+        }
+    }
+
+    .tag {
+        margin-right: 0.3rem;
+    }
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.tag--act {
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.twist {
+    display: inline-block;
+    width: 1rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+/* Coverage: bar tinted by band, figure next to it and label below. */
+.cov {
+    &__row {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        margin-bottom: 0.2rem;
+    }
+
+    &__track {
+        min-width: 60px;
+
+        i {
+            background: var(--seg-shared);
+        }
+
+        &[data-cov='global'] i {
+            background: var(--crit);
+        }
+
+        &[data-cov='narrow'] i {
+            background: var(--seg-boot);
+        }
+    }
+
+    &__n {
+        flex-shrink: 0;
+
+        min-width: 7.5rem;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-body);
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+/* Detail: screens on the left, contents on the right. */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem 2rem;
+    padding-top: 0.4rem;
+
+    h4 {
+        margin: 0 0 0.45rem;
+
+        font-size: var(--fs-note);
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0.01em;
+    }
+}
+
+@media (width >= 900px) {
+    .detail-grid {
+        grid-template-columns: 2fr 3fr;
+    }
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.chip {
+    cursor: pointer;
+
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-note);
+    color: var(--ink);
+
+    background: var(--surface);
+
+    &:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+}

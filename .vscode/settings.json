@@ -1,0 +1,59 @@
+{
+    // Default formatter for every language
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+
+    // Global code actions
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+
+    // Per-language overrides (only the differences)
+    "[scss]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "never",
+            "source.fixAll.stylelint": "explicit"
+        }
+    },
+    "[css]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "never",
+            "source.fixAll.stylelint": "explicit"
+        }
+    },
+    "[json]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "never"
+        }
+    },
+    "[jsonc]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "never"
+        }
+    },
+
+    // ESLint (flat config)
+    "eslint.enable": true,
+    "eslint.validate": ["javascript", "typescript", "html"],
+    "eslint.lintTask.enable": true,
+    "eslint.useFlatConfig": true,
+
+    // Stylelint
+    "stylelint.enable": true,
+    "stylelint.validate": ["css", "scss"],
+
+    // Disable the built-in validators that conflict with stylelint
+    "css.validate": false,
+    "scss.validate": false,
+
+    // Editor
+    "files.eol": "\n",
+    "editor.rulers": [120],
+    "editor.tabSize": 4,
+
+    // Extra
+    "editor.formatOnPaste": false, // avoids lag when pasting large code
+    "prettier.requireConfig": true, // only format when a Prettier config exists
+
+    "npm.packageManager": "pnpm"
+}

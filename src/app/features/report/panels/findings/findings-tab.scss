@@ -1,0 +1,178 @@
+:host {
+    display: block;
+}
+
+.findings {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.finding {
+    display: grid;
+    gap: 0.45rem;
+
+    padding: 1.05rem 1.2rem;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--muted);
+    border-radius: var(--radius);
+
+    background: var(--surface);
+
+    /*
+       Severity carries weight, not only a 3 px edge and an 11 px badge: an important signal reads
+       as important from across the page. The tint is the softest step that does that, and it stops
+       at `high` — three levels of tint would put the whole list back on one flat plane.
+    */
+    &[data-sev='high'] {
+        border-left-color: var(--crit);
+        border-left-width: 5px;
+        background: var(--crit-soft);
+
+        .finding__title {
+            font-size: 1.1rem;
+        }
+    }
+
+    &[data-sev='mid'] {
+        border-left-color: var(--warn);
+    }
+
+    &[data-sev='ok'] {
+        border-left-color: var(--ok);
+    }
+
+    /* Context, not a problem: the accent colour, none of the rating ones. */
+    &[data-sev='info'] {
+        border-left-color: var(--accent);
+    }
+
+    /* Ticked off: still there, still readable, no longer competing for attention. */
+    &.is-seen {
+        border-left-color: var(--line-strong);
+        opacity: 0.55;
+        background: var(--surface);
+    }
+
+    &__top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        align-items: center;
+    }
+
+    &__kind {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--muted);
+        letter-spacing: 0.02em;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: 0.98rem;
+        font-weight: 600;
+    }
+
+    /* 110 characters across a 1180 px card is two eye movements per line. */
+    &__body,
+    &__fix {
+        max-width: 74ch;
+        margin: 0;
+        font-size: var(--fs-body);
+    }
+
+    &__body {
+        color: var(--muted);
+    }
+
+    &__fix {
+        padding-top: 0.4rem;
+        border-top: 1px dashed var(--line);
+        font-size: var(--fs-body);
+    }
+
+    /* Next to the title, not below the text: it is the thing somebody came to press. */
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-left: auto;
+    }
+}
+
+.fix-label {
+    font-weight: 600;
+    color: var(--muted);
+}
+
+/*
+ * What to fix first: an order over the cards below it.
+ *
+ * It is styled as an index and not as a card of its own — no border, no severity colour — because
+ * it is not a finding. Every line leads to the card it names, which is the only thing it adds.
+ */
+.actions {
+    margin-bottom: var(--sp-4);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--line);
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-2);
+    }
+
+    &__note {
+        margin: var(--sp-1) 0 0;
+        font-size: var(--fs-0);
+        color: var(--muted);
+    }
+
+    &__list {
+        margin: var(--sp-2) 0 0;
+        padding-left: var(--sp-4);
+    }
+
+    &__row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: var(--sp-2);
+        align-items: baseline;
+
+        padding: 2px 0;
+    }
+
+    /* A link in a list, not a button in a toolbar: it moves the page, it does not change state. */
+    &__go {
+        cursor: pointer;
+
+        padding: 0;
+        border: 0;
+
+        font: inherit;
+        color: inherit;
+        text-align: left;
+
+        background: none;
+
+        &:hover,
+        &:focus-visible {
+            text-decoration: underline;
+        }
+    }
+
+    &__saving {
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__effort {
+        min-width: 8ch;
+        font-size: var(--fs-0);
+        color: var(--muted);
+        text-align: right;
+    }
+
+    &__total {
+        margin: var(--sp-3) 0 0;
+        font-size: var(--fs-0);
+    }
+}

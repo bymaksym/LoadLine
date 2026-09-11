@@ -1,0 +1,1 @@
+{"version":3,"file":"settings.page-V-97uIwW.js","names":[],"sources":["../../src/settings.page.js"],"sourcesContent":["import { table } from './table.js';\n\nexport const render = () => `<h1>Settings</h1>${table([1, 2])}`;\n"],"mappings":"wCAEA,IAAa,MAAe,oBAAoB,EAAM,CAAC,EAAG,CAAC,CAAC"}

@@ -1,0 +1,174 @@
+:host {
+    display: block;
+}
+
+.field--wide {
+    max-width: 30rem;
+}
+
+.twist {
+    display: inline-block;
+    width: 1rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+/* What was searched for, inside the name. Not the browser default yellow, which fights the theme. */
+mark {
+    border-radius: 2px;
+    color: var(--ink);
+    background: var(--accent-soft);
+    box-shadow: inset 0 -1px 0 var(--accent);
+}
+
+/* The name carries up to three tags; without this they run into it and into each other. */
+td.path .tag {
+    margin-left: 0.3rem;
+}
+
+/* Zone dot, same colours as the tree so both views read the same. */
+.dot {
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+    margin-right: 0.35rem;
+    border-radius: 2px;
+
+    vertical-align: middle;
+
+    background: var(--line-strong);
+
+    &[data-zone='boot'] {
+        background: var(--seg-boot);
+    }
+
+    &[data-zone='shared'] {
+        background: var(--seg-shared);
+    }
+
+    &[data-zone='own'] {
+        background: var(--seg-own);
+    }
+}
+
+.who {
+    display: block;
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+.note {
+    margin: 0 0 0.5rem;
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+.empty--pad {
+    padding: 1.5rem 0.85rem;
+}
+
+/* Detail: where it is on the left, what it carries on the right. */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem 2rem;
+    padding-top: 0.4rem;
+}
+
+.detail-title {
+    margin: 0 0 0.45rem;
+
+    font-size: var(--fs-note);
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+
+    &:not(:first-child) {
+        margin-top: 0.9rem;
+    }
+}
+
+@media (width >= 900px) {
+    .detail-grid {
+        grid-template-columns: 3fr 2fr;
+    }
+}
+
+/* Chunk list inside the detail: no header, tighter than the outer table. */
+table.inner {
+    margin-bottom: 0.3rem;
+    font-size: var(--fs-body);
+
+    td {
+        padding: 0.22rem 0.6rem 0.22rem 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.chip {
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-note);
+    color: var(--ink);
+
+    background: var(--surface);
+}
+
+button.chip {
+    cursor: pointer;
+    border-color: var(--accent);
+
+    &:hover {
+        color: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+}
+
+/* One copy of a duplicated package: version, where it lands, and what brings it. */
+.copy {
+    margin-bottom: 0.7rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid var(--line-strong);
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-items: baseline;
+
+        margin: 0 0 0.2rem;
+
+        font-size: var(--fs-body);
+    }
+
+    &__brought {
+        margin: 0 0 0.1rem;
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
+
+    &__who {
+        margin: 0;
+        font-size: var(--fs-body);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+    }
+}

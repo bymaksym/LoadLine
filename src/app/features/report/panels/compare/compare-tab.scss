@@ -1,0 +1,87 @@
+:host {
+    display: block;
+}
+
+/* The file input the label opens. Hidden, not absent: a label needs something to point at. */
+.hidden-input {
+    position: absolute;
+
+    overflow: hidden;
+
+    width: 1px;
+    height: 1px;
+
+    opacity: 0;
+}
+
+/* Reuses the intake's button look: same action, same shape. */
+.file-btn {
+    cursor: pointer;
+
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+
+    font: inherit;
+    font-size: var(--fs-body);
+    font-weight: 500;
+    color: var(--accent);
+
+    background: transparent;
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}
+
+/* The one figure this view exists to produce: the ceiling on a shared package. */
+.lead-figure {
+    margin: var(--sp-4) 0 0;
+    font-size: var(--fs-body);
+    color: var(--muted);
+
+    strong {
+        font-family: var(--font-data);
+        font-size: 1.45rem;
+        color: var(--ink);
+    }
+}
+
+.sub {
+    margin: var(--sp-5) 0 var(--sp-2);
+    font-size: var(--fs-2);
+}
+
+.note {
+    max-width: 74ch;
+    margin: var(--sp-1) 0 var(--sp-2);
+    font-size: var(--fs-0);
+    color: var(--muted);
+}
+
+.status {
+    margin: var(--sp-2) 0;
+    font-size: var(--fs-body);
+
+    &[data-tone='error'] {
+        color: var(--crit);
+    }
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.bar-col {
+    width: 8rem;
+}
+
+/* Two versions of the framework across two applications: the expensive case, marked as such. */
+tr.is-bad td {
+    background: var(--crit-soft);
+}
+
+.empty--pad {
+    padding: 1.5rem 0;
+}

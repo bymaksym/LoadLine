@@ -1,0 +1,162 @@
+:host {
+    display: block;
+}
+
+.empty-state {
+    display: grid;
+    gap: 0.8rem;
+    justify-items: start;
+
+    padding: 1.5rem;
+    border: 1.5px dashed var(--line-strong);
+    border-radius: var(--radius);
+
+    background: var(--surface);
+
+    p {
+        max-width: 60ch;
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--muted);
+    }
+}
+
+/* Reuses the intake's button look: same action, same shape. */
+.file-btn {
+    cursor: pointer;
+
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+
+    font: inherit;
+    font-size: var(--fs-body);
+    font-weight: 500;
+    color: var(--accent);
+
+    background: transparent;
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}
+
+/* One line of facts: Angular version, zone.js, current raw bootstrap. */
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+
+    margin-bottom: 1rem;
+
+    font-size: var(--fs-body);
+    color: var(--muted);
+}
+
+.fact {
+    &[data-zone='zoneless'] {
+        color: var(--ok);
+    }
+}
+
+/* A fact that is also a way to the tab it comes from. Reads as the others, not as a button. */
+.fact--link {
+    cursor: pointer;
+
+    padding: 0;
+    border: none;
+
+    font-size: inherit;
+    color: var(--accent);
+
+    background: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}
+
+.sub {
+    margin: 1.2rem 0 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.scroller + .sub {
+    margin-top: 1.4rem;
+}
+
+.chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+/* The configurations the pipeline builds are the ones that matter: a stronger row. */
+tr.is-built td:first-child {
+    font-weight: 600;
+}
+
+.is-focus td {
+    background: var(--accent-soft);
+    transition: background 0.4s;
+}
+
+/*
+ * The measurements this browser kept.
+ *
+ * Bars and not a chart, deliberately: twenty points need no axes, and a chart would read as a
+ * dashboard — which would invite somebody to take one machine's memory for the team's history.
+ */
+.history {
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--line);
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-2);
+    }
+
+    &__note {
+        max-width: 70ch;
+        margin: var(--sp-1) 0 0;
+        font-size: var(--fs-0);
+        color: var(--muted);
+    }
+
+    /* Which screen the second line draws. One control, and it is the whole of the second chart. */
+    &__pick {
+        display: flex;
+        gap: var(--sp-2);
+        align-items: baseline;
+
+        margin: var(--sp-4) 0 0;
+
+        font-size: var(--fs-0);
+        color: var(--muted);
+    }
+
+    &__list {
+        margin: var(--sp-3) 0 0;
+        padding: 0;
+        font-size: var(--fs-0);
+        list-style: none;
+
+        li {
+            display: flex;
+            gap: var(--sp-2);
+            align-items: baseline;
+        }
+    }
+}

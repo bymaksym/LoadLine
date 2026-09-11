@@ -1,0 +1,184 @@
+@let t = i18n.ui();
+@let total = totalScreens();
+
+<app-panel-header [howTo]="t.howToShared" [subtitle]="t.secSharedSub" [title]="t.secShared" />
+
+<p class="sum" [innerHTML]="sumText()"></p>
+
+<!-- The same chunks, split by whether there is anything to do about them. -->
+@if (triage(); as triage) {
+    <p class="triage">
+        {{ triage }}
+        <!-- The rule the colours in this table follow, written out: it used to live in a `title`. -->
+        <span aria-hidden="true" class="triage__dot">·</span>
+        <span>{{ coverageRule() }}</span>
+    </p>
+}
+
+<!-- Fifteen rows here, a hundred and fifty in a big build, and no way to look for one. -->
+<div class="toolbar">
+    <div class="toolbar__group">
+        <input
+            class="field"
+            type="search"
+            [attr.aria-label]="t.filterShared"
+            [placeholder]="t.filterShared"
+            [value]="filter()"
+            (input)="filter.set($any($event.target).value)"
+        />
+        <span aria-live="polite" class="toolbar__count">{{ t.shownRows(rows().length, allRows().length) }}</span>
+    </div>
+</div>
+
+<div class="scroller--tall">
+    <table>
+        <thead>
+            <tr>
+                <th
+                    app-sort
+                    [active]="order().key === 'name'"
+                    [dir]="order().dir"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick('name')"
+                >
+                    {{ t.thChunk }}
+                </th>
+                <th
+                    app-sort
+                    class="cov-col"
+                    [active]="order().key === 'coverage'"
+                    [dir]="order().dir"
+                    [help]="t.helpCoverage + ' ' + coverageRule()"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick('coverage')"
+                >
+                    {{ t.thCoverage }}
+                </th>
+                <th
+                    app-sort
+                    class="num"
+                    [active]="order().key === 'bytes'"
+                    [dir]="order().dir"
+                    [help]="t.helpSize"
+                    [sortLabel]="t.sortByColumn"
+                    (pick)="pick('bytes')"
+                >
+                    {{ t.thSize }}
+                </th>
+                <th>{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of rows(); track row.file) {
+                @let isOpen = expanded() === row.file;
+
+                <tr
+                    class="row-btn"
+                    role="button"
+                    tabindex="0"
+                    [attr.aria-expanded]="isOpen"
+                    [attr.data-key]="row.file"
+                    (click)="toggle(row)"
+                    (keydown.enter)="toggle(row)"
+                    (keydown.space)="toggle(row); $event.preventDefault()"
+                >
+                    <!--
+                    One tag, where there were three systems of them on the same row.
+
+                    `lazy` said the same thing on every row of a tab that is only about lazy chunks.
+                    "below the threshold" said it on fourteen of fifteen, which distinguishes
+                    nothing — and the row already carries that answer in the size column and in the
+                    detail. What is left is the tag that names where the weight comes from, and only
+                    when it names something: those are the handful of rows that lead anywhere.
+                    -->
+                    <td class="path">
+                        <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
+                        {{ row.name }}
+                        @if (row.worth.origin !== 'small') {
+                            <!-- The same sentence is in the detail this row opens; twice is once too many. -->
+                            <span class="tag" [class.tag--act]="row.worth.level === 'try'">{{
+                                worthLabel(row.worth)
+                            }}</span>
+                        }
+                    </td>
+                    <td class="cov">
+                        <span class="cov__row">
+                            <span class="track cov__track" [attr.data-cov]="row.coverage">
+                                <i [style.width.%]="row.ratio * 100"></i>
+                            </span>
+                            <span class="cov__n" [attr.data-v]="row.verdict">
+                                {{ t.coverageOf(row.screens, total) }} · {{ (row.ratio * 100).toFixed(0) }} %
+                            </span>
+                        </span>
+                        <span class="tag" [class]="'tag ' + tagClass(row.coverage)">{{ covLabel(row.coverage) }}</span>
+                    </td>
+                    <td class="num" [attr.data-v]="row.sizeVerdict">
+                        {{ row.bytes | bytes }}
+                        @if (row.sizeVerdict === 'bad') {
+                            <i aria-hidden="true" class="dot-v dot-v--after" data-v="bad"></i>
+                            <span class="sr-only">, {{ t.verdictBad }}.</span>
+                        }
+                    </td>
+                    <!-- An empty cell here used to be the whole explanation of a 0 B chunk. -->
+                    <td class="path" [title]="row.mainContent">
+                        @if (row.mainContent) {
+                            {{ elide(row.mainContent) }}
+                        } @else {
+                            <span class="muted">{{ t.chunkNoContent }}</span>
+                        }
+                    </td>
+                </tr>
+
+                @if (isOpen) {
+                    <tr class="detail">
+                        <td colspan="4">
+                            <!--
+                            The answer to "and so what?": what it costs on a typical visit, what
+                            the visit would weigh without it, and which part of the chunk that
+                            cost comes from.
+                            -->
+                            <div class="worth">
+                                <h4 class="detail-title">{{ t.worthTitle }}</h4>
+                                <p class="worth__line">
+                                    <span class="tag" [class.tag--act]="row.worth.level === 'try'">{{
+                                        worthLabel(row.worth)
+                                    }}</span>
+                                    {{ worthWhy(row.worth) }}
+                                </p>
+                                <p class="worth__line">{{ worthCost(row.worth) }}</p>
+                                <p class="worth__line worth__line--note">{{ t.worthNoSplit }}</p>
+                            </div>
+
+                            <div class="detail-grid">
+                                <div>
+                                    <h4>{{ t.loadedBy(row.loadedBy.length) }}</h4>
+                                    <div class="chips">
+                                        @for (screen of row.loadedBy; track screen.source) {
+                                            <button
+                                                class="chip"
+                                                type="button"
+                                                [title]="screen.source"
+                                                (click)="nav.go('screens', screen.source)"
+                                            >
+                                                {{ screen.label }}
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4>{{ t.contents }}</h4>
+                                    <app-path-tree [items]="row.files" />
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            } @empty {
+                <tr>
+                    <td class="empty" colspan="4">{{ allRows().length ? t.noMatch : t.noShared }}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

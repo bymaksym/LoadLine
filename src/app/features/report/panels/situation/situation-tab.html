@@ -1,0 +1,165 @@
+@let t = i18n.ui();
+@let s = situation.situation();
+@let answered = situation.answered();
+
+<app-panel-header [howTo]="t.howToSituation" [subtitle]="t.secSituationSub" [title]="t.secSituation" />
+
+<div class="toolbar">
+    <span class="toolbar__count">{{ t.sitAnswered(answered, total) }}</span>
+    <div class="toolbar__group">
+        <button class="ctl" type="button" [title]="t.sitExportHelp" (click)="export()">{{ t.sitExport }}</button>
+        <button class="ctl" type="button" [disabled]="!situation.anything()" (click)="situation.reset()">
+            {{ t.sitReset }}
+        </button>
+    </div>
+</div>
+
+<!--
+The line the two middle questions exist to produce, and the reason the tab is worth opening. It is
+the multiplication and not its result: somebody who disagrees with four a week needs to see whether
+they disagree about the releases or about the returning share.
+-->
+<div class="cost" [attr.data-level]="situation.exposure()">
+    @if (cost(); as c) {
+        <p class="cost__line">{{ t.sitCost(c.deploys, c.returning, c.perWeek) }}</p>
+    } @else {
+        <p class="cost__line cost__line--none">{{ t.sitCostNone }}</p>
+    }
+    <p class="cost__note">{{ t.sitExposure[situation.exposure()] }} · {{ t.sitBreadth[breadth()] }}</p>
+</div>
+
+<p class="asymmetry">
+    <span class="tag" data-source="declared">{{ t.sitDeclared }}</span>
+    {{ t.sitAsymmetry }}
+</p>
+
+<!--
+Said once, above the form, rather than next to each of the three fields that have one: the raw
+controls are not a second questionnaire, they are the same answers with less rounding.
+-->
+<p class="muted panel-note">
+    <strong>{{ t.sitPanel }}</strong> — {{ t.sitPanelHelp }}
+</p>
+
+@if (stale()) {
+    <p class="warn">{{ t.sitStale(freshDays) }}</p>
+}
+
+@for (question of questions; track trackQuestion($index, question)) {
+    @let key = question.key;
+
+    <section class="q" [class.q--open]="open(key)">
+        <div class="q__ask">
+            <h3 class="q__title">
+                {{ t.sitQuestion[key] }}
+                <!--
+                Which questions are still open has to be visible somewhere, and it stopped being
+                visible the moment "I don't know" stopped being drawn as a chosen answer.
+                -->
+                @if (open(key)) {
+                    <span class="tag">{{ t.sitOpen }}</span>
+                }
+            </h3>
+
+            <!--
+            Both halves are shown on every question, answered or not. The metric is what makes the
+            answer checkable a year from now, and where to look is what stops "I don't know" being
+            the path of least resistance.
+            -->
+            <p class="q__technical">
+                <span class="q__metric">{{ t.sitTechnical[key] }}</span>
+                <span class="q__howto">{{ t.sitHowTo[key] }}</span>
+            </p>
+        </div>
+
+        <div class="q__answer">
+            @if (key === 'connection' && !asksConnection()) {
+                <!-- With RUM the question is not asked. The figure they already have beats a band. -->
+                <p class="q__imported">{{ t.sitRumOn }}</p>
+            } @else {
+                <div class="opts">
+                    @for (option of question.options; track option) {
+                        <button
+                            class="opt"
+                            type="button"
+                            [attr.aria-pressed]="picked(key, option)"
+                            [class.opt--dunno]="option === 'unknown'"
+                            [class.opt--on]="picked(key, option)"
+                            (click)="situation.answer(key, option)"
+                        >
+                            {{ label(key, option) }}
+                        </button>
+                    }
+                </div>
+            }
+
+            <!-- The raw control: the same answer with less rounding, and it wins when it is there. -->
+            <div class="raw">
+                @if (question.raw; as raw) {
+                    <label class="raw__field">
+                        <span class="raw__label">{{ t.sitRawLabel[raw] }}</span>
+                        <input
+                            class="field field--num"
+                            min="0"
+                            type="number"
+                            [max]="raw === 'returningPct' ? 100 : null"
+                            [placeholder]="t.sitRawEmpty"
+                            [value]="rawValue(raw)"
+                            (change)="setRaw(raw, $event)"
+                        />
+                        <span class="raw__unit">{{ t.sitRawUnit[raw] }}</span>
+                    </label>
+                } @else if (key === 'connection') {
+                    <!--
+                    The one raw control that is not a field of its own: round-trip time already
+                    exists in the report, once, and a second copy here would be two numbers for one
+                    fact drifting apart.
+                    -->
+                    <span class="raw__note">
+                        {{ t.sitLatency(store.criteria().latencyMs) }}
+                        <button class="link-btn" type="button" (click)="nav.go('criteria')">
+                            {{ t.sitLatencyGo }}
+                        </button>
+                    </span>
+                } @else {
+                    <span class="raw__note">{{ t.sitNoRaw }}</span>
+                }
+            </div>
+
+            @if (key === 'connection') {
+                <label class="rum">
+                    <input type="checkbox" [checked]="s.rum" (change)="onRum($event)" />
+                    {{ t.sitRum }}
+                    <app-explain [text]="t.sitRumHelp" />
+                </label>
+            }
+        </div>
+    </section>
+}
+
+<!--
+Who and when. Not decoration: an answer with no name is one nobody can go and check, and one with
+no date is one that cannot be told to have expired.
+-->
+<section class="who">
+    <div class="who__fields">
+        <label>
+            <span>{{ t.sitWho }}</span>
+            <input
+                class="field"
+                type="text"
+                [placeholder]="t.sitWhoPlaceholder"
+                [value]="s.answeredBy ?? ''"
+                (change)="onWho($event)"
+            />
+        </label>
+        <label>
+            <span>{{ t.sitWhen }}</span>
+            <input class="field" type="date" [value]="s.answeredAt ?? ''" (change)="onWhen($event)" />
+        </label>
+    </div>
+
+    @if (!s.answeredAt && situation.anything()) {
+        <p class="warn">{{ t.sitNoDate }}</p>
+    }
+</section>

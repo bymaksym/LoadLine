@@ -1,0 +1,3 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/chart.widget-CF1ga2SA.js","assets/index-DMWDkxZl.js"])))=>i.map(i=>d[i]);
+import{r as e,t}from"./index-DMWDkxZl.js";var n=()=>(t(()=>import(`./chart.widget-CF1ga2SA.js`).then(t=>e(document.querySelector(`#chart`),t.draw())),__vite__mapDeps([0,1])),`<h1>Home</h1><div id="chart"></div>`);export{n as render};
+//# sourceMappingURL=home.page-CcV956gU.js.map
