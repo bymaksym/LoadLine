@@ -47,7 +47,7 @@
     }
 
     /* Ticked off: still there, still readable, no longer competing for attention. */
-    &.is-seen {
+    &--seen {
         border-left-color: var(--line-strong);
         opacity: 0.55;
         background: var(--surface);
@@ -100,7 +100,7 @@
     }
 }
 
-.fix-label {
+.finding__fix-label {
     font-weight: 600;
     color: var(--muted);
 }

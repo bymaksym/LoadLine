@@ -58,3 +58,58 @@
         color: var(--ink);
     }
 }
+
+/*
+   A row of chips: the files that import a package, the screens that load a chunk. They wrap rather
+   than scroll, because the count is the point and a scrolled list hides it.
+*/
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+
+    /* Inside a table cell, beside text: it sits on the line instead of taking one. */
+    &--inline {
+        display: inline-flex;
+    }
+}
+
+/*
+   One name, as a pill. The sibling of `.tag`, and the difference between them is what they carry:
+   a tag names a state and is read, a chip names a thing and is often a way to go to it.
+*/
+.chip {
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-note);
+    color: var(--ink);
+
+    background: var(--surface);
+
+    /* The chip is a button that goes somewhere. */
+    &--pick {
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+    }
+
+    /*
+       In a list where some chips lead to a screen and the rest are just file names, the ones that
+       lead somewhere say so before being hovered — the hover state alone is invisible to whoever
+       is deciding whether there is anything to click.
+    */
+    &--screen {
+        border-color: var(--accent);
+    }
+}

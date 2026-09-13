@@ -8,6 +8,7 @@
  * in, and whether a modern version of it is sitting in the same folder.
  */
 
+import { asMember } from '../json/json.utils';
 import {
     type AssetFile,
     type AssetKind,
@@ -58,6 +59,18 @@ const SUPERSEDED_BY: Record<string, string[]> = {
 export const extensionOf = (name: string): string => (/\.([\da-z]+)$/i.exec(name)?.[1] ?? '').toLowerCase();
 
 export const kindOf = (name: string): AssetKind => EXTENSIONS[extensionOf(name)] ?? 'other';
+
+/** The three of the eight kinds the media table holds. The only place they are listed. */
+const MEDIA_KINDS: ReadonlySet<MediaFile['kind']> = new Set<MediaFile['kind']>(['image', 'video', 'audio']);
+
+/**
+ * The kind that puts a file in the media table, or `null` when it belongs in none.
+ *
+ * `kindOf` answers over all eight kinds and the table holds three, so the wide answer used to be
+ * asserted back down into the narrow one. This asks the same question so that the answer is
+ * already narrow, which is what both the filter and the row below need.
+ */
+const mediaKindOf = (name: string): MediaFile['kind'] | null => asMember(kindOf(name), MEDIA_KINDS);
 
 /**
  * The face a font file belongs to.
@@ -173,8 +186,7 @@ const fontsOf = (files: readonly AssetFile[], preloaded: ReadonlySet<string>): F
 
 /** Pictures and video, with whether a modern version of the same name is already there. */
 const mediaOf = (files: readonly AssetFile[], inPage: ReadonlySet<string>): MediaFile[] => {
-    const kinds = new Set<AssetKind>(['image', 'video', 'audio']);
-    const media = files.filter(file => kinds.has(kindOf(file.name)));
+    const media = files.filter(file => mediaKindOf(file.name) !== null);
     // Two files are the same picture when everything but the extension matches. The hash a bundler
     // adds is part of the name and stays in the comparison, which is what keeps it honest.
     const stems = new Map<string, Set<string>>();
@@ -193,7 +205,8 @@ const mediaOf = (files: readonly AssetFile[], inPage: ReadonlySet<string>): Medi
 
             return {
                 ...file,
-                kind: kindOf(file.name) as MediaFile['kind'],
+                // Never the fallback: `media` is exactly the files whose kind is one of the three.
+                kind: mediaKindOf(file.name) ?? 'image',
                 format,
                 inPage: inPage.has(file.name),
                 modernNeighbour: modern ?? null,

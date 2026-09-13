@@ -128,7 +128,7 @@
         @for (screen of visible; track screen.source) {
             @let isOpen = expanded() === screen.source;
 
-            <div class="screen" [attr.data-key]="screen.source" [class.is-open]="isOpen">
+            <div class="screen" [attr.data-key]="screen.source" [class.screen--open]="isOpen">
                 <button
                     class="screen-row"
                     type="button"
@@ -214,13 +214,13 @@
                         is written out there: a bare `+12 kB` hanging below a row explained nothing.
                         -->
                         <span class="screen-row__num screen-row__delta" [attr.data-tone]="delta.tone">
-                            <span class="col-label">{{ t.colDelta }} </span>{{ delta.text }}
+                            <span class="screen-row__col-label">{{ t.colDelta }} </span>{{ delta.text }}
                         </span>
                     }
                 </button>
 
                 @if (isOpen) {
-                    <div class="screen-detail" [id]="'screen-detail-' + $index">
+                    <div class="screen__detail" [id]="'screen-detail-' + $index">
                         <app-screen-detail [screen]="screen" />
                     </div>
                 }

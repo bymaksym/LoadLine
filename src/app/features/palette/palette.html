@@ -43,7 +43,7 @@ keyboard and it is the keyboard that puts it away.
                             <button
                                 class="palette__row"
                                 type="button"
-                                [class.is-on]="cursor() === i"
+                                [class.palette__row--on]="cursor() === i"
                                 (click)="pick(entry)"
                             >
                                 <span class="palette__label">{{ entry.label }}</span>

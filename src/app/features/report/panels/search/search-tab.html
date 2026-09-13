@@ -99,9 +99,9 @@ already computed, they are the ones anybody would look for first, and they cost 
                     @if (isOpen) {
                         <tr class="detail">
                             <td colspan="4">
-                                <div class="detail-grid">
+                                <div class="detail__grid">
                                     <div>
-                                        <h4 class="detail-title">{{ t.searchChain }}</h4>
+                                        <h4 class="detail__title">{{ t.searchChain }}</h4>
                                         <app-chain [steps]="row.chain" />
 
                                         <!--
@@ -110,7 +110,7 @@ already computed, they are the ones anybody would look for first, and they cost 
                                         landed rather than about the file.
                                         -->
                                         @if (blast(row); as radius) {
-                                            <h4 class="detail-title">{{ t.blastTitle }}</h4>
+                                            <h4 class="detail__title">{{ t.blastTitle }}</h4>
                                             <p class="muted">
                                                 {{
                                                     t.blastBody(
@@ -156,7 +156,7 @@ already computed, they are the ones anybody would look for first, and they cost 
                                         }
 
                                         @if (row.copies.length > 1) {
-                                            <h4 class="detail-title">
+                                            <h4 class="detail__title">
                                                 {{ t.searchCopiesTag(row.copies.length) }}
                                             </h4>
                                             @for (copy of row.copies; track copy.at) {
@@ -184,7 +184,7 @@ already computed, they are the ones anybody would look for first, and they cost 
                                             }
                                         }
 
-                                        <h4 class="detail-title">{{ t.searchPlaces }}</h4>
+                                        <h4 class="detail__title">{{ t.searchPlaces }}</h4>
                                         @if (row.places.length > 1) {
                                             <p class="note">{{ t.searchTwice }}</p>
                                         }
@@ -231,11 +231,11 @@ already computed, they are the ones anybody would look for first, and they cost 
                                         </table>
 
                                         @if (row.screens.length > 0) {
-                                            <h4 class="detail-title">{{ t.loadedBy(row.screens.length) }}</h4>
+                                            <h4 class="detail__title">{{ t.loadedBy(row.screens.length) }}</h4>
                                             <div class="chips">
                                                 @for (screen of row.screens; track screen.source) {
                                                     <button
-                                                        class="chip"
+                                                        class="chip chip--pick chip--screen"
                                                         type="button"
                                                         [title]="screen.source"
                                                         (click)="nav.go('screens', screen.source)"
@@ -249,7 +249,7 @@ already computed, they are the ones anybody would look for first, and they cost 
 
                                     <div>
                                         @if (row.matchedFiles.length > 0) {
-                                            <h4 class="detail-title">
+                                            <h4 class="detail__title">
                                                 {{ t.searchMatchedIn(row.matchedFiles.length) }}
                                             </h4>
                                             <div class="chips">
@@ -259,7 +259,7 @@ already computed, they are the ones anybody would look for first, and they cost 
                                             </div>
                                         }
                                         @if (row.contents.length > 0) {
-                                            <h4 class="detail-title">{{ t.contents }}</h4>
+                                            <h4 class="detail__title">{{ t.contents }}</h4>
                                             <app-path-tree [items]="row.contents" />
                                         }
                                     </div>

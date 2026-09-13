@@ -27,6 +27,10 @@
         // Provided by the `angular-eslint` meta-package; angular.json references it as the builder of
         // the lint target, but it is deliberately not declared on its own.
         "@angular-eslint/builder",
+
+        // The rule pack secretlint loads by name from .secretlintrc.json. Nothing imports it, and
+        // removing it would leave the pre-commit secret gate with no rules and passing silently.
+        "@secretlint/secretlint-rule-preset-recommend",
     ],
 
     // "Nobody imports it" has two causes and only one is debt: a symbol used INSIDE its own file

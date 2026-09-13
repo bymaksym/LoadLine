@@ -8,7 +8,7 @@
 }
 
 @if (report) {
-    <div class="summary">
+    <div class="figures">
         <div class="figure">
             <span class="figure__label">
                 {{ t.measureComputed }}
@@ -96,7 +96,7 @@
         @if (staleFact()) {
             <p class="status" data-tone="error">{{ t.measureStaleFact(freshDays) }}</p>
         }
-        <div class="summary">
+        <div class="figures">
             <div class="figure">
                 <span class="figure__label">
                     {{ t.measureProtocol }}
@@ -216,10 +216,10 @@
                         </td>
                         <td class="path">
                             @if (chunk.screens.length > 0) {
-                                <span class="chips">
+                                <span class="chips chips--inline">
                                     @for (screen of chunk.screens; track screen) {
                                         <button
-                                            class="chip"
+                                            class="chip chip--pick"
                                             type="button"
                                             [title]="screen"
                                             (click)="nav.go('screens', screen)"
@@ -298,7 +298,7 @@
         (input)="text.set($any($event.target).value)"
     ></textarea>
 
-    <div class="actions">
+    <div class="measure-run">
         <button class="ctl ctl--active" type="button" (click)="run()">{{ t.measureRun }}</button>
         <span aria-live="polite" class="status" data-tone="error">{{ store.measurementError() }}</span>
     </div>

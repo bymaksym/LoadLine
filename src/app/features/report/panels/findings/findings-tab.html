@@ -81,7 +81,7 @@ reads, and thirty-seven signals with five of them shown is a list that has to be
             class="finding"
             [attr.data-sev]="finding.severity"
             [attr.data-title]="finding.title"
-            [class.is-seen]="isSeen"
+            [class.finding--seen]="isSeen"
         >
             <div class="finding__top">
                 <span class="tag" [class]="'tag ' + sevClass(finding.severity)">{{ sevLabel(finding.severity) }}</span>
@@ -117,7 +117,7 @@ reads, and thirty-seven signals with five of them shown is a list that has to be
             <p class="finding__body" [innerHTML]="finding.body"></p>
 
             <p class="finding__fix">
-                <span class="fix-label">{{ t.fixLabel }} — </span><span [innerHTML]="finding.fix"></span>
+                <span class="finding__fix-label">{{ t.fixLabel }} — </span><span [innerHTML]="finding.fix"></span>
             </p>
         </article>
     } @empty {

@@ -7,6 +7,7 @@
  *
  * Usage: node scripts/inline-build.mjs [output-folder] [target-file]
  */
+// @ts-check
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -23,6 +24,8 @@ if (!fs.existsSync(indexPath)) {
 }
 
 let html = fs.readFileSync(indexPath, 'utf8');
+/** The base names of everything that ended up inside, for the line printed at the end. */
+/** @type {string[]} */
 const inlined = [];
 
 /** A local `<script src>` becomes a `<script>` with the code inside. */
@@ -62,12 +65,14 @@ html = html.replaceAll(/<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g, (
 });
 
 /** Icons go inside as data URIs: opened from disk, an `href="favicon.svg"` finds nothing. */
+/** @type {Record<string, string>} */
 const mime = { '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.png': 'image/png' };
 html = html.replaceAll(/<link\b[^>]*>/g, match => {
     // Attribute order is not guaranteed (the build rewrites the head), so read `rel` and `href` separately.
     const rel = /\brel="([^"]+)"/.exec(match)?.[1];
     const href = /\bhref="([^"]+)"/.exec(match)?.[1];
-    if (!['icon', 'apple-touch-icon'].includes(rel) || !href || /^https?:/.test(href)) {
+    // `rel` is absent on a `<link>` that has none, which is not one of the two this looks for.
+    if (!rel || !['icon', 'apple-touch-icon'].includes(rel) || !href || /^https?:/.test(href)) {
         return match;
     }
 

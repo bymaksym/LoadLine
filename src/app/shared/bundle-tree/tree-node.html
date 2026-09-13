@@ -9,8 +9,8 @@
         {{ open() ? '−' : '+' }}
     </button>
 
-    <span class="label-cell">
-        <span class="label" [title]="node().label">{{ node().label }}</span>
+    <span class="row__label-cell">
+        <span class="row__label" [title]="node().label">{{ node().label }}</span>
         <span class="tag" [attr.data-zone]="node().zone">{{ whoPays() }}<app-explain [text]="zoneHelp()" /></span>
         @if (share(); as share) {
             <span class="tag"
@@ -19,16 +19,16 @@
         }
     </span>
 
-    <span aria-hidden="true" class="zone" [class]="'zone zone--' + (node().zone ?? 'none')"></span>
+    <span aria-hidden="true" class="row__zone" [class]="'row__zone row__zone--' + (node().zone ?? 'none')"></span>
 
-    <span class="share" [title]="barHelp()">
+    <span class="row__share" [title]="barHelp()">
         <i [style.background]="barColour()" [style.width.%]="sharePercent()"></i>
     </span>
 
-    <span class="size">
+    <span class="row__size">
         {{ node().bytes | bytes }}
         @if (rawSize(); as raw) {
-            <small class="size__raw"
+            <small class="row__size-raw"
                 >{{ raw | bytes }} {{ i18n.ui().unitRaw }}<app-explain [text]="i18n.ui().treeRawHelp"
             /></small>
         }
@@ -39,10 +39,10 @@
     common scale say everything; what costs is getting them onto the screen at the same time.
     -->
     <button
-        class="pin"
+        class="row__pin"
         type="button"
         [attr.aria-pressed]="pinned()"
-        [class.pin--on]="pinned()"
+        [class.row__pin--on]="pinned()"
         [title]="pinned() ? i18n.ui().treeUnpin : i18n.ui().treePin"
         (click)="pinToggled.emit()"
     >
@@ -52,7 +52,7 @@
 </div>
 
 @if (open()) {
-    <div class="inside">
+    <div class="chunk-files">
         <app-path-tree [items]="files()" [rawTotal]="node().rawBytes ?? null" />
     </div>
 }

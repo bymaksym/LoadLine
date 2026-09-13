@@ -70,7 +70,11 @@
                     </thead>
                     <tbody>
                         @for (row of rows(); track row.name) {
-                            <tr [attr.data-key]="row.name" [class.is-built]="row.builtBy.length > 0">
+                            <tr
+                                class="budget-row"
+                                [attr.data-key]="row.name"
+                                [class.budget-row--built]="row.builtBy.length > 0"
+                            >
                                 <td class="path">
                                     {{ row.name }}
                                     @if (row.isDefault) {
@@ -94,7 +98,7 @@
                                     } @else if (row.builtBy.length === 0) {
                                         <span class="muted">{{ t.builtByNone }}</span>
                                     } @else {
-                                        <span class="chips">
+                                        <span class="chips chips--inline">
                                             @for (job of row.builtBy; track job) {
                                                 <span class="tag tag--ok mono">{{ job }}</span>
                                             }
@@ -155,7 +159,7 @@
                                     @if (build.unresolved) {
                                         <span class="tag tag--warn">{{ t.buildUnresolved }}</span>
                                     } @else {
-                                        <span class="chips">
+                                        <span class="chips chips--inline">
                                             @for (name of targetsOf(build); track name) {
                                                 <span class="tag mono">{{ name }}</span>
                                             }

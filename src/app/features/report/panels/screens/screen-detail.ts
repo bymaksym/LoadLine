@@ -27,6 +27,11 @@ import { ReportNav } from '@state/report-nav.service';
     templateUrl: './screen-detail.html',
     styleUrl: './screen-detail.scss',
     imports: [BytesPipe, PathTreeComponent, ChainComponent, ExplainComponent],
+    /*
+     * The same block an expanded table row opens (`tr.detail`), so the parts inside it — the
+     * origin line, the chain, the three-way split — are named `detail__…` here as they are there.
+     */
+    host: { class: 'detail' },
 })
 export class ScreenDetailComponent {
     // * SERVICES

@@ -15,6 +15,7 @@
  *
  * Usage: node scripts/embed-fonts.mjs
  */
+// @ts-check
 import fs from 'node:fs';
 import path from 'node:path';
 

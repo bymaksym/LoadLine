@@ -54,7 +54,7 @@
                 criteria.isCustom(mode, field.key) ||
                 (field.pairWith ? criteria.isCustom(mode, field.pairWith) : false);
 
-            <div class="crit" [class.is-custom]="isCustom">
+            <div class="crit" [class.crit--custom]="isCustom">
                 <div class="crit__text">
                     <span class="crit__label">
                         {{ t.critLabel[field.key] }}

@@ -27,6 +27,28 @@ describe('readLock · three formats, because a project has whichever one it has'
         ]);
     });
 
+    it('is null for an npm lock file that parses to something other than an object', () => {
+        expect(readLock('package-lock.json', 'null')).toBeNull();
+        expect(readLock('package-lock.json', '[]')).toBeNull();
+        expect(readLock('package-lock.json', 'not json')).toBeNull();
+    });
+
+    it('skips a lock entry whose version is missing or not a string', () => {
+        const lock = readLock(
+            'package-lock.json',
+            JSON.stringify({
+                packages: {
+                    'node_modules/lodash': { version: '4.17.21' },
+                    'node_modules/broken': { version: 7 },
+                    'node_modules/absent': {},
+                    'node_modules/nothing': null,
+                },
+            }),
+        );
+
+        expect(lock?.map(entry => entry.name)).toEqual(['lodash']);
+    });
+
     it('reads a pnpm lock file, scopes included', () => {
         const pnpm = readLock(
             'pnpm-lock.yaml',
@@ -60,6 +82,37 @@ describe('readAudit', () => {
     it('is null for anything that is not an audit report: nobody ran one is not the same as none', () => {
         expect(readAudit('{"hello":1}')).toBeNull();
         expect(readAudit('not json')).toBeNull();
+    });
+
+    /*
+     * These four parse as JSON and are not objects with the fields the reader goes on to use. The
+     * shape used to be asserted rather than checked, so `null` reached a property read and threw a
+     * TypeError out of a function whose signature promises `Advisory[] | null`.
+     */
+    it('rejects valid JSON that is not an object instead of throwing', () => {
+        expect(readAudit('null')).toBeNull();
+        expect(readAudit('[1,2,3]')).toBeNull();
+        expect(readAudit('"a string"')).toBeNull();
+        expect(readAudit('42')).toBeNull();
+    });
+
+    /*
+     * `Object.entries` of a string yields its characters, so a report whose `vulnerabilities` is
+     * not a keyed object used to become one advisory per character, each named after its index.
+     */
+    it('does not invent an advisory per character when the keyed object is a string', () => {
+        expect(readAudit('{"vulnerabilities":"oops"}')).toBeNull();
+    });
+
+    it('skips an entry that is not an object rather than reading fields off it', () => {
+        expect(readAudit('{"vulnerabilities":{"lodash":null,"rxjs":{"severity":"low"}}}')).toEqual([
+            { package: 'rxjs', severity: 'low', title: 'rxjs', url: null, range: null, fixedIn: null },
+        ]);
+    });
+
+    it('falls back to `info` for a severity that is not one of the five', () => {
+        expect(readAudit('{"vulnerabilities":{"lodash":{"severity":"catastrophic"}}}')?.[0]?.severity).toBe('info');
+        expect(readAudit('{"vulnerabilities":{"lodash":{"severity":7}}}')?.[0]?.severity).toBe('info');
     });
 });
 

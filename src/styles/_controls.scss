@@ -139,3 +139,42 @@
         color: var(--muted);
     }
 }
+
+/*
+   The control that opens a file picker: a `<button>` next to a `<label for>` that has to look the
+   same as it, since which of the two an action needs is an implementation detail of the picker and
+   not something the reader should be able to see.
+
+   `font: inherit` before the two overrides, because a `<button>` does not inherit the page font
+   and the ones on the intake page were being drawn in the browser's default while the identical
+   `<label>` beside them was in Archivo.
+*/
+.file-btn {
+    cursor: pointer;
+
+    display: inline-block;
+
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+
+    font: inherit;
+    font-size: var(--fs-body);
+    font-weight: 500;
+
+    /* The page background colour: white in light, near black in dark. Contrasts in both. */
+    color: var(--ground);
+
+    background: var(--accent);
+
+    /* The outline version, which is every one of these but the primary action of the intake page. */
+    &--ghost {
+        color: var(--accent);
+        background: transparent;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}

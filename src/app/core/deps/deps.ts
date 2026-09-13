@@ -17,6 +17,7 @@
  */
 
 import { type ModuleEntry } from '../analysis/analysis.types';
+import { asArray, asMember, asRecord, asText } from '../json/json.utils';
 import { type Advisory, type DepsReport, type LockedPackage, type Severity } from './deps.types';
 
 /** `  /lodash@4.17.21:` in pnpm, `"node_modules/lodash": {` in npm, `lodash@^4.0.0:` in yarn. */
@@ -24,12 +25,7 @@ const PNPM_ENTRY = /^ {2}\/?((?:@[^/@]+\/)?[^@/\s]+)@([^(:\s]+)/;
 const YARN_ENTRY = /^"?((?:@[^/@]+\/)?[^@/\s]+)@[^:]*:?$/;
 const YARN_VERSION = /^\s+version:?\s+"?([^"\s]+)"?/;
 
-const SEVERITIES = new Set<string>(['critical', 'high', 'moderate', 'low', 'info']);
-
-interface NpmLock {
-    packages?: Record<string, { version?: string }>;
-    dependencies?: Record<string, { version?: string; requires?: Record<string, string> }>;
-}
+const SEVERITIES: ReadonlySet<Severity> = new Set<Severity>(['critical', 'high', 'moderate', 'low', 'info']);
 
 /** The package name out of an npm lock key: `node_modules/a/node_modules/b` → `b`. */
 const nameFromPath = (path: string): string | null => {
@@ -42,22 +38,27 @@ const nameFromPath = (path: string): string | null => {
     return (parts[0]?.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]) ?? null;
 };
 
-const readNpmLock = (lock: NpmLock): LockedPackage[] => {
+/** The `version` of one lock entry, when the entry is an object carrying one. */
+const versionOf = (entry: unknown): string | null => asText(asRecord(entry)?.['version']);
+
+const readNpmLock = (lock: Record<string, unknown>): LockedPackage[] => {
     const found = new Map<string, LockedPackage>();
 
-    const installed = Object.entries(lock.packages ?? {});
+    const installed = Object.entries(asRecord(lock['packages']) ?? {});
     for (const [path, entry] of installed) {
         const name = nameFromPath(path);
-        if (name && entry.version) {
-            found.set(`${name}@${entry.version}`, { name, version: entry.version, requiredBy: [] });
+        const version = versionOf(entry);
+        if (name && version) {
+            found.set(`${name}@${version}`, { name, version, requiredBy: [] });
         }
     }
 
     // The older format, for a lock file written before npm 7. Same two fields, one level in.
-    const older = Object.entries(lock.dependencies ?? {});
+    const older = Object.entries(asRecord(lock['dependencies']) ?? {});
     for (const [name, entry] of older) {
-        if (entry.version) {
-            found.set(`${name}@${entry.version}`, { name, version: entry.version, requiredBy: [] });
+        const version = versionOf(entry);
+        if (version) {
+            found.set(`${name}@${version}`, { name, version, requiredBy: [] });
         }
     }
 
@@ -101,29 +102,18 @@ const readYamlLock = (text: string): LockedPackage[] => {
 /** Whichever format was dropped. `null` when it is none of them. */
 export const readLock = (name: string, text: string): LockedPackage[] | null => {
     if (/package-lock\.json$|npm-shrinkwrap\.json$/i.test(name)) {
+        let parsed: unknown;
         try {
-            return readNpmLock(JSON.parse(text) as NpmLock);
+            parsed = JSON.parse(text);
         } catch {
             return null;
         }
+        const lock = asRecord(parsed);
+        return lock ? readNpmLock(lock) : null;
     }
 
     return /lock\.ya?ml$|yarn\.lock$/i.test(name) ? readYamlLock(text) : null;
 };
-
-interface AuditJson {
-    /** npm 7+ and pnpm: keyed by package name. */
-    vulnerabilities?: Record<
-        string,
-        {
-            severity?: string;
-            via?: (string | { title?: string; url?: string; range?: string })[];
-            fixAvailable?: unknown;
-        }
-    >;
-    /** npm 6 and the audit endpoint: a list of advisories. */
-    advisories?: Record<string, { module_name?: string; severity?: string; title?: string; url?: string }>;
-}
 
 /**
  * The audit report, in either shape npm and pnpm write.
@@ -134,26 +124,39 @@ interface AuditJson {
  * worse than being explicit about what is and is not known.
  */
 export const readAudit = (text: string): Advisory[] | null => {
-    let parsed: AuditJson;
+    let parsed: unknown;
     try {
-        parsed = JSON.parse(text) as AuditJson;
+        parsed = JSON.parse(text);
     } catch {
         return null;
     }
 
-    const found: Advisory[] = [];
-    const severityOf = (value: string | undefined): Severity =>
-        SEVERITIES.has(value ?? '') ? (value as Severity) : 'info';
+    // An audit report is an object. `null`, a list and a bare number are all valid JSON, and the
+    // shape this used to assert made reading a property off any of them a crash rather than a
+    // rejection: `readAudit('null')` type-checked and threw.
+    const report = asRecord(parsed);
+    if (!report) {
+        return null;
+    }
 
-    const reported = Object.entries(parsed.vulnerabilities ?? {});
-    for (const [name, entry] of reported) {
-        const detail = (entry.via ?? []).find(via => typeof via === 'object');
+    const found: Advisory[] = [];
+    const severityOf = (value: unknown): Severity => asMember(asText(value) ?? '', SEVERITIES) ?? 'info';
+
+    /** npm 7+ and pnpm: keyed by package name. */
+    const reported = asRecord(report['vulnerabilities']);
+    const byPackage = Object.entries(reported ?? {});
+    for (const [name, value] of byPackage) {
+        const entry = asRecord(value);
+        if (!entry) {
+            continue;
+        }
+        const detail = (asArray(entry['via']) ?? []).map(via => asRecord(via)).find(via => via !== null);
         found.push({
             package: name,
-            severity: severityOf(entry.severity),
-            title: detail?.title ?? name,
-            url: detail?.url ?? null,
-            range: detail?.range ?? null,
+            severity: severityOf(entry['severity']),
+            title: asText(detail?.['title']) ?? name,
+            url: asText(detail?.['url']),
+            range: asText(detail?.['range']),
             // npm's `fixAvailable` is either `false` or an object naming a package and a version
             // to move to — which is not the same as "this advisory is fixed in X". Rather than
             // reword it into something it does not say, it is left out.
@@ -161,21 +164,27 @@ export const readAudit = (text: string): Advisory[] | null => {
         });
     }
 
-    const legacy = Object.values(parsed.advisories ?? {});
-    for (const entry of legacy) {
-        if (entry.module_name) {
+    /** npm 6 and the audit endpoint: a list of advisories. */
+    const legacy = asRecord(report['advisories']);
+    const listed = Object.values(legacy ?? {});
+    for (const value of listed) {
+        const entry = asRecord(value);
+        const module = asText(entry?.['module_name']);
+        if (entry && module) {
             found.push({
-                package: entry.module_name,
-                severity: severityOf(entry.severity),
-                title: entry.title ?? entry.module_name,
-                url: entry.url ?? null,
+                package: module,
+                severity: severityOf(entry['severity']),
+                title: asText(entry['title']) ?? module,
+                url: asText(entry['url']),
                 range: null,
                 fixedIn: null,
             });
         }
     }
 
-    return found.length > 0 || parsed.vulnerabilities || parsed.advisories ? found : null;
+    // Neither key present means this JSON was not an audit report at all, which is not the same
+    // answer as an audit report with nothing in it.
+    return found.length > 0 || reported !== null || legacy !== null ? found : null;
 };
 
 const RANK: Record<Severity, number> = { critical: 0, high: 1, moderate: 2, low: 3, info: 4 };

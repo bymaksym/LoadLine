@@ -56,7 +56,7 @@
     }
 
     /* Custom: the left border marks it, and the recommended value reads right below the field. */
-    &.is-custom {
+    &--custom {
         border-left-color: var(--accent);
         background: var(--accent-soft);
     }

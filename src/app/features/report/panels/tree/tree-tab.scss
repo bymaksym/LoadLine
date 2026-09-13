@@ -7,7 +7,7 @@
 }
 
 /* The header of the list, on the same columns as every row (`--tree-cols`). */
-.tree-head {
+.tree__head {
     position: sticky;
     z-index: 1;
     top: var(--tabs-h);
@@ -29,17 +29,17 @@
 
     background: var(--surface);
 
-    &__zone {
+    &-zone {
         width: 9px;
     }
 
-    &__size {
+    &-size {
         text-align: right;
     }
 }
 
 /* The crumbs, as one row: how many there are and what they add up to. */
-.tree-tail {
+.tree__tail {
     cursor: pointer;
 
     display: block;
@@ -71,40 +71,6 @@
         width: 1.3rem;
         font-family: var(--font-data);
         font-weight: 700;
-    }
-}
-
-.dot {
-    display: inline-block;
-
-    width: 8px;
-    height: 8px;
-    margin-right: 0.3rem;
-    border-radius: 2px;
-
-    vertical-align: middle;
-
-    background: var(--line-strong);
-
-    &[data-zone='boot'] {
-        background: var(--seg-boot);
-    }
-
-    &[data-zone='shared'] {
-        background: var(--seg-shared);
-    }
-
-    &[data-zone='own'] {
-        background: var(--seg-own);
-    }
-
-    &[data-zone='all'] {
-        background: linear-gradient(90deg, var(--seg-boot) 33%, var(--seg-shared) 33% 66%, var(--seg-own) 66%);
-    }
-
-    /* The lazy half is the two zones under it, so its square carries both of their colours. */
-    &[data-zone='lazy'] {
-        background: linear-gradient(90deg, var(--seg-shared) 50%, var(--seg-own) 50%);
     }
 }
 
@@ -143,22 +109,23 @@
         border-radius: 999px;
 
         background: var(--surface-sunk);
+    }
 
-        i {
-            display: block;
-            height: 100%;
+    /* One coloured stretch of that bar. */
+    &__seg {
+        display: block;
+        height: 100%;
 
-            &[data-zone='boot'] {
-                background: var(--seg-boot);
-            }
+        &[data-zone='boot'] {
+            background: var(--seg-boot);
+        }
 
-            &[data-zone='shared'] {
-                background: var(--seg-shared);
-            }
+        &[data-zone='shared'] {
+            background: var(--seg-shared);
+        }
 
-            &[data-zone='own'] {
-                background: var(--seg-own);
-            }
+        &[data-zone='own'] {
+            background: var(--seg-own);
         }
 
         /* The one gap in the bar is the eager/lazy boundary, and the only one. */
@@ -226,7 +193,7 @@
    The pinned rows, held above the list. The rule under them is what says the list restarts below:
    without it two chunks with nothing to do with each other read as the top two of one ordering.
 */
-.tree-pins {
+.tree__pins {
     margin-bottom: 0.4rem;
     padding-bottom: 0.4rem;
     border-bottom: 1px dashed var(--line-strong);

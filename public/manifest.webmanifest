@@ -1,8 +1,8 @@
 {
     "name": "Loadline",
     "short_name": "Loadline",
-    "description": "Peso por pantalla: qué descarga cada pantalla de tu aplicación.",
-    "lang": "es",
+    "description": "Weight per screen: what each screen of your app actually downloads.",
+    "lang": "en",
     "start_url": "./",
     "display": "standalone",
     "background_color": "#12151a",

@@ -36,7 +36,7 @@
 .screen {
     border-radius: var(--radius);
 
-    &.is-open {
+    &--open {
         box-shadow: inset 0 0 0 1px var(--accent);
     }
 }
@@ -157,7 +157,7 @@
        bar, where a bare `+12 kB` had no header anywhere near it. Wide, the header row says it and
        this goes back to being for screen readers only.
     */
-    .col-label {
+    &__col-label {
         color: var(--muted);
     }
 
@@ -218,7 +218,7 @@
             text-align: right;
         }
 
-        .col-label {
+        &__col-label {
             position: absolute;
 
             overflow: hidden;
@@ -235,12 +235,6 @@
             grid-column: auto;
         }
     }
-}
-
-/* The rating marker rides after the figure, so the shape reads as part of it. */
-.dot-v--after {
-    margin-right: 0;
-    margin-left: 0.35rem;
 }
 
 /* Three segments with a 2 px gap: where one ends and the next begins shows without reading the figure. */
@@ -287,7 +281,7 @@
     }
 }
 
-.screen-detail {
+.screen__detail {
     padding: 0.5rem 0.75rem 1rem;
 }
 

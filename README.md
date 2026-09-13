@@ -5,7 +5,7 @@
 
 [![npm](https://img.shields.io/npm/v/loadline.svg)](https://www.npmjs.com/package/loadline)
 [![CI](https://github.com/bymaksym/LoadLine/actions/workflows/ci.yml/badge.svg)](https://github.com/bymaksym/LoadLine/actions/workflows/ci.yml)
-[![license](https://img.shields.io/npm/l/loadline.svg)](LICENSE)
+[![license](https://img.shields.io/github/license/bymaksym/LoadLine.svg)](LICENSE)
 
 Bundle analysers report what each chunk weighs. Loadline reports what each **screen** costs: it
 walks the import graph of your build, separates the bootstrap everyone downloads from the code a
@@ -103,9 +103,11 @@ grew does not break every screen's gate at once.
 for builds that write no `stats.json`. Write it on every run, passing or failing, so tomorrow
 compares against yesterday rather than against the last green build.
 
-Output formats: `text` (default), `json`, `markdown`, `sarif` for GitHub code scanning, and
-`pr-comment`, which carries an HTML marker so the next run edits its comment instead of adding
-another. `--lang en|es`, and `loadline --help` for the full list.
+Output formats: `text` (default), `summary` for the whole report in a dozen lines, `json`,
+`markdown`, `sarif` for GitHub code scanning, and `pr-comment`, which carries an HTML marker so
+the next run edits its comment instead of adding another. `--lang en|es` — English unless it is
+asked for in Spanish, never read from the machine's locale, which is the same rule the page
+follows with its language button. `loadline --help` for the full list.
 
 ```yaml
 # .github/workflows/loadline.yml

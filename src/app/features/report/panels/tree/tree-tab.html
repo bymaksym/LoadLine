@@ -17,8 +17,9 @@ one is the only reading that does not depend on which row happens to be open.
         <span aria-hidden="true" class="shape__bar">
             @for (part of shape.bar; track part.zone) {
                 <i
+                    class="shape__seg"
                     [attr.data-zone]="part.zone"
-                    [class.shape__bar--break]="part.break"
+                    [class.shape__seg--break]="part.break"
                     [style.width.%]="part.percent"
                 ></i>
             }
@@ -36,7 +37,7 @@ one is the only reading that does not depend on which row happens to be open.
                         <span aria-hidden="true" class="shape__sep">·</span>
                     }
                     @if (row.who) {
-                        <span class="shape__who">{{ row.who }}</span>
+                        <span>{{ row.who }}</span>
                     }
                 </span>
                 <span class="shape__size">{{ row.size }}</span>
@@ -81,7 +82,7 @@ one is the only reading that does not depend on which row happens to be open.
 </div>
 
 <div class="scroller--tall tree">
-    <div class="tree-head">
+    <div class="tree__head">
         <span></span>
         <span
             app-sort
@@ -91,11 +92,11 @@ one is the only reading that does not depend on which row happens to be open.
             (pick)="pick('name')"
             >{{ t.thChunk }}</span
         >
-        <span class="tree-head__zone"></span>
+        <span class="tree__head-zone"></span>
         <span></span>
         <span
             app-sort
-            class="tree-head__size"
+            class="tree__head-size"
             [active]="order().key === 'bytes'"
             [dir]="order().dir"
             [help]="t.helpSize"
@@ -113,7 +114,7 @@ one is the only reading that does not depend on which row happens to be open.
     -->
     @if (pinnedRows(); as pins) {
         @if (pins.length > 0) {
-            <div class="tree-pins">
+            <div class="tree__pins">
                 @for (node of pins; track node.id) {
                     <app-tree-node
                         [node]="node"
@@ -149,7 +150,7 @@ one is the only reading that does not depend on which row happens to be open.
     @if (tail(); as crumbs) {
         @if (crumbs.length > 0) {
             <button
-                class="tree-tail"
+                class="tree__tail"
                 type="button"
                 [attr.aria-expanded]="tailOpen()"
                 (click)="tailOpen.set(!tailOpen())"

@@ -26,3 +26,45 @@
         border-radius: 2px;
     }
 }
+
+/*
+   The same colour code as a marker inside a row, where there is no room to spell the zone out.
+   Here for the reason written above the legend: it was copied into `tree`, `search` and `measured`
+   and had already drifted — one of the three used a different gap — which is the legend
+   contradicting itself one panel later.
+
+   `all` and `lazy` are not zones a file is in, they are the two summary rows of the tree: the
+   first stands for the three zones together, the second for the two under the lazy half.
+*/
+.dot {
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+    margin-right: 0.3rem;
+    border-radius: 2px;
+
+    vertical-align: middle;
+
+    background: var(--line-strong);
+
+    &[data-zone='boot'] {
+        background: var(--seg-boot);
+    }
+
+    &[data-zone='shared'] {
+        background: var(--seg-shared);
+    }
+
+    &[data-zone='own'] {
+        background: var(--seg-own);
+    }
+
+    &[data-zone='all'] {
+        background: linear-gradient(90deg, var(--seg-boot) 33%, var(--seg-shared) 33% 66%, var(--seg-own) 66%);
+    }
+
+    &[data-zone='lazy'] {
+        background: linear-gradient(90deg, var(--seg-shared) 50%, var(--seg-own) 50%);
+    }
+}

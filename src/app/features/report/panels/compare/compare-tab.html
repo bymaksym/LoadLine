@@ -93,7 +93,7 @@
                     </thead>
                     <tbody>
                         @for (entry of report.frameworks; track entry.name) {
-                            <tr [class.is-bad]="entry.versions.length > 1">
+                            <tr class="framework-row" [class.framework-row--split]="entry.versions.length > 1">
                                 <td class="path">{{ entry.name }}</td>
                                 <td class="num">{{ t.compareOfN(entry.builds, list.length) }}</td>
                                 <td class="num">{{ entry.duplicatedBytes | bytes }}</td>

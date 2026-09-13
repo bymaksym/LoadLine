@@ -1,10 +1,21 @@
 /* ==========================================================================
    The global stylesheet: what every component can count on being there.
 
-   Split by what each part styles. Components add only what is theirs, so a class
-   used by more than one panel belongs in one of these partials, not in a component.
+   Split by what each part styles. Components add only what is theirs, so a class used by more
+   than one panel belongs in one of these partials, not in a component. That is not a preference:
+   Angular's emulated encapsulation stamps a component's styles with that component's attribute,
+   so a rule copied into a second component reaches the second component and nowhere else. The
+   copy drifts and the third panel to use the class gets nothing at all — `.muted`, `.dot`,
+   `.chips`, `.chip`, `.detail__title` and `.dot-v--after` were all found that way.
+   `scripts/check-styles.mjs` checks it now, and CI runs it.
 
-   Two conventions the whole page holds to, because breaking them once costs more than they save:
+   Three conventions the whole page holds to, because breaking them once costs more than they save:
+
+   · **BEM.** `block`, `block__element`, `block--modifier`. A `-` joins the words inside one part
+     and never means "a part of": `screen-row` is a block, `screen-row__num` is its element,
+     `screen-row__num--own` a modifier of that element. Elements are flat — a part of a part is
+     another element of the same block (`tree__head`, `tree__head-size`), never `tree__head__size`.
+     State a component toggles is a modifier too, not an `is-` class. `stylelint` checks it.
 
    · **Size.** Two steps, `--fs-body` (14 px) and `--fs-note` (12 px). Anything meant to be read is
      the first; only what names another thing is the second. See `assets/_tokens.scss`.

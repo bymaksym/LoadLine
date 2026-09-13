@@ -5,8 +5,9 @@
  * signals, one string in and one string out. The store passes the strings of the current language.
  */
 
-import { type ForeignFormat } from '../core/analysis/metafile.types';
+import { FOREIGN_FORMATS, type ForeignFormat } from '../core/analysis/metafile.types';
 import { type UiStrings } from '../core/i18n/ui-strings';
+import { asMember } from '../core/json/json.utils';
 import { type MeasurementError } from '../core/measurement/measurement.types';
 
 /** Anything thrown while reading a `stats.json`, named when it is one of ours and quoted when not. */
@@ -55,7 +56,11 @@ const reason = (error: unknown, t: UiStrings): string => {
         return t.errNotEsmGraph;
     }
     if (code.startsWith('NOT_METAFILE:')) {
-        return foreignMessage(code.slice('NOT_METAFILE:'.length) as ForeignFormat, t);
+        // The code is a string the core assembled, so the format it carries is read back against
+        // the formats that exist. A code naming one that does not gets the general sentence, which
+        // is what `foreignMessage` already answers for `unknown`.
+        const named = asMember(code.slice('NOT_METAFILE:'.length), FOREIGN_FORMATS);
+        return foreignMessage(named ?? 'unknown', t);
     }
 
     return code;

@@ -117,7 +117,7 @@
                     tabindex="0"
                     [attr.aria-expanded]="isOpen"
                     [attr.data-key]="row.name"
-                    [class.is-lazy]="row.fewImporters"
+                    [class.row-btn--lazy]="row.fewImporters"
                     (click)="toggle(row)"
                     (keydown.enter)="toggle(row)"
                     (keydown.space)="toggle(row); $event.preventDefault()"
@@ -187,20 +187,20 @@
                             on a touch screen could reach and sixty-one rows' worth of them if they
                             had each been given a mark. The row already opens; this is what it says.
                             -->
-                            <p class="detail-figures">{{ rowFigures(row) }}</p>
-                            <div class="detail-grid" [class.detail-grid--single]="row.isProjectCode">
+                            <p class="detail__figures">{{ rowFigures(row) }}</p>
+                            <div class="detail__grid" [class.detail__grid--single]="row.isProjectCode">
                                 @if (!row.isProjectCode) {
                                     <div>
-                                        <h4 class="detail-title">{{ t.bootChain }}</h4>
+                                        <h4 class="detail__title">{{ t.bootChain }}</h4>
                                         <app-chain [none]="t.bootChainNone" [steps]="row.chain" />
 
                                         @if (row.importerFiles.length > 0) {
-                                            <h4 class="detail-title">{{ t.thImporters }}</h4>
+                                            <h4 class="detail__title">{{ t.thImporters }}</h4>
                                             <div class="chips">
                                                 @for (file of row.importerFiles; track file.path) {
                                                     @if (file.screen) {
                                                         <button
-                                                            class="chip chip--screen"
+                                                            class="chip chip--pick chip--screen"
                                                             type="button"
                                                             [title]="t.seeInScreens + ': ' + file.path"
                                                             (click)="nav.go('screens', file.path)"
@@ -216,14 +216,14 @@
                                     </div>
                                 }
                                 <div>
-                                    <h4 class="detail-title">{{ t.contents }}</h4>
+                                    <h4 class="detail__title">{{ t.contents }}</h4>
                                     <app-path-tree [items]="row.files" />
                                     <!--
                                     This tab only says what the entry weighs HERE. Whether it also
                                     lands in other chunks is a question only the search answers, and
                                     until now getting there meant retyping the name.
                                     -->
-                                    <p class="detail-more">
+                                    <p class="detail__more">
                                         <button class="link-btn" type="button" (click)="nav.go('search', row.name)">
                                             {{ t.seeInSearch }} →
                                         </button>

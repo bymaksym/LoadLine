@@ -37,6 +37,11 @@ jobs:
 
             - run: pnpm install --frozen-lockfile
 
+            # The pre-commit hook only sees what one machine staged. This sees the whole tree,
+            # including whatever arrived in a pull request from a fork.
+            - name: Secrets
+              run: pnpm run secrets:scan
+
             - name: Formatting
               run: pnpm run format:check
 
@@ -45,6 +50,11 @@ jobs:
 
             - name: Lint styles
               run: pnpm run lint-styles:ci
+
+            # Stylelint reads one stylesheet at a time, so it cannot see a class a template
+            # names and no rule in that component's scope declares. This can.
+            - name: Styles in scope
+              run: pnpm run lint-styles:scope
 
             - name: Types
               run: pnpm run typecheck

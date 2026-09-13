@@ -3,13 +3,21 @@
  * The executable. It is hand-written JavaScript and not compiled output for two reasons: it is the
  * only file that needs the shebang, and it is the only one that knows where the repository root is,
  * which is how `--version` gets the version without a copy of it in the source.
+ *
+ * Checked by `tsconfig.scripts.json`: `require` of a built path hands back `any`, so the one thing
+ * worth writing down is what this file expects to find on the other side of it.
  */
+// @ts-check
 
 const { join } = require('node:path');
+
+/** What `dist/cli/cli/main.js` exports. The command's whole interface to its own executable. */
+/** @typedef {{ run: (argv: string[], version: string) => Promise<number> }} CompiledCli */
 
 const root = join(__dirname, '..');
 const entry = join(root, 'dist', 'cli', 'cli', 'main.js');
 
+/** @type {CompiledCli | undefined} */
 let main;
 try {
     main = require(entry);
@@ -32,8 +40,10 @@ if (main) {
         code => {
             process.exitCode = code;
         },
+        /** @param {unknown} error */
         error => {
-            process.stderr.write(`${error && error.stack ? error.stack : error}\n`);
+            const stack = error instanceof Error ? error.stack : undefined;
+            process.stderr.write(`${stack ?? String(error)}\n`);
             process.exitCode = 2;
         },
     );

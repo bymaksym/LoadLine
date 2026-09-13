@@ -11,6 +11,7 @@
 import { type ModuleEntry } from '../analysis/analysis.types';
 import { isSourceMap, segmentsOf, sourceAt } from '../analysis/sourcemap';
 import { packageOf } from '../format/format.utils';
+import { asArray, asRecord, asText } from '../json/json.utils';
 import { categoryOf } from './catalog';
 import {
     type Leftover,
@@ -283,18 +284,21 @@ export const exposureOf = (maps: readonly { name: string; text: string }[]): Sou
 
     for (const map of maps) {
         try {
-            const parsed = JSON.parse(map.text) as { sources?: string[]; sourcesContent?: (string | null)[] };
-            const sources = parsed.sources ?? [];
+            // Both fields are checked entry by entry rather than asserted whole: the assertion
+            // made a map with one non-string in `sources` throw on the first `.includes`, and the
+            // catch below then dropped everything that map knew instead of the one bad entry.
+            const parsed = asRecord(JSON.parse(map.text));
+            const sources = (asArray(parsed?.['sources']) ?? []).map(source => asText(source));
             for (const source of sources) {
-                if (!source.includes('node_modules')) {
+                if (source !== null && !source.includes('node_modules')) {
                     paths.add(source.replace(/^(?:\.\.\/)+/, ''));
                 }
             }
 
-            const contents = parsed.sourcesContent ?? [];
+            const contents = asArray(parsed?.['sourcesContent']) ?? [];
             hasContent ||= contents.some(content => typeof content === 'string' && content.length > 0);
             for (const content of contents) {
-                envReferences += [...(content ?? '').matchAll(/\bprocess\.env\.[A-Z][\dA-Z_]{2,}/g)].length;
+                envReferences += [...(asText(content) ?? '').matchAll(/\bprocess\.env\.[A-Z][\dA-Z_]{2,}/g)].length;
             }
         } catch {
             // A map that will not parse says nothing about the build, only about the file.

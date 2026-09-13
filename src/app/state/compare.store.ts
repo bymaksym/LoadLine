@@ -77,7 +77,7 @@ export class CompareStore {
         }
 
         const name = this.report.statsInfo()?.name ?? 'stats.json';
-        this.builds.update(current => [...current, { name: this.nameFor({ name } as File, current), analysis }]);
+        this.builds.update(current => [...current, { name: this.nameFor({ name }, current), analysis }]);
         this.error.set(null);
     }
 
@@ -97,7 +97,7 @@ export class CompareStore {
      * columns with the same heading are five columns nobody can tell apart. The folder above the
      * file is used when there is one, and a number is added when even that repeats.
      */
-    private nameFor(file: Pick<File, 'name'> & Partial<File>, alreadyAdded: readonly Build[]): string {
+    private nameFor(file: { name: string; webkitRelativePath?: string }, alreadyAdded: readonly Build[]): string {
         const folder = file.webkitRelativePath?.split('/', 1)[0];
         const base = folder || file.name.replace(/\.json$/i, '');
         const taken = new Set([...this.builds(), ...alreadyAdded].map(build => build.name));

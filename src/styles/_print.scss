@@ -84,7 +84,7 @@
     /* Sticky headers on paper pin nothing and hide the first row of every page. */
     .scroller--tall thead th,
     .screen-row--head,
-    .tree-head {
+    .tree__head {
         position: static;
     }
 }

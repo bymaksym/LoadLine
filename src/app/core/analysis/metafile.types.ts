@@ -3,6 +3,8 @@
  * Reference: https://esbuild.github.io/api/#metafile
  */
 
+import { asRecord } from '../json/json.utils';
+
 /** `import-statement` keeps files in the same chunk; `dynamic-import` is the lazy boundary. */
 export type ImportKind = 'import-statement' | 'dynamic-import' | 'require-call' | 'url-token' | string;
 
@@ -50,12 +52,22 @@ export const isMetafile = (value: unknown): value is Metafile =>
  */
 export type ForeignFormat = 'webpack' | 'viteManifest' | 'visualizer' | 'unknown';
 
+/** The formats by name, for reading one back out of an error code that carries it. */
+export const FOREIGN_FORMATS: ReadonlySet<ForeignFormat> = new Set<ForeignFormat>([
+    'webpack',
+    'viteManifest',
+    'visualizer',
+    'unknown',
+]);
+
 export const foreignFormat = (value: unknown): ForeignFormat => {
-    if (!value || typeof value !== 'object') {
+    // A list is rejected here too, which the hand-written check before it let through: every one
+    // of the three shapes below is an object keyed by name, and `Object.values` of an array would
+    // have read its elements as though they were those entries.
+    const data = asRecord(value);
+    if (!data) {
         return 'unknown';
     }
-
-    const data = value as Record<string, unknown>;
 
     // webpack, and everything that copies its stats: Angular's `browser` builder (up to v16), Next,
     // Rspack. Arrays where the metafile has objects.
@@ -70,8 +82,7 @@ export const foreignFormat = (value: unknown): ForeignFormat => {
 
     // Vite's manifest: every value is an entry with the file it produced.
     const values = Object.values(data);
-    const looksLikeEntry = (entry: unknown): boolean =>
-        !!entry && typeof entry === 'object' && typeof (entry as { file?: unknown }).file === 'string';
+    const looksLikeEntry = (entry: unknown): boolean => typeof asRecord(entry)?.['file'] === 'string';
     if (values.length > 0 && values.every(entry => looksLikeEntry(entry))) {
         return 'viteManifest';
     }

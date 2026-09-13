@@ -211,9 +211,13 @@ const actionsBlock = (report: CliReport, palette: Palette): string[] => {
         return [];
     }
 
+    // Painted by severity, like the signal it points at. Without it this table reads as four
+    // equal jobs, and the eye has to go down to Signals to learn that the fourth is an `info`
+    // and the first is not. The saving cell stays plain on purpose: one colour per row, or the
+    // colour stops meaning anything.
     const rows = actions.map((action, index) => [
         `${index + 1}.`,
-        action.finding.title,
+        severityPaint(palette, action.finding.severity)(action.finding.title),
         text.savingCell(action.saving > 0 ? formatBytes(action.saving) : ''),
         text.effortLabel[action.effort],
     ]);

@@ -3,6 +3,7 @@ import { type ScreenCost } from '@core/analysis/analysis.types';
 import { rate } from '@core/criteria/criteria';
 import { type Verdict } from '@core/criteria/criteria.types';
 import { formatBytes, formatDelta } from '@core/format/format.utils';
+import { asKeyOf } from '@core/json/json.utils';
 import { ExplainComponent } from '@shared/explain/explain';
 import { BytesPipe } from '@shared/pipes/bytes.pipe';
 import { pickSort, type Sort, sortSign } from '@shared/sort-header/sort.utils';
@@ -199,7 +200,18 @@ export class ScreensTabComponent {
      * and the delta — the ones somebody has already read and is now scrolling past.
      */
     protected readonly hiddenColumns = computed<ReadonlySet<SortKey>>(
-        () => new Set(this.nav.param('hide').split(',').filter(Boolean) as SortKey[]),
+        () =>
+            new Set(
+                this.nav
+                    .param('hide')
+                    .split(',')
+                    // The address is typed by hand and survives a column being renamed, so what is
+                    // in it is checked against the columns that exist rather than assumed to be
+                    // one of them. `?hide=nonsense` now hides nothing, instead of sitting in the
+                    // set as a key no column will ever match.
+                    .map(key => asKeyOf(key, COLUMN_WIDTH))
+                    .filter(key => key !== null),
+            ),
     );
 
     protected readonly hideableColumns = computed(() => this.allColumns().filter(column => column.key !== 'total'));

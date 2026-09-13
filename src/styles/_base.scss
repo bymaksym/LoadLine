@@ -44,6 +44,16 @@ code {
 }
 
 /*
+   Secondary text: a note beside a figure, a "nobody imports it", the chain when there is no chain.
+   Three lines with no panel in them, which is exactly why they belong here — copied into a
+   component they are three lines that cannot be found from the other six places that want them,
+   and two panels (search, findings) were already using the class with no rule behind it.
+*/
+.muted {
+    color: var(--muted);
+}
+
+/*
 Text for a screen reader and nobody else. The screens table needs it: its columns are a header row
 that is decorative for sighted people and would otherwise leave every figure of every row read out
 as a bare number with no name attached.

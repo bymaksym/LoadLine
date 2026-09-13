@@ -41,14 +41,14 @@
     }
 }
 
-.label-cell {
+.row__label-cell {
     display: flex;
     gap: 0.5rem;
     align-items: center;
     min-width: 0;
 }
 
-.label {
+.row__label {
     overflow: hidden;
 
     font-family: var(--font-data);
@@ -73,7 +73,7 @@
     }
 }
 
-.zone {
+.row__zone {
     width: 9px;
     height: 9px;
     border-radius: 2px;
@@ -101,7 +101,7 @@
    is a floor, not a distortion — the figure next to it is still the truth, and the crumbs at the
    bottom of the list are grouped into one row rather than drawn forty times.
 */
-.share {
+.row__share {
     display: block;
     height: 6px;
     border-radius: 2px;
@@ -115,7 +115,7 @@
     }
 }
 
-.size {
+.row__size {
     font-family: var(--font-data);
     font-size: var(--fs-body);
     font-variant-numeric: tabular-nums;
@@ -123,7 +123,7 @@
 }
 
 /* The same chunk uncompressed: the unit the breakdown inside it is in. */
-.size__raw {
+.row__size-raw {
     display: block;
 
     font-size: var(--fs-note);
@@ -136,7 +136,7 @@
    Keeping a row on screen. Grey and unfilled until it is on, so a list of forty rows does not gain
    forty marks competing with the bars: what it has to say is "this one", and only once it is said.
 */
-.pin {
+.row__pin {
     cursor: pointer;
 
     padding: 0;
@@ -166,16 +166,16 @@
 }
 
 /* The chunk's file tree, indented under its row. */
-.inside {
+.chunk-files {
     margin: 0.2rem 0 0.6rem 1.8rem;
 }
 
 @media (width < 600px) {
-    .share {
+    .row__share {
         display: none;
     }
 
-    .inside {
+    .chunk-files {
         margin-left: 0.6rem;
     }
 }

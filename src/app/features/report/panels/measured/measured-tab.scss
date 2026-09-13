@@ -3,7 +3,7 @@
 }
 
 /* Computed, measured and the gap between them, side by side: the comparison IS the panel. */
-.summary {
+.figures {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
     gap: 0.6rem;
@@ -138,64 +138,9 @@
     font-size: var(--fs-body);
 }
 
-.actions {
+.measure-run {
     display: flex;
     gap: 0.7rem;
     align-items: center;
     margin: 0.6rem 0;
-}
-
-.chips {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-}
-
-.chip {
-    cursor: pointer;
-
-    padding: 0.15rem 0.55rem;
-    border: 1px solid var(--line-strong);
-    border-radius: 999px;
-
-    font-family: var(--font-data);
-    font-size: var(--fs-note);
-    color: var(--ink);
-
-    background: var(--surface);
-
-    &:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-    }
-
-    &:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 1px;
-    }
-}
-
-.dot {
-    display: inline-block;
-
-    width: 8px;
-    height: 8px;
-    margin-right: 0.3rem;
-    border-radius: 2px;
-
-    vertical-align: middle;
-
-    background: var(--line-strong);
-
-    &[data-zone='boot'] {
-        background: var(--seg-boot);
-    }
-
-    &[data-zone='shared'] {
-        background: var(--seg-shared);
-    }
-
-    &[data-zone='own'] {
-        background: var(--seg-own);
-    }
 }

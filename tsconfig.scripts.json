@@ -1,0 +1,28 @@
+/*
+ * The Node scripts and the executable, type-checked.
+ *
+ * They are JavaScript and stay JavaScript: `bin/loadline.js` is the only file that needs the
+ * shebang and the only one that knows where the repository root is, and the three scripts are build
+ * steps run with bare `node`. What they were missing was any checking at all — `tsconfig.app.json`
+ * and `tsconfig.cli.json` between them cover `src/` and `cli/` and neither one looks here, so the
+ * strictness the rest of the project is held to stopped at the `.mjs` boundary.
+ *
+ * `checkJs` applies it to them through their JSDoc instead, which is what `eslint.config.js`
+ * already did on its own with a `// @ts-check` comment. This makes that the rule rather than the
+ * exception, and `pnpm run typecheck` runs it.
+ */
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "noEmit": true,
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "lib": ["ES2023"],
+        "types": ["node"],
+        "importHelpers": false,
+        "paths": {}
+    },
+    "include": ["bin/**/*.js", "scripts/**/*.mjs", "eslint.config.js"]
+}

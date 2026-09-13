@@ -1,6 +1,7 @@
 import { computed, Service, signal } from '@angular/core';
 import { RECOMMENDED } from '../core/criteria/criteria';
 import { type Criteria, type CriteriaKey, type Mode } from '../core/criteria/criteria.types';
+import { asRecord } from '../core/json/json.utils';
 import { readLocal, writeLocal } from '../core/session/local-store';
 
 type Overrides = Record<Mode, Partial<Criteria>>;
@@ -8,14 +9,15 @@ type Overrides = Record<Mode, Partial<Criteria>>;
 const STORAGE_KEY = 'loadline.criteria.v1';
 
 /** Only known keys holding numbers: anything else is ignored, wherever it came from. */
-const sanitize = (value: Partial<Criteria> | undefined): Partial<Criteria> => {
+const sanitize = (value: unknown): Partial<Criteria> => {
     const clean: Partial<Criteria> = {};
-    if (!value || typeof value !== 'object') {
+    const raw = asRecord(value);
+    if (!raw) {
         return clean;
     }
 
     for (const key of Object.keys(RECOMMENDED.raw) as CriteriaKey[]) {
-        const candidate = value[key];
+        const candidate = raw[key];
         if (typeof candidate === 'number' && Number.isFinite(candidate) && candidate >= 0) {
             clean[key] = candidate;
         }
@@ -32,8 +34,12 @@ const load = (): Overrides => {
     }
 
     try {
-        const parsed = JSON.parse(stored) as Partial<Overrides>;
-        return { raw: sanitize(parsed.raw), gzip: sanitize(parsed.gzip), brotli: sanitize(parsed.brotli) };
+        const parsed = asRecord(JSON.parse(stored));
+        return {
+            raw: sanitize(parsed?.['raw']),
+            gzip: sanitize(parsed?.['gzip']),
+            brotli: sanitize(parsed?.['brotli']),
+        };
     } catch {
         // Something else wrote this key, or an older shape of it: start from the recommended ones.
         return empty;

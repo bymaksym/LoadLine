@@ -134,7 +134,7 @@ th {
     }
 }
 
-.is-sorted .sort-th {
+.sort-th--active {
     color: var(--ink);
 
     .sort-th__dir {
@@ -185,6 +185,25 @@ tr.row-btn {
 tr.detail td {
     padding: 0.2rem 0.85rem 1rem;
     background: var(--surface-sunk);
+}
+
+/*
+   Heading of one section inside an open row. It lives with the block it names an element of: it
+   was written twice, in `boot` and in `search`, and the third panel that used it (`shared`) got a
+   bare `<h4>`. The gap only opens between sections, so the first title sits flush against the top
+   of the detail instead of pushing it down.
+*/
+.detail__title {
+    margin: 0 0 0.45rem;
+
+    font-size: var(--fs-note);
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+
+    &:not(:first-child) {
+        margin-top: 0.9rem;
+    }
 }
 
 /* Proportional bar in a cell: bootstrap grey by default, each table tints it if it wants. */

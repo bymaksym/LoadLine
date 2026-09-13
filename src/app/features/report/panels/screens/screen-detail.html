@@ -2,7 +2,7 @@
 @let s = screen();
 @let loaders = loadersOf(s.source);
 
-<p class="detail-origin">
+<p class="detail__origin">
     {{ t.origin }}: <span class="mono">{{ s.source }}</span> ·
     {{ t.filesCount(s.files) }}
     @if (loaders.length > 0) {
@@ -28,7 +28,7 @@ Why this screen is in the build at all: the chain of imports from the entry
 point down to it. The search tab has answered this since it existed, and
 getting there meant leaving the row and retyping the name.
 -->
-<p class="detail-why">{{ t.whyHere }}</p>
+<p class="detail__why">{{ t.whyHere }}</p>
 <app-chain [none]="t.whyHereNone" [steps]="chainOf(s.source)" />
 
 <!--
@@ -36,13 +36,13 @@ The three parts of the total, each one leading to the tab that can do
 something about it. Two thirds of an expensive screen are usually not the
 screen's, and this line is where that becomes obvious.
 -->
-<p class="detail-parts">
+<p class="detail__parts">
     {{ t.screenParts }}:
     <button class="link-btn" type="button" [title]="t.helpZoneBoot" (click)="nav.go('boot')">
         {{ t.treeBoot }} {{ s.boot | bytes }}
     </button>
     <span class="tag">{{ t.tagDelivery.eager }}<app-explain [text]="t.helpDelivery.eager" /></span>
-    <span aria-hidden="true" class="detail-parts__op">+</span>
+    <span aria-hidden="true" class="detail__parts-op">+</span>
     @if (s.shared > 0) {
         <button class="link-btn" type="button" [title]="t.helpZoneShared" (click)="nav.go('shared')">
             {{ t.colShared }} {{ s.shared | bytes }}
@@ -51,21 +51,21 @@ screen's, and this line is where that becomes obvious.
         <span>{{ t.colShared }} {{ s.shared | bytes }}</span>
     }
     <span class="tag">{{ t.tagDelivery.lazy }}</span>
-    <span aria-hidden="true" class="detail-parts__op">+</span>
+    <span aria-hidden="true" class="detail__parts-op">+</span>
     <span>{{ t.colOwn }} {{ s.own | bytes }}</span>
     <span class="tag">{{ t.tagDelivery.lazy }}</span>
-    <span aria-hidden="true" class="detail-parts__op">=</span>
+    <span aria-hidden="true" class="detail__parts-op">=</span>
     <strong>{{ s.total | bytes }}</strong>
 </p>
 
 <!-- And in how many pieces that total arrives, which is the other half. -->
-<p class="detail-origin">{{ granularity(s) }}</p>
+<p class="detail__origin">{{ granularity(s) }}</p>
 
 <!--
 In how many round trips, which is the half no size figure can show: the same
 bytes chained across three requests land later than the same bytes in one.
 -->
-<p class="detail-origin">{{ t.screenWaves(s.waves) }}<app-explain [text]="t.helpWaves" /></p>
+<p class="detail__origin">{{ t.screenWaves(s.waves) }}<app-explain [text]="t.helpWaves" /></p>
 
 @for (
     group of [

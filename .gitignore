@@ -54,3 +54,16 @@ yarn-debug.log*
 # dropping one back in for a moment cannot put it in a commit by accident.
 /docs/*
 !/docs/HOW-IT-WORKS.md
+
+# Credentials. Deny-list deliberate and first line of defence: secretlint (pre-commit) reads the
+# CONTENT of what is staged, but a file that never reaches the index cannot leak in the first place.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+secrets.json
+credentials.json

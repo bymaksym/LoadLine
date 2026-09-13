@@ -4,19 +4,20 @@ import { UI } from '../core/i18n/ui';
 import { type Lang } from '../core/i18n/ui-strings';
 import { readLocal, writeLocal } from '../core/session/local-store';
 
-const STORAGE_KEY = 'loadline-lang';
+const STORAGE_KEY = 'loadline.lang';
 
-const initialLang = (): Lang => {
-    const saved = readLocal(STORAGE_KEY);
-    if (saved === 'es' || saved === 'en') {
-        return saved;
-    }
+/**
+ * English, unless this browser has been told otherwise.
+ *
+ * It used to follow `navigator.language`, which meant a Spanish machine opened the tool in Spanish
+ * even when everything around it — the repository, the bundle names, the build output being read —
+ * was in English. Guessing from the machine answers the wrong question: the language of the person
+ * is not the language of the work. So the default is the one the documentation and the command are
+ * written in, and the button is what changes it.
+ */
+const initialLang = (): Lang => (readLocal(STORAGE_KEY) === 'es' ? 'es' : 'en');
 
-    // Without a stored choice the browser decides.
-    return navigator.language?.toLowerCase().startsWith('es') ? 'es' : 'en';
-};
-
-/** UI language. Starts from the browser's and remembers the choice. */
+/** UI language. Starts in English and remembers the choice. */
 @Service()
 export class I18nService {
     readonly lang = signal<Lang>(initialLang());
@@ -26,7 +27,7 @@ export class I18nService {
 
     constructor() {
         // `index.html` ships with one language written in. Without this the attribute keeps saying
-        // Spanish to a screen reader while the page paints English, until the button is pressed.
+        // English to a screen reader while the page paints Spanish, until the button is pressed.
         document.documentElement.lang = this.lang();
         setNumberLang(this.lang());
     }

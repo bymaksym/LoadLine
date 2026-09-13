@@ -37,7 +37,7 @@ they disagree about the releases or about the returning share.
 Said once, above the form, rather than next to each of the three fields that have one: the raw
 controls are not a second questionnaire, they are the same answers with less rounding.
 -->
-<p class="muted panel-note">
+<p class="muted panel__note">
     <strong>{{ t.sitPanel }}</strong> — {{ t.sitPanelHelp }}
 </p>
 
@@ -49,7 +49,7 @@ controls are not a second questionnaire, they are the same answers with less rou
     @let key = question.key;
 
     <section class="q" [class.q--open]="open(key)">
-        <div class="q__ask">
+        <div>
             <h3 class="q__title">
                 {{ t.sitQuestion[key] }}
                 <!--

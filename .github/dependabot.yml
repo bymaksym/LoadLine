@@ -19,6 +19,38 @@ updates:
       schedule:
           interval: monthly
       open-pull-requests-limit: 3
+      # This exists because the first run failed, and the reason is worth keeping.
+      #
+      # `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440` — pnpm refuses to resolve anything
+      # published in the last 24 hours, which is the window a compromised package gets caught in.
+      # Dependabot proposes the *newest* version there is. So for any dependency that published
+      # within the day, the two disagree by design: Dependabot picks a version and pnpm will not
+      # resolve it, and the job dies with `unknown_error` and no detail.
+      #
+      # It failed on `angular-eslint`, `typescript-eslint` and `@types/node` — the three that ship
+      # most often, which is exactly the set most likely to have released that day.
+      #
+      # The fix is to make Dependabot wait too, rather than to widen pnpm's window: the quarantine
+      # is the point of the exercise.
+      #
+      # There are three windows in this repository and they are **not three copies of one number**:
+      #
+      #   pnpm-workspace.yaml  minimumReleaseAge: 1440   the floor: what pnpm will resolve at all
+      #   package.json         ncu --cooldown 3d         what the interactive update offers
+      #   here                 default-days: 3           what Dependabot proposes
+      #
+      # The floor is a hard refusal; the other two decide what gets *suggested*, and both must stay
+      # **strictly above** the floor. Not equal to it: Dependabot picks a version when the job
+      # starts and pnpm judges it when resolution runs, so a release that was 23 hours old at the
+      # top of the job is still too young at the bottom.
+      #
+      # Which means raising `minimumReleaseAge` to three days would break this again unless this
+      # number goes up with it. They move together, in that order, and never to the same value.
+      #
+      # Three days here costs nothing — the schedule below is monthly — and every extra day is
+      # another day for a compromised release to be caught and pulled before it is proposed.
+      cooldown:
+          default-days: 3
       groups:
           angular:
               patterns: ['@angular/*', 'angular-eslint']

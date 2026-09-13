@@ -71,7 +71,7 @@ describe('the page, with the example loaded', () => {
         await fixture.whenStable();
         fixture.detectChanges();
 
-        expect(textOf(fixture, 'app-intake-page .bar__status')).toContain('Example build');
+        expect(textOf(fixture, 'app-intake-page .loadbar__status')).toContain('Example build');
     });
 
     /**
@@ -102,14 +102,14 @@ describe('the page, with the example loaded', () => {
         await fixture.whenStable();
         fixture.detectChanges();
 
-        expect(countOf(fixture, '.tree-pins')).toBe(0);
+        expect(countOf(fixture, '.tree__pins')).toBe(0);
         const before = countOf(fixture, 'app-tree-node');
 
-        (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(':scope .pin')?.click();
+        (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(':scope .row__pin')?.click();
         await fixture.whenStable();
         fixture.detectChanges();
 
-        expect(countOf(fixture, '.tree-pins app-tree-node')).toBe(1);
+        expect(countOf(fixture, '.tree__pins app-tree-node')).toBe(1);
         // Moved, not copied: a row shown twice would be two bars for one chunk.
         expect(countOf(fixture, 'app-tree-node')).toBe(before);
     });

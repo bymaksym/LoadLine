@@ -2,14 +2,14 @@
     display: block;
 }
 
-.detail-origin {
+.detail__origin {
     margin: 0 0 0.6rem;
     font-size: var(--fs-body);
     color: var(--muted);
 }
 
 /* The heading of the chain: it names the answer under it, so it goes in the small step. */
-.detail-why {
+.detail__why {
     margin: 0 0 0.15rem;
     font-size: var(--fs-note);
     font-weight: 600;
@@ -17,7 +17,7 @@
 }
 
 /* The total broken into its three parts, two of which are somewhere else in the report. */
-.detail-parts {
+.detail__parts {
     display: flex;
     flex-wrap: wrap;
     gap: 0.1rem 0.4rem;
@@ -30,7 +30,7 @@
     font-variant-numeric: tabular-nums;
     color: var(--muted);
 
-    &__op {
+    &-op {
         color: var(--line-strong);
     }
 }
@@ -53,9 +53,4 @@
 tr.row-btn[aria-expanded='true'] td,
 tr.detail td {
     background: var(--surface);
-}
-
-/* One line of this row, for the thread where the decision is being argued. */
-.detail-copy {
-    margin: 0 0 0.9rem;
 }

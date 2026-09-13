@@ -30,18 +30,18 @@
         </button>
     }
 
-    <span class="name-cell">
-        <span class="name" [title]="n.id">{{ n.name }}</span>
+    <span class="row__name-cell">
+        <span class="row__name" [title]="n.id">{{ n.name }}</span>
         @if (!n.isFile) {
-            <span class="count">{{ t.filesCount(n.files) }}</span>
+            <span class="row__count">{{ t.filesCount(n.files) }}</span>
         }
     </span>
 
-    <span aria-hidden="true" class="share">
+    <span aria-hidden="true" class="row__share">
         <i [style.width.%]="sharePercent()"></i>
     </span>
 
-    <span class="size">{{ node().bytes | bytes }}</span>
+    <span class="row__size">{{ node().bytes | bytes }}</span>
 </div>
 
 @if (n.isFile) {

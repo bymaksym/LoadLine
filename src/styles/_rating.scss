@@ -46,6 +46,17 @@
         background: var(--crit);
         clip-path: polygon(50% 0, 100% 100%, 0 100%);
     }
+
+    /*
+       The marker rides after the figure, so the shape reads as part of it. A modifier of the block
+       belongs with the block: written inside `screens-tab.scss` it reached the screens table and
+       nothing else, and the two panels that also ask for it (`boot`, `shared`) were drawing the
+       marker with the leading gap of the default and no trailing one.
+    */
+    &--after {
+        margin-right: 0;
+        margin-left: 0.35rem;
+    }
 }
 
 /* Short numeric field, for the criteria. */
@@ -58,7 +69,15 @@
     text-align: right;
 }
 
-/* Element a link from another tab led to: it lights up and fades. */
+/*
+   Element a link from another tab led to: it lights up and fades.
+
+   The one `is-` class left on the page, and the reason it is not a BEM modifier is that there is no
+   block to hang it on: `revealOnFocus` puts it on whatever the link landed on — a `tr` in one tab,
+   a `.screen` in another — so it belongs to none of them. A modifier says "this block, in this
+   state"; this says "this element, just now", across blocks that know nothing about each other.
+   Everything that IS a state of one block is a modifier of that block.
+*/
 .is-focus {
     animation: focus-pulse 1.6s ease-out;
 }

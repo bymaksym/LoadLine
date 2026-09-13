@@ -74,7 +74,7 @@
         border-color 0.15s,
         background 0.15s;
 
-    &.is-over {
+    &--over {
         border-color: var(--accent);
         background: var(--accent-soft);
     }
@@ -99,7 +99,7 @@
 }
 
 /* One line: what is loaded, with which figures, and the buttons to change it. Accepts drops. */
-.bar {
+.loadbar {
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem 1.25rem;
@@ -118,7 +118,7 @@
         border-color 0.15s,
         background 0.15s;
 
-    &.is-over {
+    &--over {
         border-color: var(--accent);
         background: var(--accent-soft);
     }
@@ -162,36 +162,16 @@
     }
 }
 
+/*
+   The look lives in `styles/_controls.scss`; what is this page's is the space above it. Every
+   button here sits under a line of text that explains it, and without the gap it reads as part of
+   the paragraph.
+*/
 .file-btn {
-    cursor: pointer;
-
-    display: inline-block;
-
     margin-top: 0.35rem;
-    padding: 0.45rem 0.9rem;
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-
-    font-size: var(--fs-body);
-    font-weight: 500;
-
-    /* The page background colour: white in light, near black in dark. Contrasts in both. */
-    color: var(--ground);
-
-    background: var(--accent);
-
-    &--ghost {
-        color: var(--accent);
-        background: transparent;
-    }
-
-    &:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-    }
 }
 
-.bar .file-btn {
+.loadbar .file-btn {
     padding: 0.35rem 0.75rem;
     font-size: var(--fs-body);
 }

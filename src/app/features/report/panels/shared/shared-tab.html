@@ -138,7 +138,7 @@
                             cost comes from.
                             -->
                             <div class="worth">
-                                <h4 class="detail-title">{{ t.worthTitle }}</h4>
+                                <h4 class="detail__title">{{ t.worthTitle }}</h4>
                                 <p class="worth__line">
                                     <span class="tag" [class.tag--act]="row.worth.level === 'try'">{{
                                         worthLabel(row.worth)
@@ -149,13 +149,13 @@
                                 <p class="worth__line worth__line--note">{{ t.worthNoSplit }}</p>
                             </div>
 
-                            <div class="detail-grid">
+                            <div class="detail__grid">
                                 <div>
                                     <h4>{{ t.loadedBy(row.loadedBy.length) }}</h4>
                                     <div class="chips">
                                         @for (screen of row.loadedBy; track screen.source) {
                                             <button
-                                                class="chip"
+                                                class="chip chip--pick"
                                                 type="button"
                                                 [title]="screen.source"
                                                 (click)="nav.go('screens', screen.source)"

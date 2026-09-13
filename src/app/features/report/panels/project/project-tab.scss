@@ -21,27 +21,6 @@
     }
 }
 
-/* Reuses the intake's button look: same action, same shape. */
-.file-btn {
-    cursor: pointer;
-
-    padding: 0.45rem 0.9rem;
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-
-    font: inherit;
-    font-size: var(--fs-body);
-    font-weight: 500;
-    color: var(--accent);
-
-    background: transparent;
-
-    &:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-    }
-}
-
 /* One line of facts: Angular version, zone.js, current raw bootstrap. */
 .facts {
     display: flex;
@@ -92,18 +71,8 @@
     margin-top: 1.4rem;
 }
 
-.chips {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-}
-
-.muted {
-    color: var(--muted);
-}
-
 /* The configurations the pipeline builds are the ones that matter: a stronger row. */
-tr.is-built td:first-child {
+.budget-row--built td:first-child {
     font-weight: 600;
 }
 

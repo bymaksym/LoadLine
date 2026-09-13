@@ -7,15 +7,23 @@
 import { MODES as MODE_LIST } from '../src/app/core/criteria/criteria';
 import { type Mode } from '../src/app/core/criteria/criteria.types';
 import { type Lang, LANGS as LANG_LIST } from '../src/app/core/i18n/ui-strings';
+import { asMember } from '../src/app/core/json/json.utils';
 import { parseSize } from '../src/app/core/project/project-context';
 import { type FailOn, type Options, type OutputFormat, type ParsedArgs } from './args.types';
 
 // The two lists the page also uses. Written out again here, they drifted: adding a language would
 // have been accepted by the page and rejected by the command.
-const MODES = new Set<string>(MODE_LIST);
-const LANGS = new Set<string>(LANG_LIST);
-const FORMATS = new Set<string>(['text', 'json', 'markdown', 'pr-comment', 'sarif', 'summary']);
-const SEVERITIES = new Set<string>(['high', 'mid', 'none']);
+const MODES: ReadonlySet<Mode> = new Set<Mode>(MODE_LIST);
+const LANGS: ReadonlySet<Lang> = new Set<Lang>(LANG_LIST);
+const FORMATS: ReadonlySet<OutputFormat> = new Set<OutputFormat>([
+    'text',
+    'json',
+    'markdown',
+    'pr-comment',
+    'sarif',
+    'summary',
+]);
+const SEVERITIES: ReadonlySet<FailOn> = new Set<FailOn>(['high', 'mid', 'none']);
 
 /** Flags that take a value. Everything else is a switch, which is how a missing value gets caught. */
 const WITH_VALUE = new Set([
@@ -142,22 +150,36 @@ const apply = (options: Options, flag: string, value: string, positional: string
             return null;
         }
         case '--mode': {
-            options.mode = value as Mode;
-            return MODES.has(value) ? null : `--mode takes raw, gzip or brotli, not "${value}".`;
+            const mode = asMember(value, MODES);
+            if (mode === null) {
+                return `--mode takes raw, gzip or brotli, not "${value}".`;
+            }
+            options.mode = mode;
+            return null;
         }
         case '--lang': {
-            options.lang = value as Lang;
-            return LANGS.has(value) ? null : `--lang takes en or es, not "${value}".`;
+            const lang = asMember(value, LANGS);
+            if (lang === null) {
+                return `--lang takes en or es, not "${value}".`;
+            }
+            options.lang = lang;
+            return null;
         }
         case '--format': {
-            options.format = value as OutputFormat;
-            return FORMATS.has(value)
-                ? null
-                : `--format takes text, json, markdown, pr-comment, sarif or summary, not "${value}".`;
+            const format = asMember(value, FORMATS);
+            if (format === null) {
+                return `--format takes text, json, markdown, pr-comment, sarif or summary, not "${value}".`;
+            }
+            options.format = format;
+            return null;
         }
         case '--fail-on': {
-            options.gates.failOn = value as FailOn;
-            return SEVERITIES.has(value) ? null : `--fail-on takes high, mid or none, not "${value}".`;
+            const failOn = asMember(value, SEVERITIES);
+            if (failOn === null) {
+                return `--fail-on takes high, mid or none, not "${value}".`;
+            }
+            options.gates.failOn = failOn;
+            return null;
         }
         case '--max-boot': {
             options.gates.maxBoot = parseSize(value);
@@ -264,7 +286,10 @@ Reading the build
                            the command line win over the file.
 
 Output
-  --format <format>             text (default), json, markdown, pr-comment or sarif.
+  --format <format>             text (default), summary, json, markdown, pr-comment or sarif.
+                                summary is the whole report in a dozen lines — the figures, what to
+                                fix first and nothing else — for a pipeline step that runs next to
+                                twenty others and should not bury them.
                                 pr-comment writes the comment a bot leaves on a merge request, with
                                 an HTML marker so the next run edits it instead of adding a
                                 sixteenth one. sarif anchors each signal to a file, which is what

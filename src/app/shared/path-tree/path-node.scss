@@ -51,14 +51,14 @@
     }
 }
 
-.name-cell {
+.row__name-cell {
     display: flex;
     gap: 0.5rem;
     align-items: baseline;
     min-width: 0;
 }
 
-.name {
+.row__name {
     overflow: hidden;
 
     font-family: var(--font-data);
@@ -69,18 +69,18 @@
 }
 
 /* The file is the leaf: dimmed and regular weight, the folder leads. */
-.row--file .name {
+.row--file .row__name {
     font-weight: 400;
     color: var(--muted);
 }
 
-.count {
+.row__count {
     flex-shrink: 0;
     font-size: var(--fs-note);
     color: var(--muted);
 }
 
-.share {
+.row__share {
     display: block;
     height: 5px;
     border-radius: 2px;
@@ -94,11 +94,11 @@
     }
 }
 
-.row:not(.row--file) .share i {
+.row:not(.row--file) .row__share i {
     background: var(--seg-boot);
 }
 
-.size {
+.row__size {
     font-family: var(--font-data);
     font-size: var(--fs-body);
     font-variant-numeric: tabular-nums;
@@ -125,7 +125,7 @@
         grid-template-columns: 1.3rem minmax(0, 1fr) 5rem;
     }
 
-    .share {
+    .row__share {
         display: none;
     }
 }

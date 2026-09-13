@@ -17,7 +17,13 @@ import { type SortDir } from './sort.utils';
 @Component({
     selector: 'th[app-sort], span[app-sort]',
     template: `
-        <button class="sort-th" type="button" [attr.title]="sortLabel()" (click)="pick.emit()">
+        <button
+            class="sort-th"
+            type="button"
+            [attr.title]="sortLabel()"
+            [class.sort-th--active]="active()"
+            (click)="pick.emit()"
+        >
             <ng-content />
             <span aria-hidden="true" class="sort-th__dir">{{ arrow() }}</span>
         </button>
@@ -29,7 +35,6 @@ import { type SortDir } from './sort.utils';
     imports: [ExplainComponent],
     host: {
         '[attr.aria-sort]': 'ariaSort()',
-        '[class.is-sorted]': 'active()',
     },
 })
 export class SortHeaderComponent {

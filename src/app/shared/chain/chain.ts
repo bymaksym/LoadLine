@@ -51,10 +51,6 @@ import { I18nService } from '@state/i18n.service';
         .chain__end {
             font-weight: 700;
         }
-
-        .muted {
-            color: var(--muted);
-        }
     `,
 })
 export class ChainComponent {

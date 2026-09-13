@@ -1,3 +1,8 @@
+# A gate, NOT a report: no `|| true` on this one, on purpose. A credential that reaches a commit
+# is already in the history and getting it out is an afternoon; blocking it is one second.
+echo -e "\nScanning staged files for secrets...\n"
+git diff --cached --name-only --diff-filter=ACM -z | xargs -0 -r pnpm exec secretlint --maskSecrets --
+
 echo -e "\nRunning linters...\n"
 pnpm exec lint-staged || true
 

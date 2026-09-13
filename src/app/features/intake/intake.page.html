@@ -8,17 +8,17 @@
 
 @if (compact()) {
     <div
-        class="bar"
-        [class.is-over]="dragging() === 'stats'"
+        class="loadbar"
+        [class.loadbar--over]="dragging() === 'stats'"
         (dragenter)="onDragOver($event, 'stats')"
         (dragleave)="dragging.set(null)"
         (dragover)="onDragOver($event, 'stats')"
         (drop)="onDrop($event, 'stats')"
     >
-        <div class="bar__status">
-            <span aria-hidden="true" class="bar__ok">✓</span>
+        <div class="loadbar__status">
+            <span aria-hidden="true" class="loadbar__ok">✓</span>
             <span class="mono">{{ statsStatus() }}</span>
-            <span aria-hidden="true" class="bar__sep">·</span>
+            <span aria-hidden="true" class="loadbar__sep">·</span>
             <!--
             Four states on one line of middle dots, all weighing the same. This one does not weigh
             the same: raw figures mean every number on the page is above what anybody downloads.
@@ -30,18 +30,18 @@
                 {{ compactDist() }}
             </span>
             @if (store.baseline(); as baseline) {
-                <span aria-hidden="true" class="bar__sep">·</span>
+                <span aria-hidden="true" class="loadbar__sep">·</span>
                 <span [attr.data-tone]="store.comparisonBlocked() ? 'error' : null">{{
                     t.baselineShort(baseline.name)
                 }}</span>
             }
             @if (store.contextInfo(); as context) {
-                <span aria-hidden="true" class="bar__sep">·</span>
+                <span aria-hidden="true" class="loadbar__sep">·</span>
                 <span>{{ t.contextShort(context.files.length) }}</span>
             }
         </div>
 
-        <div class="bar__actions">
+        <div class="loadbar__actions">
             <!-- A suggestion, not the main action: it used to be the loudest thing on the page. -->
             @if (!store.compressed()) {
                 @if (store.canPickFolder) {
@@ -110,7 +110,7 @@
         }
         <div
             class="drop drop--main"
-            [class.is-over]="dragging() === 'stats'"
+            [class.drop--over]="dragging() === 'stats'"
             (dragenter)="onDragOver($event, 'stats')"
             (dragleave)="dragging.set(null)"
             (dragover)="onDragOver($event, 'stats')"
@@ -195,7 +195,7 @@
 
         <div
             class="drop"
-            [class.is-over]="dragging() === 'baseline'"
+            [class.drop--over]="dragging() === 'baseline'"
             (dragenter)="onDragOver($event, 'baseline')"
             (dragleave)="dragging.set(null)"
             (dragover)="onDragOver($event, 'baseline')"
@@ -235,7 +235,7 @@
 
         <div
             class="drop"
-            [class.is-over]="dragging() === 'context'"
+            [class.drop--over]="dragging() === 'context'"
             (dragenter)="onDragOver($event, 'context')"
             (dragleave)="dragging.set(null)"
             (dragover)="onDragOver($event, 'context')"

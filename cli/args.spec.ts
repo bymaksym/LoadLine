@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseArgs } from './args';
+import { parseArgs, USAGE } from './args';
 import { type Options } from './args.types';
 
 const KB = 1024;
@@ -56,11 +56,36 @@ describe('parseArgs', () => {
         expect(parse('s.json', '--max-growth-pct', '7.5%').gates.maxGrowthRatio).toBeCloseTo(0.075);
     });
 
+    /**
+     * English unless it is asked for in Spanish, the same rule the page follows. It is not read
+     * from the machine's locale: a Spanish laptop building an English repository would get a
+     * report nobody on the pull request can read.
+     */
+    it('reports in English until --lang says otherwise', () => {
+        expect(parse('s.json').lang).toBe('en');
+        expect(parse('s.json', '--lang', 'es').lang).toBe('es');
+        expect(parse('s.json', '--lang=en').lang).toBe('en');
+    });
+
     it('rejects a value outside the list instead of falling back to the default', () => {
         expect(reject('s.json', '--mode', 'zopfli')).toContain('--mode');
         expect(reject('s.json', '--lang', 'fr')).toContain('--lang');
         expect(reject('s.json', '--format', 'xml')).toContain('--format');
         expect(reject('s.json', '--fail-on', 'low')).toContain('--fail-on');
+    });
+
+    // --format summary shipped accepted by the parser and absent from --help, which is the same
+    // as not shipping it: nobody types a flag they cannot read about.
+    it('every format the parser accepts is one --help names', () => {
+        // The line listing them, not the whole help: every one of these words appears somewhere
+        // else in USAGE (`--criteria <file.json>`, the paragraph under the flag), so a match
+        // against the full text passes even when the list itself is missing one.
+        const listed = USAGE.split(/\r?\n/).find(line => line.includes('--format <format>')) ?? '';
+
+        for (const format of ['text', 'summary', 'json', 'markdown', 'pr-comment', 'sarif']) {
+            expect(parse('s.json', '--format', format).format).toBe(format);
+            expect(listed).toContain(format);
+        }
     });
 
     it('a flag with no value is an error, not a flag that swallows the next one', () => {

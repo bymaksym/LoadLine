@@ -21,7 +21,7 @@ const helpOpen = signal(false);
 @Component({
     selector: 'app-panel-header',
     template: `
-        <div class="panel-head">
+        <div class="panel__head">
             <h2>{{ title() }}</h2>
             <p>{{ subtitle() }}</p>
         </div>

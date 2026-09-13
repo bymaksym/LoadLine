@@ -64,14 +64,10 @@
     color: var(--muted);
 }
 
-.panel-note {
+.panel__note {
     max-width: 78ch;
     margin: 0.4rem 0 1.2rem;
     font-size: 0.85rem;
-}
-
-.muted {
-    color: var(--muted);
 }
 
 .warn {
