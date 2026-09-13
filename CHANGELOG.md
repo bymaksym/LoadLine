@@ -17,6 +17,11 @@ Nothing yet.
 First published version. `0.x` on purpose: the figures are stable, the shape of the flags and of the
 exported report may still move before `1.0.0`.
 
+Published as `@bymaksym/loadline` and not as `loadline`, which npm refuses: its typosquatting check
+rejects the name for being two letters from `readline`. The registry returning 404 for a name means
+nobody owns it, not that you may have it — the rule only fires on publish. **The command installed
+is still `loadline`**, since the executable's name is independent of the package's.
+
 ### Added
 
 - **Weight per screen.** What opening each screen downloads, split into the bootstrap everyone pays

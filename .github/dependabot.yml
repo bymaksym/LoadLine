@@ -1,9 +1,9 @@
 # Dependency updates, and the reason the settings are not the defaults.
 #
 # Every dependency here is a development dependency — the published package has none — so an
-# update can never reach somebody who ran `npx loadline`. That takes the urgency out of it and
-# leaves the cost: a pull request per package per week is how Dependabot gets muted, and a
-# muted Dependabot is worse than none, because the security alerts arrive in the same place.
+# update can never reach somebody who ran `npx @bymaksym/loadline`. That takes the urgency out
+# of it and leaves the cost: a pull request per package per week is how Dependabot gets muted,
+# and a muted Dependabot is worse than none, because security alerts arrive in the same place.
 #
 # So: grouped, monthly, and majors left out. `pnpm run deps:check` (npm-check-updates, with a
 # cooldown) is still the tool for deciding a major on purpose. What this file is for is the

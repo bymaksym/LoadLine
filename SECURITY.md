@@ -47,4 +47,4 @@ npm provenance, so npm can tell you which commit and which workflow run produced
 npm audit signatures
 ```
 
-Anything other than a verified signature for `loadline` is worth reporting.
+Anything other than a verified signature for `@bymaksym/loadline` is worth reporting.

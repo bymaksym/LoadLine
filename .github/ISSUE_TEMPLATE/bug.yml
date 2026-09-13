@@ -27,7 +27,7 @@ body:
           label: Where
           options:
               - The page (loadline.html)
-              - The command (loadline / npx loadline)
+              - The command (loadline / npx @bymaksym/loadline)
               - Both
       validations:
           required: true

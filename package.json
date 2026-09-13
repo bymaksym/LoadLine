@@ -1,5 +1,5 @@
 {
-    "name": "loadline",
+    "name": "@bymaksym/loadline",
     "version": "0.1.0",
     "description": "Weight per screen: what each screen of your app actually downloads.",
     "keywords": [

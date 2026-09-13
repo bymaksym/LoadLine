@@ -45,7 +45,7 @@ runs as a local hook, so it fails before the push rather than in CI.
   tool against a folder Angular did not write is what caught it.
 - **The page and the command share their analysis.** They are the same code with two front ends; a
   fix applied to only one of them is a bug report waiting to happen.
-- **No new runtime dependency.** The published package has zero, which is what lets `npx loadline`
+- **No new runtime dependency.** The published package has zero, which is what lets `npx @bymaksym/loadline`
   run with nothing to install and nothing to audit. Development dependencies are a normal
   conversation.
 

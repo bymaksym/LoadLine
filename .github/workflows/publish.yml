@@ -116,6 +116,6 @@ jobs:
                   gh release create "$GITHUB_REF_NAME" \
                       --verify-tag \
                       --title "$GITHUB_REF_NAME" \
-                      --notes "Published to npm as \`loadline@${GITHUB_REF_NAME#v}\`.
+                      --notes "Published to npm as \`@bymaksym/loadline@${GITHUB_REF_NAME#v}\`.
 
                   See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md) for what changed."

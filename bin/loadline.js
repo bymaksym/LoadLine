@@ -28,7 +28,7 @@ try {
     const installed = __dirname.includes('node_modules');
     process.stderr.write(
         installed
-            ? 'This install is missing its compiled analysis. Install it again: npm i -g loadline\n'
+            ? 'This install is missing its compiled analysis. Install it again: npm i -g @bymaksym/loadline\n'
             : 'The command is not built yet. Run: pnpm build:cli\n',
     );
     process.exitCode = 2;

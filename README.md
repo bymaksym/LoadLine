@@ -3,7 +3,7 @@
 > Weight per screen: what someone opening a screen of your app actually downloads, how much of that
 > everybody else pays for too, and what is worth moving elsewhere.
 
-[![npm](https://img.shields.io/npm/v/loadline.svg)](https://www.npmjs.com/package/loadline)
+[![npm](https://img.shields.io/npm/v/@bymaksym/loadline.svg)](https://www.npmjs.com/package/@bymaksym/loadline)
 [![CI](https://github.com/bymaksym/LoadLine/actions/workflows/ci.yml/badge.svg)](https://github.com/bymaksym/LoadLine/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/bymaksym/LoadLine.svg)](LICENSE)
 
@@ -24,11 +24,11 @@ inside the page.
 **In the terminal.**
 
 ```bash
-npx loadline dist/app/browser                          # the build folder on its own
-npx loadline dist/app/stats.json --dist dist/app/browser
+npx @bymaksym/loadline dist/app/browser                # the build folder on its own
+npx @bymaksym/loadline dist/app/stats.json --dist dist/app/browser
 ```
 
-Zero runtime dependencies, no install script, Node 20.19 or newer. `npm i -g loadline` installs it;
+Zero runtime dependencies, no install script, Node 20.19 or newer. `npm i -g @bymaksym/loadline` installs it;
 `pnpm`, `yarn`, `bun` and `deno` all work, as do `pnpm dlx`, `yarn dlx` and `bunx`. The package also
 ships `loadline.html` next to the command, under `npm root -g`.
 
@@ -122,10 +122,10 @@ jobs:
             - uses: actions/setup-node@v4
               with: { node-version: 22 }
             - run: npm ci && npm run build
-            - run: npx loadline dist/app/browser --format pr-comment > comment.md
+            - run: npx @bymaksym/loadline dist/app/browser --format pr-comment > comment.md
             - run: gh pr comment "$NUMBER" --body-file comment.md --edit-last --create-if-none
               env: { GH_TOKEN: '${{ github.token }}', NUMBER: '${{ github.event.number }}' }
-            - run: npx loadline dist/app/browser --format sarif > loadline.sarif
+            - run: npx @bymaksym/loadline dist/app/browser --format sarif > loadline.sarif
             - uses: github/codeql-action/upload-sarif@v3
               with: { sarif_file: loadline.sarif }
 ```
