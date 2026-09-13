@@ -8,6 +8,14 @@ is numbers, so a release that moves one silently is indistinguishable from a reg
 `1.0.0`, a minor bump may change the command's flags or its output. The page and the command share
 their analysis, so a change to one is a change to both unless an entry says otherwise.
 
+## [0.1.1](https://github.com/bymaksym/LoadLine/compare/v0.1.0...v0.1.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **ci:** anchor release-please at 0.1.0 so it stops proposing 1.0.0 ([f4cb6f5](https://github.com/bymaksym/LoadLine/commit/f4cb6f56f65c96143fab88804e823b2df19b6a1a))
+* **ci:** tag releases as v0.2.0, which is the shape publish.yml listens for ([f7f7466](https://github.com/bymaksym/LoadLine/commit/f7f74664bc85904917a61c032343bcc29db96467))
+
 ## [Unreleased]
 
 Nothing yet.
