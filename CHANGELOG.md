@@ -8,6 +8,19 @@ is numbers, so a release that moves one silently is indistinguishable from a reg
 `1.0.0`, a minor bump may change the command's flags or its output. The page and the command share
 their analysis, so a change to one is a change to both unless an entry says otherwise.
 
+## [0.2.0](https://github.com/bymaksym/LoadLine/compare/loadline-v0.1.0...loadline-v0.2.0) (2026-09-13)
+
+
+### Features
+
+* loadline, weight per screen for ES module builds ([8c27f94](https://github.com/bymaksym/LoadLine/commit/8c27f94144a86d6f16c4fbd2d9d0b9cb53d5faf2))
+
+
+### Bug Fixes
+
+* **ci:** anchor release-please at 0.1.0 so it stops proposing 1.0.0 ([f4cb6f5](https://github.com/bymaksym/LoadLine/commit/f4cb6f56f65c96143fab88804e823b2df19b6a1a))
+* publish under a scope, which is the only name npm will take ([ba21824](https://github.com/bymaksym/LoadLine/commit/ba2182424d82933722953283f506e8814566ce28))
+
 ## [Unreleased]
 
 Nothing yet.
