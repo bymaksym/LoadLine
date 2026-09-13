@@ -24,6 +24,12 @@
 # Without it release-please has nothing to count from, reads the whole history as unreleased and
 # proposes 1.0.0 — which it did, once. A tag it did not create itself is not an anchor: the
 # manifest is. It says 0.1.0 because that is what went to npm by hand.
+#
+# `include-component-in-tag: false` in the config matters more than it looks. The package is named
+# `@bymaksym/loadline`, so by default release-please derives a component from it and tags releases
+# `loadline-v0.2.0`. publish.yml triggers on `v*`, which that does not match — the release would be
+# tagged, the changelog written, and **nothing would ever reach npm**, with every check green.
+# Tags stay `v0.2.0`, the same shape as the v0.1.0 that went out by hand.
 
 name: Release please
 
