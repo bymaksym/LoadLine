@@ -17,11 +17,13 @@
 # So the counting is automated and the decision is not.
 #
 # Below 1.0.0 this bumps the minor for a feature and the patch for a fix, and a breaking change
-# is a minor too. That is semver for 0.x, and it is the reason to stay on 0.x while the command's
-# flags are still moving.
+# is a minor too — `bump-minor-pre-major` in release-please-config.json. That is semver for 0.x,
+# and it is what keeps the command's flags free to move without spending the 1.0.0.
 #
-# The first release, v0.1.0, is tagged by hand: release-please continues from the last release it
-# can find, and there is none yet.
+# **Where it thinks it is lives in `.release-please-manifest.json`, and that file is not optional.**
+# Without it release-please has nothing to count from, reads the whole history as unreleased and
+# proposes 1.0.0 — which it did, once. A tag it did not create itself is not an anchor: the
+# manifest is. It says 0.1.0 because that is what went to npm by hand.
 
 name: Release please
 
@@ -43,5 +45,3 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: googleapis/release-please-action@v4
-              with:
-                  release-type: node
