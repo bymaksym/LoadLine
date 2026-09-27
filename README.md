@@ -1,4 +1,6 @@
-# Loadline
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bymaksym/LoadLine/main/.github/banner.png" alt="Loadline — weight per screen" width="100%">
+</p>
 
 > Weight per screen: what someone opening a screen of your app actually downloads, how much of that
 > everybody else pays for too, and what is worth moving elsewhere.
