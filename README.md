@@ -176,6 +176,12 @@ When opening an issue, the **Copy diagnostics** button at the end of the report 
 lines describing the build and what Loadline decided about it. Package names are real; paths in your
 own code are replaced by stable hashes, so it can be pasted in public.
 
+## Community
+
+[Discord — ByMaksymDev Labs](https://discord.gg/ctDJjFF9yT), where Loadline has its own
+channel. Bugs and feature requests are better off as issues here, where they can be found
+again; the chat is for everything that is a conversation.
+
 ## License
 
 [MIT](LICENSE). Offered with no commitment of support: issues and pull requests are welcome and may
