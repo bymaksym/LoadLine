@@ -173,7 +173,7 @@ export class IntakePageComponent {
 
     protected readonly contextTone = computed(() => {
         const info = this.store.contextInfo();
-        return info && info.files.length === 0 ? 'error' : null;
+        return info?.files.length === 0 ? 'error' : null;
     });
 
     /** The shape of what was loaded, with every path hashed: what a failure can be reported with. */

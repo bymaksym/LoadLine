@@ -254,7 +254,6 @@ export interface UiStrings {
      */
     rereadBtn: string;
     rereadHelp: string;
-    intakeChangeStats: string;
     intakeShow: string;
     intakeHide: string;
     intakeAddBaseline: string;
@@ -347,11 +346,6 @@ export interface UiStrings {
     // --- summary ---
     headLeadGzip: string;
     headLeadRaw: string;
-    headFigure: (size: string, files: number) => string;
-    headNote: (
-        screen: { label: string; total: string; files: number; shared: string; own: string },
-        unit: string,
-    ) => string;
     unitGzip: string;
     unitRaw: string;
     unitBrotli: string;
@@ -366,7 +360,6 @@ export interface UiStrings {
     /** One line per rated figure: what moves that one. Shown only when it is not rated good. */
     adviceBoot: string;
     adviceEffective: string;
-    adviceScreens: string;
     adviceShared: string;
     adviceFindings: string;
 
@@ -394,6 +387,7 @@ export interface UiStrings {
     tabBoot: string;
     tabShared: string;
     tabTree: string;
+    tabMap: string;
     howTo: string;
     howToFindings: string;
     howToScreens: string;
@@ -407,6 +401,35 @@ export interface UiStrings {
     secScreensSub: string;
     secTree: string;
     secTreeSub: string;
+
+    // --- map ---
+    howToMap: string;
+    secMap: string;
+    secMapSub: string;
+    /** The breadcrumb's first step: every chunk of the build. */
+    mapRoot: string;
+    mapSearch: string;
+    /** How many rectangles a search lights up, out of how many are drawn. */
+    mapMatches: (hits: number) => string;
+    /** The bytes of a chunk the metafile attributes to no file: the bundler's own wrapper. */
+    mapUnattributed: string;
+    mapRest: (count: number) => string;
+    mapKind: Record<'chunk' | 'package' | 'folder' | 'file' | 'rest' | 'unattributed' | 'build', string>;
+    /** What the area means at the level shown, which is the one thing a treemap never says. */
+    mapAreaRoot: (unit: string) => string;
+    mapAreaInside: string;
+    mapShareOfParent: (percent: string, parent: string) => string;
+    mapShareOfAll: (percent: string) => string;
+    mapRawInside: (raw: string) => string;
+    mapContents: string;
+    mapOpen: string;
+    mapUp: string;
+    mapFindIt: string;
+    mapHint: string;
+    mapLegendPackage: string;
+    mapLegendOwn: string;
+    mapEmpty: string;
+    mapPick: string;
     secBoot: string;
     secBootSub: string;
     secShared: string;

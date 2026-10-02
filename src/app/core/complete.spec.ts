@@ -51,10 +51,12 @@ const manyScreens = (screens: number, heavy: number): Metafile => {
             inputs: { [source]: { bytesInOutput: 1000 } },
         };
 
-        if (isHeavy) {
-            inputs[library] = { bytes: 400_000 };
-            outputs[`lib${index}.js`] = { bytes: 400_000, inputs: { [library]: { bytesInOutput: 400_000 } } };
+        if (!isHeavy) {
+            continue;
         }
+
+        inputs[library] = { bytes: 400_000 };
+        outputs[`lib${index}.js`] = { bytes: 400_000, inputs: { [library]: { bytesInOutput: 400_000 } } };
     }
 
     inputs['src/main.ts'] = { bytes: 500, imports: fromMain };

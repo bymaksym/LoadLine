@@ -213,10 +213,9 @@ const OPTIONS = new Map<SituationKey, ReadonlySet<string>>(
 const RAW_LIMITS: Record<string, number> = { screensPerSession: 1000, deploysPerWeek: 1000, returningPct: 100 };
 
 const readNumber = (value: unknown, key: string): number | null => {
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > (RAW_LIMITS[key] ?? 0)) {
-        return null;
-    }
-    return value;
+    return typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > (RAW_LIMITS[key] ?? 0)
+        ? null
+        : value;
 };
 
 const readText = (value: unknown): string | null =>

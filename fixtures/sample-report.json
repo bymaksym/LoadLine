@@ -169,7 +169,7 @@
       "chip": "duplicate copies",
       "title": "1 package shipped more than once",
       "body": "You pay the weight twice because two dependencies ask for incompatible ranges. One of the copies is in the bootstrap, so everybody downloads that extra weight. date-fns — version 3.6.0 · 28 kB · in the bootstrap. Comes in through src/main.ts › src/app/app.ts › src/app/core/http/api.service.ts › date-fns; your own code imports it in src/app/core/http/api.service.ts, src/app/features/orders/orders.page.ts. copy nested inside ag-grid-community · 23 kB · in a shared chunk. Comes in through src/main.ts › src/app/app.config.ts › src/app/app.routes.ts › src/app/features/orders/orders.page.ts › src/app/shared/grid/grid.ts › ag-grid-community › date-fns; ag-grid-community imports it.",
-      "fix": "At least one copy is not one you asked for: another dependency imports it, so aligning your package.json is not enough. Force the resolution with pnpm.overrides, overrides (npm) or resolutions (yarn), and check that the version you keep works for both."
+      "fix": "At least one copy is not one you asked for: another dependency imports it, so aligning your package.json is not enough. Force the resolution with pnpm.overrides, overrides (npm) or resolutions (yarn), and check that the version you keep works for both — pass --lock and the report will say whether any of them is pinned to an exact version."
     },
     {
       "kind": "heavy",
@@ -208,7 +208,7 @@
       "severity": "mid",
       "chip": "names that cannot be cached",
       "title": "1 file carries no hash in the name",
-      "body": "A file without a hash in its name cannot be cached for good: the browser has to ask whether it changed on every visit, and that question costs a round trip even when the answer is no. 1 of them are asked for by the page itself (88 kB). main-K7QW2X.js (88 kB, in the page).",
+      "body": "A file without a hash in its name cannot be cached for good: the browser has to ask whether it changed on every visit, and that question costs a round trip even when the answer is no. One of them is asked for by the page itself (88 kB). main-K7QW2X.js (88 kB, asked for by the page).",
       "fix": "Almost always informative: a favicon.ico or a manifest.webmanifest carry no hash and do not need one. When it fires on something large the page asks for, hash the name in the build configuration. The version-in-the-query case (?v=3) is the one that is nearly always a mistake: it changes the URL of every file at once on every deploy, which is the opposite of what a per-file hash does."
     },
     {
@@ -252,15 +252,15 @@
       "effort": "import"
     },
     {
-      "kind": "bigFile",
-      "title": "countries.data.ts takes 47 kB of the bootstrap",
-      "saving": 48600,
-      "effort": "refactor"
-    },
-    {
       "kind": "shared",
       "title": "167 kB downloaded by 5 of your 8 screens",
       "saving": 0,
+      "effort": "refactor"
+    },
+    {
+      "kind": "bigFile",
+      "title": "countries.data.ts takes 47 kB of the bootstrap",
+      "saving": 48600,
       "effort": "refactor"
     },
     {

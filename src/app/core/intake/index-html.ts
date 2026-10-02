@@ -11,7 +11,7 @@
  */
 
 /** Angular writes `index.html`; with server-side rendering the browser one is `index.csr.html`. */
-const INDEX_NAME = /^index(\.[\w-]+)?\.html$/i;
+const INDEX_NAME = /^index(?:\.[\w-]+)?\.html$/i;
 
 const TAG = /<(script|link)\b([^>]*)>/gi;
 
@@ -27,7 +27,7 @@ const BASE = /<(base)\b([^>]*)>/gi;
  * page and calls `start()` with the result. Nothing outside that script names those chunks, so
  * without reading it the build has no entry at all and cannot be read — which is what it did.
  */
-const INLINE_SCRIPT = /<script\b([^>]*)>([\S\s]*?)<\/script>/gi;
+const INLINE_SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 
 /** `import("./chunk.js")` as it is written in a page: a literal specifier, never a variable. */
 const IMPORT_CALL = /\bimport\s*\(\s*(["'`])([^"'`]+)\1\s*\)/g;
@@ -102,11 +102,13 @@ export const scriptsIn = (html: string): { names: string[]; entries: string[] } 
         }
 
         const name = fileNameOf(attribute(rest, isScript ? 'src' : 'href') ?? '');
-        if (/\.m?js$/.test(name)) {
-            names.add(name);
-            if (isScript) {
-                entries.add(name);
-            }
+        if (!/\.m?js$/.test(name)) {
+            continue;
+        }
+
+        names.add(name);
+        if (isScript) {
+            entries.add(name);
         }
     }
 
@@ -140,10 +142,40 @@ export const announcedIn = (html: string): string[] => scriptsIn(html).names;
  * counting them all would overstate the first load, which is the mistake this whole group exists
  * to stop making in the other direction.
  */
+/**
+ * Icons a page names that the browser does not all download.
+ *
+ * `<link rel="icon">` with several sizes or types are **alternatives**: the browser picks the one
+ * that fits and fetches that one, the way it picks one candidate of a `srcset`. `apple-touch-icon`
+ * and `mask-icon` are fetched only when somebody saves the page to a home screen or pins a tab. A
+ * page with a `.ico`, an SVG, three PNG sizes and a touch icon was counted as downloading all six,
+ * which inflated the first trip, the "no hash, asked for by the page" list and the "same file twice"
+ * one with files that never travel together.
+ */
+const ON_DEMAND_ICON = new Set(['apple-touch-icon', 'apple-touch-icon-precomposed', 'mask-icon']);
+
+/** Which of a page's `rel="icon"` alternatives a current browser fetches: the SVG when there is one. */
+const chosenIcon = (icons: readonly { source: string; type: string; sizes: string }[]): string | null => {
+    const svg = icons.find(icon => icon.type.includes('svg') || /\.svg$/i.test(icon.source));
+    const any = icons.find(icon => icon.sizes === '' || icon.sizes === 'any');
+    return (svg ?? any ?? icons[0])?.source ?? null;
+};
+
 export const assetsIn = (
     html: string,
-): { referenced: string[]; preloaded: string[]; prefetched: string[]; hrefs: string[] } => {
+): {
+    referenced: string[];
+    preloaded: string[];
+    prefetched: string[];
+    hrefs: string[];
+    icons: string[];
+    alternates: string[];
+} => {
     const referenced = new Set<string>();
+    /** Every icon the page names, and of those, the ones the browser will not fetch on this load. */
+    const icons = new Set<string>();
+    const alternates = new Set<string>();
+    const favicons: { source: string; type: string; sizes: string }[] = [];
     const preloaded = new Set<string>();
     /**
      * Kept apart from both, because it is neither. A `prefetch` is not part of the first load — the
@@ -168,8 +200,23 @@ export const assetsIn = (
             continue;
         }
 
-        referenced.add(source);
         hrefs.add(url);
+        if (lower === 'link' && [...rel].some(value => ON_DEMAND_ICON.has(value))) {
+            icons.add(source);
+            alternates.add(source);
+            continue;
+        }
+        if (lower === 'link' && rel.has('icon')) {
+            icons.add(source);
+            favicons.push({
+                source,
+                type: (attribute(rest, 'type') ?? '').toLowerCase(),
+                sizes: (attribute(rest, 'sizes') ?? '').toLowerCase().trim(),
+            });
+            continue;
+        }
+
+        referenced.add(source);
         // `prefetch` is deliberately not a preload: it is what the browser fetches when it is idle,
         // which is the opposite of "before anything appears".
         if (lower === 'link' && preloads && !rel.has('prefetch')) {
@@ -185,10 +232,26 @@ export const assetsIn = (
     for (const [, rest = ''] of html.matchAll(IMG)) {
         const url = attribute(rest, 'src') ?? '';
         const source = fileNameOf(url);
-        if (source) {
-            referenced.add(source);
-            hrefs.add(url);
+        if (!source) {
+            continue;
         }
+
+        referenced.add(source);
+        hrefs.add(url);
+    }
+
+    // One favicon is fetched; the rest are alternatives. A file that is also named some other way —
+    // an `<img>` of the same logo — stays referenced through that other tag.
+    const fetched = chosenIcon(favicons);
+    for (const icon of favicons) {
+        if (icon.source === fetched) {
+            referenced.add(icon.source);
+        } else {
+            alternates.add(icon.source);
+        }
+    }
+    for (const name of referenced) {
+        alternates.delete(name);
     }
 
     return {
@@ -196,6 +259,8 @@ export const assetsIn = (
         preloaded: [...preloaded],
         prefetched: [...prefetched],
         hrefs: [...hrefs],
+        icons: [...icons],
+        alternates: [...alternates],
     };
 };
 
@@ -243,15 +308,11 @@ export const stylesIn = (html: string): string[] => {
  * A protocol-relative `//cdn.example.com/main.js` counts: it is a different host, which is the
  * whole of what matters here, and the scheme it inherits changes nothing about the handshake.
  */
-const ABSOLUTE = /^(?:(https?:)?\/\/)([^/?#]+)/i;
+const ABSOLUTE = /^(https?:)?\/\/([^/?#]+)/i;
 
 const originOf = (url: string): string | null => {
     const found = ABSOLUTE.exec(url.trim());
-    if (!found) {
-        return null;
-    }
-
-    return `${(found[1] ?? '').toLowerCase()}//${(found[2] ?? '').toLowerCase()}`;
+    return found ? `${(found[1] ?? '').toLowerCase()}//${(found[2] ?? '').toLowerCase()}` : null;
 };
 
 /** One host the page fetches from, with how much of the first load comes from it. */

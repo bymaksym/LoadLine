@@ -1,10 +1,26 @@
 # A gate, NOT a report: no `|| true` on this one, on purpose. A credential that reaches a commit
 # is already in the history and getting it out is an afternoon; blocking it is one second.
-echo -e "\nScanning staged files for secrets...\n"
-git diff --cached --name-only --diff-filter=ACM -z | xargs -0 -r pnpm exec secretlint --maskSecrets --
+#
+# It reads the whole tree (about 4 s) rather than the staged files, and not for thoroughness: the
+# staged list used to travel as arguments, and Windows cuts a command line at 8191 characters. A
+# wide commit went over it and the gate failed WITHOUT having read anything, with the error showing
+# up exactly where a finding would. Here secretlint expands the glob itself, so there is no list to
+# fit or not fit, and the time does not grow with the commit.
+#
+# The price, accepted: a finding in a file you are not committing blocks too. If it is not a
+# secret, silence it with `secretlint-disable-line` next to the value, which is where the reason
+# it is not one gets written down.
+echo -e "\nScanning for secrets...\n"
+pnpm run secrets:scan
 
+# `--relative` passes paths relative to the repository and `--max-arg-length` splits the files over
+# several calls. By default paths are absolute and there is no limit, so a wide commit went past the
+# 8191 characters Windows allows and the whole autofix died — silently, with the `|| true` below.
+# `--no-revert`: by default, one error ESLint cannot fix in one file undoes the fixes in every file
+# (Prettier's and Stylelint's too), and with the `|| true` the commit goes out without any of them.
+# `|| true` on purpose: lint errors inform and do not block here; CI is where they block.
 echo -e "\nRunning linters...\n"
-pnpm exec lint-staged || true
+pnpm exec lint-staged --relative --max-arg-length 6000 --no-revert || true
 
 echo -e "\nType checking...\n"
 pnpm run typecheck

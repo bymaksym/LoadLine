@@ -97,10 +97,7 @@ export class MeasuredTabComponent {
         }
 
         const diff = report.measured - report.computed;
-        if (diff === 0) {
-            return this.i18n.ui().measureSame;
-        }
-        return formatDelta(diff);
+        return diff === 0 ? this.i18n.ui().measureSame : formatDelta(diff);
     });
 
     /** The other half of the difference: files, which is often where it shows up first. */

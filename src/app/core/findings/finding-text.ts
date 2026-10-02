@@ -28,6 +28,17 @@ export const TEXT = {
     es: {
         /** What the entry through the root is called when the measurement matches no screen. */
         rootScreen: 'la raíz',
+        // The small pieces the lists inside a signal are built from. They were written in English in
+        // the modules that build the lists, and `--lang es` printed them in English in the middle of
+        // a Spanish sentence.
+        andMore: (count: number) => `y ${count} más`,
+        inPage: 'la pide la página',
+        each: 'cada uno',
+        fileCount: (count: number) => `${count} ${count === 1 ? 'fichero' : 'ficheros'}`,
+        packageBarrelRow: (files: number, entries: number, size: string, inBoot: boolean) =>
+            `${files} ${files === 1 ? 'fichero entra' : 'ficheros entran'}, ${entries} ${entries === 1 ? 'se importa' : 'se importan'} desde fuera, ${size}${inBoot ? ' (bootstrap)' : ''}`,
+        ownBarrelRow: (reexports: number, pulls: number, size: string) =>
+            `${reexports} ${reexports === 1 ? 'reexportación' : 'reexportaciones'}, ${pulls} ${pulls === 1 ? 'fichero' : 'ficheros'}, ${size}`,
         shared: (d: { size: string; screens: number; total: number; chunk: string; top: string }) => ({
             chip: 'código común marcado como lazy',
             title: `${d.size} que se descargan en ${d.screens} de tus ${d.total} pantallas`,
@@ -47,6 +58,15 @@ export const TEXT = {
                     ? `, en ${d.routes}, que es donde se carga la pantalla`
                     : ', dentro de un fichero de rutas lazy'
             }. Un efecto secundario a tener en cuenta: si tienes guards que comparan contra ${mono('routeConfig.path')}, deja el guard en la ruta padre, porque al anidar el hijo pasa a tener ${mono("path: ''")} y el guard deja de reconocerla.`,
+        }),
+        bootSingle: (d: { count: number; pkg: string; importer: string; size: string; list: string }) => ({
+            chip: 'paquete del arranque con un solo importador',
+            title:
+                d.count === 1
+                    ? `${d.pkg} pesa ${d.size} en el bootstrap y solo lo importa ${d.importer}`
+                    : `${d.count} paquetes del bootstrap (${d.size}) que importa un solo fichero tuyo cada uno`,
+            body: `Lo descarga <strong>toda carga de la aplicación</strong> y entra por un único fichero tuyo, que no es una pantalla. Un solo importador es una dirección: hay un sitio donde decidir si el paquete hace falta antes de pintar o solo cuando ocurre algo —un inicio de sesión, abrir un diálogo, detectar el navegador—. ${d.list}.`,
+            fix: `Si no hace falta para el primer pintado, cambia el import estático de ese fichero por un ${mono('await import()')} en el método que lo usa: el paquete sale del bootstrap a un chunk propio que se baja la primera vez que se llama. Con un SDK que hay que inicializar (Firebase, Teams), inicialízalo dentro de esa misma función y guarda la promesa para no repetirlo. Si sí hace falta antes de pintar —un tema, una comprobación de sesión al arrancar—, déjalo: entonces esta señal solo informa.`,
         }),
         commonJs: (d: { count: number; size: string; items: CommonJsItem[] }) => ({
             chip: 'paquete en CommonJS',
@@ -86,7 +106,9 @@ export const TEXT = {
         dupeCopy: (d: DupeCopyData) =>
             `<strong>${d.version ? `versión ${d.version}` : d.under ? `copia anidada en ${mono(d.under)}` : 'copia principal'}</strong> · ${d.size} · ${d.zone}. ${
                 d.chain ? `Entra por ${d.chain}` : 'No se ha podido seguir desde el punto de entrada'
-            }${d.own ? `; la importa tu código en ${d.own}` : d.via ? `; la importa ${d.via}` : ''}.`,
+            }${d.own ? `; la importa tu código en ${d.own}` : d.via ? `; la importa ${d.via}` : ''}${
+                d.pinned ? `; ${d.pinned.parent} la fija a ${d.pinned.range} exacta` : ''
+            }.`,
         dupes: (d: DupesData) => ({
             chip: 'copias duplicadas',
             title: `${d.count} paquete${d.count > 1 ? 's' : ''} que viaja${d.count > 1 ? 'n' : ''} más de una vez en el bundle`,
@@ -95,9 +117,15 @@ export const TEXT = {
                     ? ' Una de las copias está en el bootstrap, así que ese peso de más lo descarga todo el mundo.'
                     : ''
             } ${d.list}`,
-            fix: d.viaDependency
-                ? `Al menos una de las copias no la pides tú: la importa otra dependencia, así que alinear tu ${mono('package.json')} no basta. Fuerza la resolución con ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) o ${mono('resolutions')} (yarn), y comprueba que la versión que dejas vale para las dos.`
-                : `Las dos copias entran por dependencias que pides tú directamente: alinea las versiones en ${mono('package.json')} y vuelve a medir.`,
+            fix: d.pinnedApart
+                ? `<strong>No se puede deduplicar desde tu proyecto</strong>: ${d.pinnedApart} fija su copia a una versión exacta, y la otra va por otra versión mayor. Forzar una sola con ${mono('overrides')} o ${mono('resolutions')} es meter un cambio de versión mayor dentro de ${d.pinnedApart}, que no se ha publicado contra esa versión. Lo razonable es aceptar la señal y esperar a que ${d.pinnedApart} se actualice${d.pinnedSame ? `; lo de ${d.pinnedSame} va en la misma versión mayor y ahí un override sí puede valer, probándolo` : ''}.`
+                : d.viaDependency
+                  ? `Al menos una de las copias no la pides tú: la importa otra dependencia, así que alinear tu ${mono('package.json')} no basta. Fuerza la resolución con ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) o ${mono('resolutions')} (yarn), y comprueba que la versión que dejas vale para las dos${
+                        d.pinnedSame
+                            ? `: ${d.pinnedSame} fija su copia a una versión exacta, así que el override cambia una dependencia que esa librería no ha probado`
+                            : ` —pasa ${mono('--lock')} y el informe dirá si alguna está fijada a versión exacta—`
+                    }.`
+                  : `Las dos copias entran por dependencias que pides tú directamente: alinea las versiones en ${mono('package.json')} y vuelve a medir.`,
         }),
         heavy: (d: { count: number; label: string; own: string; median: string; list: string }) => ({
             chip: d.count === 1 ? 'pantalla cara' : 'pantallas caras',
@@ -224,10 +252,15 @@ export const TEXT = {
             chunks: number;
             file: string;
             measured: string;
+            angular: boolean;
         }) => ({
             chip: 'el desglose no cuadra con el fichero',
             title: `El desglose por fichero suma un ${d.percent} % de lo que pesan los chunks que describe`,
-            body: `Hay dos medidas del mismo chunk y tendrían que dar lo mismo: lo que pesa el fichero (${d.file}) y lo que suman los pesos por fichero de dentro (${d.measured}), sobre ${d.chunks === 1 ? '1 chunk' : `${d.chunks} chunks`}. No lo dan, así que lo que el ${mono('stats.json')} dice que hay dentro de un chunk no es una descripción del fichero que se sirve. <strong>Por qué difieren no se sabe desde aquí</strong> —algo cambió la salida después de escribirlo— y no hace falta saberlo para leer la consecuencia. Las cifras de arriba —el arranque, cada pantalla, las idas y vueltas— salen del fichero y son exactas. Las que se miden <strong>dentro</strong> de un chunk —el reparto por paquete, la columna exclusiva, lo que ahorraría un ${mono('--what-if')}— salen de esta suma, así que van un ${d.off} % ${d.high ? 'altas' : 'bajas'}.`,
+            body: `Hay dos medidas del mismo chunk y tendrían que dar lo mismo: lo que pesa el fichero (${d.file}) y lo que suman los pesos por fichero de dentro (${d.measured}), sobre ${d.chunks === 1 ? '1 chunk' : `${d.chunks} chunks`}. No lo dan, así que lo que el ${mono('stats.json')} dice que hay dentro de un chunk no es una descripción del fichero que se sirve. ${
+                d.angular
+                    ? '<strong>La causa es el optimizador de chunks de Angular</strong>: después de esbuild vuelve a empaquetar los chunks con Rolldown y reescribe el peso de cada fichero como la longitud de ese paso repartida en proporción, antes de la minificación final. Por eso las partes suman más que el fichero, y en la misma proporción en todos. No son las hojas de estilos de los componentes: esas van dentro del JavaScript y ya están en el peso del fichero.'
+                    : '<strong>Por qué difieren no se sabe desde aquí</strong> —algo cambió la salida después de escribirlo— y no hace falta saberlo para leer la consecuencia.'
+            } Las cifras de arriba —el arranque, cada pantalla, las idas y vueltas— salen del fichero y son exactas. Las que se miden <strong>dentro</strong> de un chunk —el reparto por paquete, la columna exclusiva, lo que ahorraría un ${mono('--what-if')}— salen de esta suma, así que van un ${d.off} % ${d.high ? 'altas' : 'bajas'}.`,
             fix: `Compila con source maps —${mono('"sourceMap": true')} en Angular, ${mono('sourcemap: true')} en Vite— y suelta la carpeta: cuando hay ${mono('.map')} el reparto se mide sobre el fichero generado y esta diferencia desaparece. No hace falta desplegarlos. Mientras tanto, léelas como una cota superior: el orden de la lista es correcto —todas están infladas igual— y la cifra absoluta no lo es.`,
         }),
         sourceMaps: (d: { count: number }) => ({
@@ -352,7 +385,7 @@ export const TEXT = {
             list: string;
         }) => ({
             chip: 'imágenes y vídeo',
-            title: `${d.size} en ${d.count} ${d.count === 1 ? 'fichero' : 'ficheros'} de imagen o vídeo${d.inPage > 0 ? `, ${d.inPage} de ellos pedidos por la página` : ''}`,
+            title: `${d.size} en ${d.count} ${d.count === 1 ? 'fichero' : 'ficheros'} de imagen o vídeo${d.inPage > 0 ? `, ${d.inPage === 1 ? 'uno de ellos pedido' : `${d.inPage} de ellos pedidos`} por la página` : ''}`,
             body: `Aquí no se recomprime nada: prometer «esto en AVIF pesaría 310 kB» sería inventarse una cifra. Se dice lo que pesa, en qué formato llega y si el ${mono('index.html')} lo pide de entrada.${
                 d.outdated > 0
                     ? ` ${d.outdated === 1 ? 'Un fichero llega' : `${d.outdated} ficheros llegan`} en un formato antiguo teniendo el moderno al lado en la misma carpeta: ${d.outdatedList}.`
@@ -366,11 +399,25 @@ export const TEXT = {
             body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño— y aun así son entradas de caché separadas, así que quien visita la página los descarga los dos. ${d.list}.`,
             fix: 'Casi siempre es el mismo recurso importado desde dos sitios con rutas distintas, o una copia que quedó de una migración. Unifica el import y borra la copia. Si los dos nombres los genera el build, mira si un plugin está copiando la carpeta de recursos además de procesarla.',
         }),
-        unreferencedAssets: (d: { count: number; size: string; list: string }) => ({
+        unreferencedAssets: (d: {
+            count: number;
+            size: string;
+            list: string;
+            fromRepo: number;
+            folders: string;
+            verified: boolean;
+        }) => ({
             chip: 'ficheros que no alcanza nadie',
             title: `${d.size} en ${d.count === 1 ? '1 fichero que no nombra' : `${d.count} ficheros que no nombra`} ni el HTML, ni el CSS, ni ningún chunk`,
-            body: `Es la misma idea que la señal de trozos inalcanzables, un nivel más afuera: se ha buscado cada nombre de fichero en el texto de los demás y estos no salen en ninguno. En una carpeta que nadie limpia suele haber megabytes de despliegues anteriores. ${d.list}.`,
-            fix: `Antes de borrar nada, ten en cuenta lo que esta búsqueda no ve: una ruta construida en tiempo de ejecución (${mono('/assets/ + name + .png')}), un fichero que pide el service worker o algo que referencia el servidor y no el bundle. Lo que quede después de descartar eso son restos: limpia la carpeta antes de compilar, porque ocupan sitio en el servidor y ensucian cualquier medida de la carpeta.`,
+            body: `Es la misma idea que la señal de trozos inalcanzables, un nivel más afuera: se ha buscado cada nombre de fichero en el texto de los demás y estos no salen en ninguno.${
+                d.fromRepo > 0
+                    ? ` <strong>${d.fromRepo === d.count ? (d.count === 1 ? 'No es un resto' : 'No son restos') : `${d.fromRepo} de ${d.count} no son restos`} de un despliegue anterior</strong>: ${d.verified ? (d.fromRepo === 1 ? 'está en' : 'están en') : d.fromRepo === 1 ? 'sale de' : 'salen de'} ${d.folders}, la carpeta que ${mono('angular.json')} copia tal cual en cada build${d.verified ? '' : ' (según su configuración de assets)'}, y Angular vacía la carpeta de salida antes de compilar.`
+                    : ' En una carpeta que nadie limpia suele haber megabytes de despliegues anteriores.'
+            } ${d.list}.`,
+            fix:
+                d.fromRepo > 0
+                    ? `Antes de borrar nada, descarta lo que esta búsqueda no ve: una ruta construida en tiempo de ejecución (${mono('/assets/ + name + .png')}), un fichero que pide el service worker, el manifiesto o el servidor, o una imagen que solo se enlaza desde fuera (${mono('og:image')}, un correo). Lo que quede después, <strong>bórralo del repositorio</strong> —de ${d.folders}—: limpiar la carpeta de build no sirve, porque el siguiente build lo vuelve a copiar.`
+                    : `Antes de borrar nada, ten en cuenta lo que esta búsqueda no ve: una ruta construida en tiempo de ejecución (${mono('/assets/ + name + .png')}), un fichero que pide el service worker o algo que referencia el servidor y no el bundle. Lo que quede después de descartar eso son restos: limpia la carpeta antes de compilar, porque ocupan sitio en el servidor y ensucian cualquier medida de la carpeta.`,
         }),
         inlinedData: (d: { count: number; size: string; types: string; list: string }) => ({
             chip: 'ficheros incrustados como data URI',
@@ -441,19 +488,45 @@ export const TEXT = {
                 d.query === ''
                     ? `${d.count} ${d.count === 1 ? 'fichero no lleva' : 'ficheros no llevan'} hash en el nombre`
                     : `Hay ficheros con la versión en la query (${d.query}): se revalidan en cada visita`,
-            body: `Un fichero sin hash en el nombre no se puede cachear para siempre: el navegador tiene que preguntar si ha cambiado en cada visita, y esa pregunta cuesta una ida y vuelta aunque la respuesta sea que no. ${d.inPage > 0 ? `${d.inPage} de ellos los pide la página de entrada (${d.size}).` : 'Ninguno lo pide la página de entrada.'} ${d.list}.`,
+            body: `Un fichero sin hash en el nombre no se puede cachear para siempre: el navegador tiene que preguntar si ha cambiado en cada visita, y esa pregunta cuesta una ida y vuelta aunque la respuesta sea que no. ${d.inPage > 0 ? `${d.inPage === 1 ? 'Uno de ellos lo pide' : `${d.inPage} de ellos los pide`} la página de entrada (${d.size}).` : 'Ninguno lo pide la página de entrada.'} ${d.list}.`,
             fix: `Casi siempre es informativo: un ${mono('favicon.ico')} o un ${mono('manifest.webmanifest')} no llevan hash y no hace falta que lo lleven. Cuando salta por algo grande que pide la página, ponle hash en el nombre desde la configuración del build. La versión en la query (${mono('?v=3')}) es el caso que casi siempre es un error: cambia la URL de todos los ficheros a la vez en cada despliegue, que es justo lo contrario de lo que hace un hash por fichero.`,
         }),
 
         // --- lo que dice leer el texto del build (IDEAS §F) ---
-        secrets: (d: { count: number; serious: number; kinds: string; list: string }) => ({
-            chip: 'secretos o direcciones internas en el bundle',
+        secretBenign: { firebaseConfig: 'configuración web de Firebase: pública por diseño' },
+        secretOwner: (pkg: string) => `es código de ${pkg}`,
+        secrets: (d: {
+            count: number;
+            serious: number;
+            open: number;
+            publicKeys: number;
+            theirs: string;
+            kinds: string;
+            list: string;
+        }) => ({
+            chip:
+                d.open > 0
+                    ? 'secretos o direcciones internas en el bundle'
+                    : 'cadenas con forma de secreto, explicadas',
             title:
                 d.serious > 0
                     ? `${d.serious === 1 ? 'Una credencial con forma de credencial viaja' : `${d.serious} credenciales con forma de credencial viajan`} en el bundle`
-                    : `${d.count} ${d.count === 1 ? 'coincidencia' : 'coincidencias'} de secreto o dirección interna en el bundle`,
-            body: `Cada patrón de aquí identifica un formato concreto por su prefijo y su longitud —${mono('AKIA')} y dieciséis caracteres es una clave de AWS y no otra cosa—, a propósito: no hay ninguna regla del tipo «cadena larga cerca de la palabra key», que es la que encuentra las de verdad y también cien nombres de variable minificados. Tipos: ${d.kinds}. Nada se imprime entero: este informe se pega en incidencias, y una herramienta que imprime una clave viva la ha publicado por segunda vez. ${d.list}.`,
-            fix: `Si alguna es real, lo primero es <strong>rotarla</strong>, no borrarla del código: lo que está desplegado ya lo tiene cualquiera que sepa la URL, y quitarla del siguiente build no revoca nada. Después, mira cómo entró: casi siempre es un ${mono('.env')} que el bundler incrusta porque la variable no empieza por el prefijo público del framework, o una constante de configuración con la clave de servidor en vez de la de cliente. Una dirección interna no es una credencial pero sí es topología: dice qué hay dentro y cómo se llama.`,
+                    : d.open > 0
+                      ? `${d.open} ${d.open === 1 ? 'coincidencia' : 'coincidencias'} de secreto o dirección interna en el bundle`
+                      : `${d.count} ${d.count === 1 ? 'cadena con forma de secreto que no lo es' : 'cadenas con forma de secreto que no lo son'}`,
+            body: `Cada patrón de aquí identifica un formato concreto por su prefijo y su longitud —${mono('AKIA')} y dieciséis caracteres es una clave de AWS y no otra cosa—, a propósito: no hay ninguna regla del tipo «cadena larga cerca de la palabra key». Tipos: ${d.kinds}.${
+                d.publicKeys > 0
+                    ? ` <strong>${d.publicKeys === 1 ? 'La clave de Google es' : `${d.publicKeys} de las claves de Google son`} el ${mono('apiKey')} de una configuración web de Firebase</strong>: ${d.publicKeys === 1 ? 'está' : 'están'} junto a ${mono('authDomain')}, ${mono('projectId')} o ${mono('messagingSenderId')}. Esa clave identifica el proyecto ante Google y la lleva toda aplicación web con Firebase; no da acceso a nada por sí sola, así que no es una filtración.`
+                    : ''
+            }${
+                d.theirs
+                    ? ` Los ${mono('process.env')} que quedan son de ${d.theirs}: es el paquete leyendo su propio interruptor, no una variable tuya que el build no sustituyó, y en el navegador se queda en ${mono('undefined')}.`
+                    : ''
+            } Nada se imprime entero: este informe se pega en incidencias, y una herramienta que imprime una clave viva la ha publicado por segunda vez. ${d.list}.`,
+            fix:
+                d.open > 0
+                    ? `Si alguna es real, lo primero es <strong>rotarla</strong>, no borrarla del código: lo que está desplegado ya lo tiene cualquiera que sepa la URL, y quitarla del siguiente build no revoca nada. Después, mira cómo entró: casi siempre es un ${mono('.env')} que el bundler incrusta porque la variable no empieza por el prefijo público del framework, o una constante de configuración con la clave de servidor en vez de la de cliente. Una dirección interna no es una credencial pero sí es topología: dice qué hay dentro y cómo se llama.`
+                    : `No hay nada que rotar.${d.publicKeys > 0 ? ' Lo que protege los datos de Firebase son las reglas de seguridad y App Check, no la clave: comprueba que las reglas no estén abiertas y, si quieres, restringe la clave a tus dominios en la consola de Google Cloud.' : ''}${d.theirs ? ` Lo que lee ${d.theirs} no es tuyo: si molesta, ${mono('define')} en el build puede fijar esa variable, y en el navegador no cambia nada.` : ''}`,
         }),
         devLeftovers: (d: { count: number; broken: boolean; unattributed: boolean; list: string }) => ({
             chip: d.unattributed ? 'marcas de desarrollo en la compilación' : 'restos de desarrollo en producción',
@@ -600,9 +673,9 @@ export const TEXT = {
         }),
         budgetTooHigh: (d: { configs: string; count: number; error: string; boot: string; factor: number }) => ({
             chip: 'budget demasiado alto',
-            title: `${d.count === 1 ? 'El budget' : 'Los budgets'} de ${d.configs} ${d.count === 1 ? 'está' : 'están'} en ${d.error} y el bootstrap pesa ${d.boot}: no puede saltar`,
-            body: `Es más de ${d.factor} veces el bootstrap actual (solo JavaScript, en crudo, que es lo que mide Angular). Un budget así no vigila nada: para llegar a él la aplicación tendría que multiplicar su tamaño.`,
-            fix: 'Baja el error a algo que no quieras cruzar (por ejemplo, un 25 % por encima del bootstrap actual) y el aviso algo por debajo. Súbelo solo cuando alguien decida a sabiendas que el bootstrap tiene que crecer.',
+            title: `${d.count === 1 ? 'El budget' : 'Los budgets'} de ${d.configs} ${d.count === 1 ? 'está' : 'están'} en ${d.error} y la carga inicial pesa ${d.boot}: no puede saltar`,
+            body: `Es más de ${d.factor} veces la carga inicial de hoy: el JavaScript y el CSS iniciales en crudo, que es exactamente lo que suma el budget ${mono('initial')} de Angular y la misma cifra sobre la que se calcula el budget sugerido. Un budget así no vigila nada: para llegar a él la aplicación tendría que multiplicar su tamaño.`,
+            fix: 'Baja el error a algo que no quieras cruzar (por ejemplo, un 25 % por encima de la carga inicial de hoy) y el aviso algo por debajo. Súbelo solo cuando alguien decida a sabiendas que el arranque tiene que crecer.',
         }),
         budgetWarnOnly: (d: { configs: string; count: number; warning: string }) => ({
             chip: 'budget que solo avisa',
@@ -896,6 +969,14 @@ export const TEXT = {
     en: {
         /** What the entry through the root is called when the measurement matches no screen. */
         rootScreen: 'the root',
+        andMore: (count: number) => `and ${count} more`,
+        inPage: 'asked for by the page',
+        each: 'each',
+        fileCount: (count: number) => `${count} ${count === 1 ? 'file' : 'files'}`,
+        packageBarrelRow: (files: number, entries: number, size: string, inBoot: boolean) =>
+            `${files} ${files === 1 ? 'file' : 'files'} in, ${entries} imported from outside, ${size}${inBoot ? ' (bootstrap)' : ''}`,
+        ownBarrelRow: (reexports: number, pulls: number, size: string) =>
+            `${reexports} re-exports, ${pulls} ${pulls === 1 ? 'file' : 'files'}, ${size}`,
         shared: (d: { size: string; screens: number; total: number; chunk: string; top: string }) => ({
             chip: 'common code marked as lazy',
             title: `${d.size} downloaded by ${d.screens} of your ${d.total} screens`,
@@ -913,6 +994,15 @@ export const TEXT = {
             fix: `Move its registration out of the bootstrap config and into that route’s providers${
                 d.routes ? `, in ${d.routes}, where the screen is loaded from` : ', inside a lazy routes file'
             }. One side effect to keep in mind: if you have guards comparing against ${mono('routeConfig.path')}, keep the guard on the parent route, because once nested the child gets ${mono("path: ''")} and the guard stops recognising it.`,
+        }),
+        bootSingle: (d: { count: number; pkg: string; importer: string; size: string; list: string }) => ({
+            chip: 'bootstrap package with a single importer',
+            title:
+                d.count === 1
+                    ? `${d.pkg} weighs ${d.size} in the bootstrap and only ${d.importer} imports it`
+                    : `${d.count} bootstrap packages (${d.size}) that one file of yours imports each`,
+            body: `<strong>Every load of the app</strong> downloads it, and it comes in through a single file of yours that is not a screen. One importer is an address: there is one place to decide whether the package is needed before the first paint or only when something happens — signing in, opening a dialog, sniffing the browser. ${d.list}.`,
+            fix: `If it is not needed for the first paint, turn that file's static import into an ${mono('await import()')} in the method that uses it: the package leaves the bootstrap for a chunk of its own, downloaded the first time that method runs. With an SDK that has to be initialised (Firebase, Teams), initialise it inside that same function and keep the promise so it runs once. If it is needed before the first paint — a theme, a session check at start-up — leave it: then this signal is only information.`,
         }),
         commonJs: (d: { count: number; size: string; items: CommonJsItem[] }) => ({
             chip: 'CommonJS package',
@@ -952,16 +1042,24 @@ export const TEXT = {
         dupeCopy: (d: DupeCopyData) =>
             `<strong>${d.version ? `version ${d.version}` : d.under ? `copy nested inside ${mono(d.under)}` : 'top-level copy'}</strong> · ${d.size} · ${d.zone}. ${
                 d.chain ? `Comes in through ${d.chain}` : 'Could not be followed from the entry point'
-            }${d.own ? `; your own code imports it in ${d.own}` : d.via ? `; ${d.via} imports it` : ''}.`,
+            }${d.own ? `; your own code imports it in ${d.own}` : d.via ? `; ${d.via} imports it` : ''}${
+                d.pinned ? `; ${d.pinned.parent} pins it to exactly ${d.pinned.range}` : ''
+            }.`,
         dupes: (d: DupesData) => ({
             chip: 'duplicate copies',
             title: `${d.count} package${d.count > 1 ? 's' : ''} shipped more than once`,
             body: `You pay the weight twice because two dependencies ask for incompatible ranges.${
                 d.inBoot ? ' One of the copies is in the bootstrap, so everybody downloads that extra weight.' : ''
             } ${d.list}`,
-            fix: d.viaDependency
-                ? `At least one copy is not one you asked for: another dependency imports it, so aligning your ${mono('package.json')} is not enough. Force the resolution with ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) or ${mono('resolutions')} (yarn), and check that the version you keep works for both.`
-                : `Both copies come in through dependencies you ask for directly: align the versions in ${mono('package.json')} and measure again.`,
+            fix: d.pinnedApart
+                ? `<strong>This cannot be deduplicated from your project</strong>: ${d.pinnedApart} pins its copy to an exact version, and the other copy is on another major. Forcing a single one with ${mono('overrides')} or ${mono('resolutions')} puts a major version change inside ${d.pinnedApart}, which was never released against it. The sensible move is to accept the signal and wait for ${d.pinnedApart} to update${d.pinnedSame ? `; the one under ${d.pinnedSame} is on the same major, and an override may work there, once tested` : ''}.`
+                : d.viaDependency
+                  ? `At least one copy is not one you asked for: another dependency imports it, so aligning your ${mono('package.json')} is not enough. Force the resolution with ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) or ${mono('resolutions')} (yarn), and check that the version you keep works for both${
+                        d.pinnedSame
+                            ? `: ${d.pinnedSame} pins its copy to an exact version, so the override changes a dependency that library has not been tested with`
+                            : ` — pass ${mono('--lock')} and the report will say whether any of them is pinned to an exact version`
+                    }.`
+                  : `Both copies come in through dependencies you ask for directly: align the versions in ${mono('package.json')} and measure again.`,
         }),
         heavy: (d: { count: number; label: string; own: string; median: string; list: string }) => ({
             chip: d.count === 1 ? 'expensive screen' : 'expensive screens',
@@ -1088,10 +1186,15 @@ export const TEXT = {
             chunks: number;
             file: string;
             measured: string;
+            angular: boolean;
         }) => ({
             chip: 'the breakdown does not add up to the file',
             title: `The per-file breakdown adds up to ${d.percent} % of what the chunks it describes weigh`,
-            body: `There are two measurements of the same chunk and they are supposed to agree: what the file weighs (${d.file}) and what the per-file weights inside it add up to (${d.measured}), over ${d.chunks === 1 ? '1 chunk' : `${d.chunks} chunks`}. They do not, so what the ${mono('stats.json')} says is inside a chunk is not an account of the file being served. <strong>Why they differ cannot be told from here</strong> — something changed the output after it was written — and it does not have to be known to read the consequence. The figures above — the bootstrap, each screen, the round trips — come from the file and are exact. The ones measured <strong>inside</strong> a chunk — the breakdown by package, the exclusive column, what a ${mono('--what-if')} would save — come from this sum, so they read ${d.off} % ${d.high ? 'high' : 'low'}.`,
+            body: `There are two measurements of the same chunk and they are supposed to agree: what the file weighs (${d.file}) and what the per-file weights inside it add up to (${d.measured}), over ${d.chunks === 1 ? '1 chunk' : `${d.chunks} chunks`}. They do not, so what the ${mono('stats.json')} says is inside a chunk is not an account of the file being served. ${
+                d.angular
+                    ? "<strong>The cause is Angular's chunk optimizer</strong>: after esbuild it bundles the chunks again with Rolldown and rewrites each file's weight as that pass's length shared out in proportion, before the final minification. That is why the parts add up to more than the file, and by the same factor in every chunk. It is not the component stylesheets: those are inside the JavaScript and already in the file's weight."
+                    : '<strong>Why they differ cannot be told from here</strong> — something changed the output after it was written — and it does not have to be known to read the consequence.'
+            } The figures above — the bootstrap, each screen, the round trips — come from the file and are exact. The ones measured <strong>inside</strong> a chunk — the breakdown by package, the exclusive column, what a ${mono('--what-if')} would save — come from this sum, so they read ${d.off} % ${d.high ? 'high' : 'low'}.`,
             fix: `Build with source maps — ${mono('"sourceMap": true')} in Angular, ${mono('sourcemap: true')} in Vite — and drop the folder: with ${mono('.map')} files the split is measured on the generated file itself and this difference goes away. They do not have to be deployed. Until then, read those figures as an upper bound: the order of the list is right — all of them are inflated by the same ratio — and the absolute number is not.`,
         }),
         sourceMaps: (d: { count: number }) => ({
@@ -1230,11 +1333,25 @@ export const TEXT = {
             body: `The content is identical byte for byte — it was compared, not assumed from the size — and they are still separate cache entries, so a visitor downloads both. ${d.list}.`,
             fix: 'Almost always the same asset imported from two places by different paths, or a copy left over from a migration. Unify the import and delete the copy. If the build generates both names, check whether a plugin is copying the assets folder as well as processing it.',
         }),
-        unreferencedAssets: (d: { count: number; size: string; list: string }) => ({
+        unreferencedAssets: (d: {
+            count: number;
+            size: string;
+            list: string;
+            fromRepo: number;
+            folders: string;
+            verified: boolean;
+        }) => ({
             chip: 'files nothing reaches',
             title: `${d.size} in ${d.count === 1 ? '1 file named by' : `${d.count} files named by`} neither the HTML, nor the CSS, nor any chunk`,
-            body: `The same idea as the unreachable-chunks signal, one level further out: every file name was searched for in the text of the others, and these appear in none of them. A folder nobody cleans usually holds megabytes of previous deploys. ${d.list}.`,
-            fix: `Before deleting anything, keep in mind what this search cannot see: a path built at run time (${mono('/assets/ + name + .png')}), a file the service worker asks for, or something the server references rather than the bundle. What is left after discarding those is leftovers: clean the folder before building, because they take space on the server and skew any measurement of the folder.`,
+            body: `The same idea as the unreachable-chunks signal, one level further out: every file name was searched for in the text of the others, and these appear in none of them.${
+                d.fromRepo > 0
+                    ? ` <strong>${d.fromRepo === d.count ? (d.count === 1 ? 'It is not a leftover' : 'They are not leftovers') : `${d.fromRepo} of ${d.count} are not leftovers`} of an old deploy</strong>: ${d.fromRepo === 1 ? 'it' : 'they'} ${d.verified ? (d.fromRepo === 1 ? 'is in' : 'are in') : d.fromRepo === 1 ? 'comes from' : 'come from'} ${d.folders}, the folder ${mono('angular.json')} copies as it is on every build${d.verified ? '' : ' (going by its assets configuration)'}, and Angular empties the output folder before building.`
+                    : ' A folder nobody cleans usually holds megabytes of previous deploys.'
+            } ${d.list}.`,
+            fix:
+                d.fromRepo > 0
+                    ? `Before deleting anything, rule out what this search cannot see: a path built at run time (${mono('/assets/ + name + .png')}), a file the service worker, the manifest or the server asks for, or a picture only linked from outside (${mono('og:image')}, an email). Whatever is left, <strong>delete it from the repository</strong> — from ${d.folders} —: cleaning the build folder does nothing, because the next build copies it back.`
+                    : `Before deleting anything, keep in mind what this search cannot see: a path built at run time (${mono('/assets/ + name + .png')}), a file the service worker asks for, or something the server references rather than the bundle. What is left after discarding those is leftovers: clean the folder before building, because they take space on the server and skew any measurement of the folder.`,
         }),
         inlinedData: (d: { count: number; size: string; types: string; list: string }) => ({
             chip: 'files embedded as data URIs',
@@ -1305,19 +1422,42 @@ export const TEXT = {
                 d.query === ''
                     ? `${d.count} ${d.count === 1 ? 'file carries' : 'files carry'} no hash in the name`
                     : `Some files carry the version in the query (${d.query}): they revalidate on every visit`,
-            body: `A file without a hash in its name cannot be cached for good: the browser has to ask whether it changed on every visit, and that question costs a round trip even when the answer is no. ${d.inPage > 0 ? `${d.inPage} of them are asked for by the page itself (${d.size}).` : 'None of them is asked for by the page itself.'} ${d.list}.`,
+            body: `A file without a hash in its name cannot be cached for good: the browser has to ask whether it changed on every visit, and that question costs a round trip even when the answer is no. ${d.inPage > 0 ? `${d.inPage === 1 ? 'One of them is' : `${d.inPage} of them are`} asked for by the page itself (${d.size}).` : 'None of them is asked for by the page itself.'} ${d.list}.`,
             fix: `Almost always informative: a ${mono('favicon.ico')} or a ${mono('manifest.webmanifest')} carry no hash and do not need one. When it fires on something large the page asks for, hash the name in the build configuration. The version-in-the-query case (${mono('?v=3')}) is the one that is nearly always a mistake: it changes the URL of every file at once on every deploy, which is the opposite of what a per-file hash does.`,
         }),
 
         // --- what reading the text of the build says (IDEAS §F) ---
-        secrets: (d: { count: number; serious: number; kinds: string; list: string }) => ({
-            chip: 'secrets or internal addresses in the bundle',
+        secretBenign: { firebaseConfig: 'Firebase web configuration: public by design' },
+        secretOwner: (pkg: string) => `code of ${pkg}`,
+        secrets: (d: {
+            count: number;
+            serious: number;
+            open: number;
+            publicKeys: number;
+            theirs: string;
+            kinds: string;
+            list: string;
+        }) => ({
+            chip: d.open > 0 ? 'secrets or internal addresses in the bundle' : 'secret-shaped strings, explained',
             title:
                 d.serious > 0
                     ? `${d.serious === 1 ? 'A string shaped like a credential ships' : `${d.serious} strings shaped like credentials ship`} in the bundle`
-                    : `${d.count} ${d.count === 1 ? 'match' : 'matches'} for a secret or an internal address in the bundle`,
-            body: `Every pattern here identifies a specific format by its own prefix and length — ${mono('AKIA')} plus sixteen characters is an AWS key and nothing else — deliberately: there is no rule for "a long string near the word key", which is the one that finds the real ones and also a hundred minified variable names. Kinds: ${d.kinds}. Nothing is printed whole: this report gets pasted into issues, and a tool that prints a live credential in full has published it a second time. ${d.list}.`,
-            fix: `If any of them is real, the first move is to <strong>rotate</strong> it, not to delete it from the code: what is deployed is already in the hands of anybody who knows the URL, and taking it out of the next build revokes nothing. Then look at how it got in: almost always a ${mono('.env')} the bundler inlines because the variable does not start with the framework's public prefix, or a configuration constant holding the server key instead of the client one. An internal address is not a credential, but it is topology: it says what is inside and what it is called.`,
+                    : d.open > 0
+                      ? `${d.open} ${d.open === 1 ? 'match' : 'matches'} for a secret or an internal address in the bundle`
+                      : `${d.count} ${d.count === 1 ? 'string shaped like a secret that is not one' : 'strings shaped like secrets that are not'}`,
+            body: `Every pattern here identifies a specific format by its own prefix and length — ${mono('AKIA')} plus sixteen characters is an AWS key and nothing else — deliberately: there is no rule for "a long string near the word key". Kinds: ${d.kinds}.${
+                d.publicKeys > 0
+                    ? ` <strong>${d.publicKeys === 1 ? 'The Google key is' : `${d.publicKeys} of the Google keys are`} the ${mono('apiKey')} of a Firebase web configuration</strong>: ${d.publicKeys === 1 ? 'it sits' : 'they sit'} next to ${mono('authDomain')}, ${mono('projectId')} or ${mono('messagingSenderId')}. That key identifies the project to Google and every web app using Firebase ships it; on its own it grants access to nothing, so it is not a leak.`
+                    : ''
+            }${
+                d.theirs
+                    ? ` The ${mono('process.env')} left in belong to ${d.theirs}: the package reading its own switch, not a variable of yours the build failed to substitute, and in a browser it stays ${mono('undefined')}.`
+                    : ''
+            } Nothing is printed whole: this report gets pasted into issues, and a tool that prints a live credential in full has published it a second time. ${d.list}.`,
+            fix:
+                d.open > 0
+                    ? `If any of them is real, the first move is to <strong>rotate</strong> it, not to delete it from the code: what is deployed is already in the hands of anybody who knows the URL, and taking it out of the next build revokes nothing. Then look at how it got in: almost always a ${mono('.env')} the bundler inlines because the variable does not start with the framework's public prefix, or a configuration constant holding the server key instead of the client one. An internal address is not a credential, but it is topology: it says what is inside and what it is called.`
+                    : `There is nothing to rotate.${d.publicKeys > 0 ? ' What protects Firebase data is the security rules and App Check, not the key: check that the rules are not open and, if you like, restrict the key to your domains in the Google Cloud console.' : ''}${d.theirs ? ` What ${d.theirs} reads is not yours: if it bothers you, ${mono('define')} in the build can pin that variable, and it changes nothing in the browser.` : ''}`,
         }),
         devLeftovers: (d: { count: number; broken: boolean; unattributed: boolean; list: string }) => ({
             chip: d.unattributed ? 'development markers in the build' : 'development leftovers in production',
@@ -1464,9 +1604,9 @@ export const TEXT = {
         }),
         budgetTooHigh: (d: { configs: string; count: number; error: string; boot: string; factor: number }) => ({
             chip: 'budget too high',
-            title: `The ${d.configs} ${d.count === 1 ? 'budget is' : 'budgets are'} ${d.error} and the bootstrap weighs ${d.boot}: ${d.count === 1 ? 'it' : 'they'} cannot fire`,
-            body: `That is more than ${d.factor} times the current bootstrap (JavaScript only, raw, which is what Angular measures). A budget like that watches nothing: the app would have to multiply its size to reach it.`,
-            fix: 'Lower the error to something you do not want to cross (say 25 % above the current bootstrap) and the warning a little below. Raise it only when someone knowingly decides the bootstrap has to grow.',
+            title: `The ${d.configs} ${d.count === 1 ? 'budget is' : 'budgets are'} ${d.error} and the initial load weighs ${d.boot}: ${d.count === 1 ? 'it' : 'they'} cannot fire`,
+            body: `That is more than ${d.factor} times today's initial load: the initial JavaScript and CSS, raw, which is exactly what Angular's ${mono('initial')} budget adds up and the same figure the suggested budget is computed from. A budget like that watches nothing: the app would have to multiply its size to reach it.`,
+            fix: 'Lower the error to something you do not want to cross (say 25 % above the initial load today) and the warning a little below. Raise it only when someone knowingly decides the start-up has to grow.',
         }),
         budgetWarnOnly: (d: { configs: string; count: number; warning: string }) => ({
             chip: 'budget that only warns',

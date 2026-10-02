@@ -12,7 +12,7 @@ const encode = (value: number): string => {
         const digit = bits % 32;
         bits = Math.floor(bits / 32);
         // 32 added on top is the "more digits follow" flag.
-        out += VLQ_CHARS[bits > 0 ? digit + 32 : digit];
+        out += VLQ_CHARS.charAt(bits > 0 ? digit + 32 : digit);
     } while (bits > 0);
 
     return out;

@@ -84,6 +84,11 @@ export interface SplitDrift {
     ratio: number;
     /** How many chunks the two figures were compared over. */
     chunks: number;
+    /**
+     * The build carries Angular, whose chunk optimizer is the known cause: it re-bundles after
+     * esbuild and shares each chunk's pre-minification length out among its files in proportion.
+     */
+    angular?: boolean;
 }
 
 /** A chunk of the bundle with its resolved size (raw or compressed, whichever is available). */
@@ -228,13 +233,30 @@ export interface DuplicatePackage {
 
 export interface Analysis {
     bootBytes: number;
-    /** Bootstrap in bytes on disk, whatever is being shown: what Angular's budgets measure. */
+    /** Bootstrap JavaScript in bytes on disk, whatever is being shown. */
     bootRawBytes: number;
+    /**
+     * What Angular's `initial` budget counts: the bootstrap JavaScript **plus** the stylesheets that
+     * are entries of their own (the global `styles.css`), raw. The budget suggestion and the signal
+     * saying a budget is too loose both read this one figure, so they cannot disagree.
+     */
+    initialRawBytes: number;
+    /**
+     * The heaviest script of the build, raw, wherever it lands. An `anyScript` budget applies to
+     * every script, bootstrap included, so this is the first file it would fail on.
+     */
+    largestScript: { name: string; bytes: number; boot: boolean } | null;
     /**
      * Outputs of a server build that were left out. A metafile of an app with server-side rendering
      * carries both sides; nobody downloads the server one. `0` when there was no server side.
      */
     serverOutputs: number;
+    /**
+     * Angular component stylesheets the metafile names apart and the compiler inlines into the
+     * JavaScript. Not files in the folder and not a server side: their bytes are already inside the
+     * chunks. Counted so the difference between the metafile and the folder is explained.
+     */
+    componentStyles: number;
     /**
      * Lazy entries that are a piece of a screen rather than a screen: an Angular `@defer` block, a
      * `lazy()` inside a component. They are not counted as screens, and they are listed so that

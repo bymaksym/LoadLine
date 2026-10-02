@@ -18,6 +18,7 @@ export interface FindingTarget {
 export const FINDING_KINDS = [
     'shared',
     'bootLazy',
+    'bootSingle',
     'bigFile',
     'dupes',
     'heavy',
@@ -145,6 +146,8 @@ export interface DupeCopyData {
     own: string | null;
     /** Packages bringing it in, as HTML, for when no own file imports it. */
     via: string | null;
+    /** The parent pinning this copy to one exact version, as HTML, with the range it declares. */
+    pinned?: { parent: string; range: string } | null;
 }
 
 export interface DupesData {
@@ -154,6 +157,14 @@ export interface DupesData {
     /** A copy nobody asked for directly: aligning the project's `package.json` will not move it. */
     viaDependency: boolean;
     inBoot: boolean;
+    /**
+     * Parents pinning a copy to an exact version a major away from the other copy, as HTML. Forcing
+     * one resolution there is a breaking change inside that parent, so the override is no advice.
+     * `null` when nothing is pinned that way, or nobody gave the ranges.
+     */
+    pinnedApart?: string | null;
+    /** Parents pinning a copy exactly, on the same major: an override may work, and needs testing. */
+    pinnedSame?: string | null;
 }
 
 /** One CommonJS package, with where it lands and who brings it. */

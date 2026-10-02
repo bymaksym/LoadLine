@@ -14,6 +14,15 @@ const EN: CliStrings = {
         `The whole first trip is ${total} across ${files} ${files === 1 ? 'file' : 'files'} — ${parts} — ` +
         'counting everything index.html asks for before anything appears. The figure above is the ' +
         'JavaScript half, which is the half this report can break down.',
+    htmlWritten: file => `The page with this build loaded: ${file}`,
+    located: files => `found ${files}`,
+    lastRunUnchanged: 'nothing moved',
+    tripFonts: 'fonts',
+    tripImages: 'images',
+    componentStyles: count =>
+        `${count} component ${count === 1 ? 'stylesheet' : 'stylesheets'} of the metafile ${count === 1 ? 'is' : 'are'} ` +
+        'inside the JavaScript: Angular inlines them, so they are not files in the folder and are already in the figures.',
+    sinceLast: (date, change) => `since the last run (${date}): ${change}`,
     serverLeftOut: count =>
         `${count} output${count === 1 ? '' : 's'} of this build are not in the browser folder ` +
         '(the server side of a rendered build): left out, because nobody downloads them.',
@@ -40,11 +49,10 @@ const EN: CliStrings = {
     },
     savingCell: saving => saving || '—',
     totalSaving: (bytes, after, count) =>
-        `Acting on all ${count} would take ${bytes} off the first load, leaving it at about ${after}. ` +
+        `${count === 1 ? 'Acting on it' : `Acting on all ${count}`} would take ${bytes} off the first load, leaving it at about ${after}. ` +
         'The figures are raw minified bytes inside the chunk, and they are not added up: the graph is ' +
         'walked once with every file named above taken out together, so bytes reachable two ways are ' +
         'counted once.',
-    nothingToSave: 'No signal here names a saving that can be measured.',
 
     profileName: { slow4g: 'slow 4G', fast4g: '4G', cable: 'cable' },
     timeNote:
@@ -92,11 +100,11 @@ const EN: CliStrings = {
     prNew: count => `${count} new`,
     prDetails: 'The whole report',
 
-    screenBudgetNote: warning =>
-        'And one for the screens. "anyScript" applies to every file the build emits, which is what ' +
-        'makes it usable when the names carry content hashes and a per-bundle budget cannot name ' +
-        "anything. It is based on the heaviest screen's own code rather than the average, or it " +
-        `fires on the screen that was already the largest the day it was written — ${warning}:`,
+    screenBudgetNote: (warning, file, size) =>
+        'And one per file. "anyScript" applies to every script the build emits — the bootstrap ones too — ' +
+        'which is what makes it usable when the names carry content hashes and a per-bundle budget cannot ' +
+        `name anything. So it goes above the largest script there is today, ${file} at ${size}, or it fails ` +
+        `the next build on a file nobody touched — ${warning}:`,
     headWhatIf: 'What if it were deferred',
     whatIfNote:
         'The saving is exact: the graph is walked without those files, and what stops being ' +
@@ -122,6 +130,15 @@ const ES: CliStrings = {
         `El primer viaje entero son ${total} en ${files} ${files === 1 ? 'fichero' : 'ficheros'} — ${parts} — ` +
         'contando todo lo que pide index.html antes de que aparezca nada. La cifra de arriba es la ' +
         'mitad de JavaScript, que es la que este informe sabe desglosar.',
+    htmlWritten: file => `La página con este build cargado: ${file}`,
+    located: files => `encontrado ${files}`,
+    lastRunUnchanged: 'no se ha movido nada',
+    tripFonts: 'de tipografías',
+    tripImages: 'de imágenes',
+    componentStyles: count =>
+        `${count} ${count === 1 ? 'hoja de estilos de componente del metafile va' : 'hojas de estilos de componente del metafile van'} ` +
+        'dentro del JavaScript: Angular las incrusta, así que no son ficheros de la carpeta y ya están en las cifras.',
+    sinceLast: (date, change) => `desde la última ejecución (${date}): ${change}`,
     serverLeftOut: count =>
         `${count} salida${count === 1 ? '' : 's'} de este build no ${count === 1 ? 'está' : 'están'} en la carpeta ` +
         'del navegador (el lado servidor de un build con render): fuera, porque nadie las descarga.',
@@ -148,11 +165,10 @@ const ES: CliStrings = {
     },
     savingCell: saving => saving || '—',
     totalSaving: (bytes, after, count) =>
-        `Aplicando las ${count} se quitarían ${bytes} de la primera carga y quedaría en unos ${after}. ` +
+        `${count === 1 ? 'Aplicándola' : `Aplicando las ${count}`} se quitarían ${bytes} de la primera carga y quedaría en unos ${after}. ` +
         'Las cifras son bytes minificados en crudo dentro del chunk, y no se suman: el grafo se recorre ' +
         'una vez quitando de golpe todos los ficheros nombrados arriba, así que lo que se alcanza por dos ' +
         'caminos se cuenta una vez.',
-    nothingToSave: 'Ninguna señal de aquí nombra un ahorro que se pueda medir.',
 
     profileName: { slow4g: '4G lento', fast4g: '4G', cable: 'cable' },
     timeNote:
@@ -174,7 +190,7 @@ const ES: CliStrings = {
         `${warning} y un error en ${error} deja sitio para una funcionalidad y sigue parando un pipeline.`,
 
     bootSummary: (files, screens) =>
-        `${files} ${files === 1 ? 'fichero' : 'ficheros'}, descargados antes de que aparezca nada · ${screens} ${screens === 1 ? 'pantalla' : 'pantallas'}`,
+        `${files} ${files === 1 ? 'fichero, descargado' : 'ficheros, descargados'} antes de que aparezca nada · ${screens} ${screens === 1 ? 'pantalla' : 'pantallas'}`,
     noScreens: 'No hay pantallas lazy: todo entra en el bootstrap.',
     fix: 'Qué hacer',
 
@@ -208,11 +224,11 @@ const ES: CliStrings = {
     prNew: count => `${count} nuevas`,
     prDetails: 'El informe entero',
 
-    screenBudgetNote: warning =>
-        'Y otro para las pantallas. «anyScript» aplica a cada fichero que emite el build, que es lo ' +
-        'que lo hace usable cuando los nombres llevan hash y un budget por bundle no puede nombrar ' +
-        'nada. Va sobre el código propio de la pantalla más pesada y no sobre la media, o saltaría ' +
-        `con la que ya era la mayor el día que se escribió — ${warning}:`,
+    screenBudgetNote: (warning, file, size) =>
+        'Y otro por fichero. «anyScript» aplica a cada script que emite el build —también a los del ' +
+        'arranque—, que es lo que lo hace usable cuando los nombres llevan hash y un budget por bundle no ' +
+        `puede nombrar nada. Por eso va por encima del script más grande de hoy, ${file} con ${size}, o ` +
+        `rompería el siguiente build por un fichero que nadie ha tocado — ${warning}:`,
     headWhatIf: 'Y si se difiriera',
     whatIfNote:
         'El ahorro es exacto: se recorre el grafo sin esos ficheros, y lo que deja de alcanzarse es ' +

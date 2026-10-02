@@ -50,6 +50,10 @@ const persist = (overrides: Overrides): void => {
     writeLocal(STORAGE_KEY, JSON.stringify(overrides));
 };
 
+/** A value worth keeping as an override: valid, and not the recommended one it would replace. */
+const isCustomValue = (mode: Mode, key: CriteriaKey, value: number): boolean =>
+    Number.isFinite(value) && value >= 0 && value !== RECOMMENDED[mode][key];
+
 /**
  * The criteria in force: the recommended ones plus whatever the person has changed. Changes are
  * stored in the browser per mode (raw / compressed), because a 170 kB budget makes sense
@@ -85,12 +89,8 @@ export class CriteriaService {
     /** A value equal to the recommended one, or not valid, stops being custom. */
     set(mode: Mode, key: CriteriaKey, value: number): void {
         this.overrides.update(current => {
-            const next: Partial<Criteria> = { ...current[mode] };
-            if (!Number.isFinite(value) || value < 0 || value === RECOMMENDED[mode][key]) {
-                delete next[key];
-            } else {
-                next[key] = value;
-            }
+            const { [key]: _previous, ...others } = current[mode];
+            const next: Partial<Criteria> = isCustomValue(mode, key, value) ? { ...others, [key]: value } : others;
 
             return { ...current, [mode]: next };
         });
@@ -106,14 +106,12 @@ export class CriteriaService {
      */
     applyAll(values: Partial<Criteria>, mode: Mode): void {
         this.overrides.update(current => {
-            const next: Partial<Criteria> = { ...current[mode] };
-            for (const [key, value] of Object.entries(values) as [CriteriaKey, number][]) {
-                if (!Number.isFinite(value) || value < 0 || value === RECOMMENDED[mode][key]) {
-                    delete next[key];
-                } else {
-                    next[key] = value;
-                }
-            }
+            const incoming = Object.entries(values) as [CriteriaKey, number][];
+            const named = new Set(incoming.map(([key]) => key));
+            const next: Partial<Criteria> = Object.fromEntries([
+                ...Object.entries(current[mode]).filter(([key]) => !named.has(key as CriteriaKey)),
+                ...incoming.filter(([key, value]) => isCustomValue(mode, key, value)),
+            ]);
 
             return { ...current, [mode]: next };
         });

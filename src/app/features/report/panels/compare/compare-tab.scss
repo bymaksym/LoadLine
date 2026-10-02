@@ -22,7 +22,7 @@
 
     strong {
         font-family: var(--font-data);
-        font-size: 1.45rem;
+        font-size: var(--fs-5);
         color: var(--ink);
     }
 }
@@ -58,5 +58,5 @@
 }
 
 .empty--pad {
-    padding: 1.5rem 0;
+    padding: var(--space-12) 0;
 }

@@ -37,6 +37,9 @@
     "eslint.validate": ["javascript", "typescript", "html"],
     "eslint.lintTask.enable": true,
     "eslint.useFlatConfig": true,
+    // The editor runs the type-aware rules too, the same as the `.ts` files of a commit: an
+    // unawaited promise is worth seeing while it is being written, not at commit time.
+    "eslint.options": { "overrideConfigFile": "eslint.typed.config.js" },
 
     // Stylelint
     "stylelint.enable": true,

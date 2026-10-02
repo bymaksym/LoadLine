@@ -309,7 +309,8 @@ describe('buildComparisonFindings', () => {
 });
 
 describe('buildContextFindings', () => {
-    const analysis = { bootRawBytes: 1.28 * KB * KB } as Analysis;
+    // What Angular's initial budget counts: the JavaScript and the global stylesheet, raw.
+    const analysis = { bootRawBytes: 1.1 * KB * KB, initialRawBytes: 1.28 * KB * KB } as Analysis;
     const angular = readAngularJson({
         projects: {
             app: {
@@ -441,9 +442,24 @@ describe('the list of signal kinds', () => {
 
     it('leaves no signal unnamed', () => {
         // Pieces other signals are composed of, not signals: a word for the root screen, one copy
-        // of a duplicated package, the zone it lands in, the line about what stays behind, and the
-        // five questions named in a clause so another signal can mention them.
-        const parts = new Set(['rootScreen', 'dupeCopy', 'dupeZone', 'ownInBootKept', 'situationAsks']);
+        // of a duplicated package, the zone it lands in, the line about what stays behind, the
+        // five questions named in a clause so another signal can mention them, and the small words
+        // the lists inside a signal are built from, so they are not English in a Spanish sentence.
+        const parts = new Set([
+            'rootScreen',
+            'dupeCopy',
+            'dupeZone',
+            'ownInBootKept',
+            'situationAsks',
+            'andMore',
+            'inPage',
+            'each',
+            'fileCount',
+            'packageBarrelRow',
+            'ownBarrelRow',
+            'secretBenign',
+            'secretOwner',
+        ]);
         const written = Object.keys(TEXT.en).filter(key => !parts.has(key));
 
         const alphabetical = (a: string, b: string) => a.localeCompare(b);

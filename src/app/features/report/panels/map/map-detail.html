@@ -1,0 +1,68 @@
+@let t = i18n.ui();
+
+<aside aria-live="polite" class="map-detail">
+    @if (node(); as node) {
+        <p class="map-detail__kind">
+            <i aria-hidden="true" class="dot" [attr.data-zone]="node.kind === 'build' ? 'all' : node.zone"></i>
+            {{ t.mapKind[node.kind] }}
+            @if (node.kind === 'chunk') {
+                · {{ whoPays(node) }}
+            }
+        </p>
+        <h3 class="map-detail__name">{{ node.label }}</h3>
+        <p class="map-detail__figure">
+            {{ figureOf(node) }}
+            @if (node.bytes !== null && store.compressed()) {
+                <small>{{ node.raw | bytes }} {{ t.unitRaw }}<app-explain [text]="t.treeRawHelp" /></small>
+            }
+        </p>
+        @for (line of sharesOf(node); track line) {
+            <p class="map-detail__share">{{ line }}</p>
+        }
+        @if (node.bytes === null && node.kind !== 'rest' && node.kind !== 'build') {
+            <p class="map-detail__share">{{ t.mapRawInside(node.raw | bytes) }}</p>
+        }
+
+        @if (contentsOf(node); as contents) {
+            @if (contents.length > 0) {
+                <h4 class="map-detail__title">{{ t.mapContents }}</h4>
+                <ul class="map-detail__list">
+                    @for (row of contents; track row.node.id) {
+                        <li class="map-detail__row">
+                            <button
+                                class="map-detail__go"
+                                type="button"
+                                [title]="row.node.label"
+                                (click)="opened.emit(row.node)"
+                            >
+                                {{ row.node.label }}
+                            </button>
+                            <span class="map-detail__pct">{{ row.share }}</span>
+                            <span
+                                aria-hidden="true"
+                                class="map-detail__bar"
+                                [class.map-detail__bar--own]="row.node.own"
+                            >
+                                <i [attr.data-zone]="row.node.zone" [style.width.%]="row.width"></i>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        }
+
+        <div class="map-detail__actions">
+            @if (node.children.length > 0 && node !== current() && node.kind !== 'build') {
+                <button class="ctl ctl--active" type="button" (click)="opened.emit(node)">{{ t.mapOpen }}</button>
+            }
+            @if (canGoUp()) {
+                <button class="ctl" type="button" (click)="upped.emit()">{{ t.mapUp }}</button>
+            }
+            @if (node.kind === 'package' || node.kind === 'file' || node.kind === 'folder') {
+                <button class="ctl" type="button" (click)="found.emit(node)">{{ t.mapFindIt }}</button>
+            }
+        </div>
+    } @else {
+        <p class="map-detail__empty">{{ t.mapPick }}</p>
+    }
+</aside>

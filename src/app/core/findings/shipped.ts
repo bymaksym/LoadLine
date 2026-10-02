@@ -26,7 +26,7 @@ import { TEXT } from './finding-text';
  * files is what keeps the count right — `date-fns` splits one language across ten files under
  * `locale/en-US/_lib/`, and counting those would report ten languages where there is one.
  */
-const LOCALE_CODE = /^([a-z]{2,3})(-[A-Za-z0-9]{2,8})?$/;
+const LOCALE_CODE = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})?$/;
 
 /**
  * What a library calls the folder it keeps its languages in. `locale` and `locales` were the whole
@@ -167,10 +167,7 @@ export const buildShippedFindings = (analysis: Analysis, lang: Lang, c: Criteria
  */
 const unnamedScreen = (label: string): boolean => {
     const rest = label.replace(/^chunk[-._]/i, '');
-    if (rest !== label) {
-        return true;
-    }
-    return /^[\dA-Za-z_-]{6,}$/.test(rest) && /[a-z]/.test(rest) && /[A-Z]/.test(rest) && /\d/.test(rest);
+    return rest !== label || (/^[\w-]{6,}$/.test(rest) && /[a-z]/.test(rest) && /[A-Z]/.test(rest) && /\d/.test(rest));
 };
 
 /**
@@ -228,6 +225,7 @@ const driftFinding = (drift: SplitDrift | null, lang: Lang): Finding[] => {
                 chunks: drift.chunks,
                 file: formatBytes(drift.file),
                 measured: formatBytes(drift.measured),
+                angular: drift.angular === true,
             }),
         },
     ];

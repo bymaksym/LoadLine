@@ -64,20 +64,24 @@ export const budgetAdvice = (initialRawBytes: number, headroom = 0.15): BudgetAd
 };
 
 /**
- * The same for one screen: the budget on what a lazy chunk may weigh.
+ * The budget on what any one script may weigh.
  *
- * Angular's `anyComponentStyle` and `bundle` budgets are per named bundle, which hashed chunk names
- * make useless. What is worth writing is `anyScript`, applied to every emitted script: the figure
- * to base it on is the heaviest screen's own code, not the average, or the budget fires on the
- * screen that was already the largest the day it was written.
+ * Angular's `bundle` budgets are per named bundle, which hashed chunk names make useless. What is
+ * worth writing is `anyScript`, and **it applies to every script the build emits, the bootstrap's
+ * included**. It used to be suggested over the heaviest screen's own code — 20/30 kB on a build
+ * whose bootstrap chunks were 137 and 284 kB — which is a budget that fails the very next build on
+ * files nobody touched. It is suggested above the largest script instead, so that it starts green
+ * and fires when any file grows past what the biggest one is today.
+ *
+ * @param largestScriptRawBytes the heaviest script of the build, raw, wherever it lands.
  */
-export const screenBudgetAdvice = (heaviestOwnRawBytes: number, headroom = 0.25): BudgetAdvice | null => {
-    if (heaviestOwnRawBytes <= 0) {
+export const screenBudgetAdvice = (largestScriptRawBytes: number, headroom = 0.15): BudgetAdvice | null => {
+    if (largestScriptRawBytes <= 0) {
         return null;
     }
 
-    const warningKb = roundKb(heaviestOwnRawBytes * (1 + headroom));
-    const errorKb = roundKb(heaviestOwnRawBytes * (1 + headroom) * 1.5);
+    const warningKb = roundKb(largestScriptRawBytes * (1 + headroom));
+    const errorKb = roundKb(largestScriptRawBytes * (1 + headroom) * 1.3);
     const snippet = [
         '{',
         '    "type": "anyScript",',
@@ -86,5 +90,5 @@ export const screenBudgetAdvice = (heaviestOwnRawBytes: number, headroom = 0.25)
         '}',
     ].join('\n');
 
-    return { warningKb, errorKb, currentBytes: heaviestOwnRawBytes, snippet };
+    return { warningKb, errorKb, currentBytes: largestScriptRawBytes, snippet };
 };

@@ -214,7 +214,7 @@ export interface JsonReport {
      * whether either was given: an empty `shipped` means "no advisory ships" only when the second
      * is `true`, and "nobody ran an audit" otherwise.
      */
-    deps: DepsReport;
+    deps: Omit<DepsReport, 'declared'>;
     comparison: JsonComparison | null;
     /** `false` when a baseline in another unit made the comparison impossible. */
     comparable: boolean;

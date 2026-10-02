@@ -150,11 +150,7 @@ export class BootTabComponent {
 
     protected readonly rows = computed<BootRow[]>(() => {
         const query = this.filter().trim().toLowerCase();
-        if (!query) {
-            return this.allRows();
-        }
-
-        return this.allRows().filter(row => row.name.toLowerCase().includes(query));
+        return query ? this.allRows().filter(row => row.name.toLowerCase().includes(query)) : this.allRows();
     });
 
     protected readonly split = computed(() => {
@@ -212,10 +208,9 @@ export class BootTabComponent {
             return rows.toSorted((a, b) => sign * (a.exclusive - b.exclusive));
         }
         // A project folder has no importers to count; it sits at the end either way.
-        if (key === 'importers') {
-            return rows.toSorted((a, b) => sign * ((a.importers ?? -1) - (b.importers ?? -1)));
-        }
-        return rows.toSorted((a, b) => sign * (a.bytes - b.bytes));
+        return key === 'importers'
+            ? rows.toSorted((a, b) => sign * ((a.importers ?? -1) - (b.importers ?? -1)))
+            : rows.toSorted((a, b) => sign * (a.bytes - b.bytes));
     }
 
     protected toggle(row: BootRow): void {

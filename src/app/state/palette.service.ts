@@ -68,9 +68,11 @@ export class PaletteService {
             return;
         }
 
-        if (event.key === '?') {
-            event.preventDefault();
-            this.show('keys');
+        if (event.key !== '?') {
+            return;
         }
+
+        event.preventDefault();
+        this.show('keys');
     }
 }

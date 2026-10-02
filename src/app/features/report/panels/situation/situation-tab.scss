@@ -8,8 +8,8 @@
    the same three colours the rest of the report rates with, so nobody has to learn a fourth scale.
 */
 .cost {
-    margin: 0.9rem 0;
-    padding: 0.9rem 1rem;
+    margin: var(--space-7) 0;
+    padding: var(--space-7) var(--space-8);
     border: 1px solid var(--line);
     border-left: 3px solid var(--line-strong);
     border-radius: var(--radius);
@@ -34,46 +34,46 @@
 
 .cost__line {
     margin: 0;
-    font-size: 1rem;
+    font-size: var(--fs-3);
     font-weight: 600;
     line-height: 1.45;
 
     /* Nothing answered yet is not a failure, so it does not read as one: it reads as a note. */
     &--none {
-        font-size: 0.9rem;
+        font-size: var(--fs-2);
         font-weight: 400;
         color: var(--muted);
     }
 }
 
 .cost__note {
-    margin: 0.35rem 0 0;
+    margin: var(--space-3) 0 0;
     font-size: var(--fs-note);
     color: var(--muted);
 }
 
 .asymmetry {
     display: flex;
-    gap: 0.4rem;
+    gap: var(--space-3);
     align-items: baseline;
 
     max-width: 78ch;
-    margin: 0.6rem 0;
+    margin: var(--space-5) 0;
 
-    font-size: 0.85rem;
+    font-size: var(--fs-body);
     color: var(--muted);
 }
 
 .panel__note {
     max-width: 78ch;
-    margin: 0.4rem 0 1.2rem;
-    font-size: 0.85rem;
+    margin: var(--space-3) 0 var(--space-10);
+    font-size: var(--fs-body);
 }
 
 .warn {
     max-width: 78ch;
-    margin: 0.6rem 0;
-    font-size: 0.85rem;
+    margin: var(--space-5) 0;
+    font-size: var(--fs-body);
     color: var(--warn);
 }
 
@@ -86,26 +86,26 @@
 .q {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    gap: 1rem 1.6rem;
+    gap: var(--space-8) var(--space-12);
 
-    padding: 1rem 0;
+    padding: var(--space-8) 0;
     border-top: 1px solid var(--line);
 
     @media (width <= 60rem) {
         grid-template-columns: minmax(0, 1fr);
-        gap: 0.7rem;
+        gap: var(--space-6);
     }
 }
 
 .q__title {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: var(--space-3);
     align-items: baseline;
 
     margin: 0;
 
-    font-size: 0.95rem;
+    font-size: var(--fs-3);
     font-weight: 600;
     line-height: 1.4;
 }
@@ -121,10 +121,10 @@
 
 .q__technical {
     display: grid;
-    gap: 0.2rem;
+    gap: var(--space-2);
 
     max-width: 60ch;
-    margin: 0.4rem 0 0;
+    margin: var(--space-3) 0 0;
 
     font-size: var(--fs-note);
     color: var(--muted);
@@ -142,24 +142,24 @@
 
 .q__answer {
     display: grid;
-    gap: 0.6rem;
+    gap: var(--space-5);
     align-content: start;
 }
 
 .opts {
     display: grid;
-    gap: 0.35rem;
+    gap: var(--space-3);
 }
 
 .opt {
     cursor: pointer;
 
-    padding: 0.4rem 0.7rem;
+    padding: var(--space-3) var(--space-6);
     border: 1px solid var(--line);
     border-radius: var(--radius);
 
     font: inherit;
-    font-size: 0.85rem;
+    font-size: var(--fs-body);
     color: var(--ink);
     text-align: left;
 
@@ -187,18 +187,18 @@
        nothing about the report — so it is quieter than the answers that do.
     */
     &--dunno {
-        font-size: 0.8rem;
+        font-size: var(--fs-note);
         color: var(--muted);
     }
 }
 
 .q__imported {
     margin: 0;
-    padding: 0.5rem 0.7rem;
+    padding: var(--space-4) var(--space-6);
     border: 1px dashed var(--line-strong);
     border-radius: var(--radius);
 
-    font-size: 0.85rem;
+    font-size: var(--fs-body);
     color: var(--muted);
 
     background: var(--surface);
@@ -210,7 +210,7 @@
 
 .raw__field {
     display: flex;
-    gap: 0.4rem;
+    gap: var(--space-3);
     align-items: center;
 }
 
@@ -230,10 +230,10 @@
 
 .rum {
     display: flex;
-    gap: 0.35rem;
+    gap: var(--space-3);
     align-items: center;
 
-    font-size: 0.85rem;
+    font-size: var(--fs-body);
     color: var(--muted);
 
     input {
@@ -242,22 +242,22 @@
 }
 
 .who {
-    margin-top: 1.4rem;
-    padding-top: 1rem;
+    margin-top: var(--space-12);
+    padding-top: var(--space-8);
     border-top: 1px solid var(--line);
 }
 
 .who__fields {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1.2rem;
+    gap: var(--space-3) var(--space-10);
 
     label {
         display: flex;
-        gap: 0.4rem;
+        gap: var(--space-3);
         align-items: center;
 
-        font-size: 0.85rem;
+        font-size: var(--fs-body);
         color: var(--muted);
     }
 }

@@ -184,10 +184,10 @@
         <table>
             <thead>
                 <tr>
-                    <th>{{ t.thChunk }}</th>
-                    <th>{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
-                    <th>{{ t.measureBelongs }}</th>
-                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                    <th scope="col">{{ t.thChunk }}</th>
+                    <th scope="col">{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
+                    <th scope="col">{{ t.measureBelongs }}</th>
+                    <th class="num" scope="col">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
                 </tr>
             </thead>
             <tbody>
@@ -249,9 +249,9 @@
         <table>
             <thead>
                 <tr>
-                    <th>{{ t.thChunk }}</th>
-                    <th>{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
-                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                    <th scope="col">{{ t.thChunk }}</th>
+                    <th scope="col">{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
+                    <th class="num" scope="col">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
                 </tr>
             </thead>
             <tbody>

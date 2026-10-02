@@ -103,7 +103,7 @@ export const diagnosticsOf = (input: DiagnosticInput): string => {
     lines.push(
         `read from:        ${input.derived ? 'the build folder (graph out of the chunks)' : 'a stats.json'}`,
         `outputs:          ${Object.keys(meta.outputs).length}`,
-        `inputs:           ${Object.keys(meta.inputs ?? {}).length}`,
+        `inputs:           ${Object.keys(meta.inputs).length}`,
         `entry outputs:    ${countEntries(meta)}`,
         `index.html:       ${input.announced ? `read, names ${input.announced.size} script(s)` : 'not loaded'}`,
         `source maps:      ${input.mapFiles ?? 0}`,

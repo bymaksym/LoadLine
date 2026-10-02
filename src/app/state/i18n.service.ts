@@ -32,6 +32,16 @@ export class I18nService {
         setNumberLang(this.lang());
     }
 
+    /**
+     * A language somebody else chose for this page — `loadline --html --lang es` — without making it
+     * this browser's choice: the button is still what remembers one.
+     */
+    use(lang: Lang): void {
+        this.lang.set(lang);
+        setNumberLang(lang);
+        document.documentElement.lang = lang;
+    }
+
     toggle(): void {
         const next: Lang = this.lang() === 'es' ? 'en' : 'es';
 

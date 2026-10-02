@@ -82,9 +82,7 @@ export class ScreensTabComponent {
         return this.i18n
             .ui()
             .startupNote(
-                startup
-                    ? { waves: startup.waves, late: startup.discovered.length, chunks: analysis?.bootFiles ?? 0 }
-                    : null,
+                startup ? { waves: startup.waves, late: startup.discovered.length, chunks: analysis.bootFiles } : null,
             );
     });
 

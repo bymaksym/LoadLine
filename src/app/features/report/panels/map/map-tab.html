@@ -1,0 +1,142 @@
+@let t = i18n.ui();
+
+<app-panel-header [howTo]="t.howToMap" [subtitle]="t.secMapSub" [title]="t.secMap" />
+
+<div class="map-bar">
+    <!-- Where the map is: the whole build, then each level opened. Each crumb goes back to it. -->
+    <nav class="map-bar__crumbs" [attr.aria-label]="t.secMap">
+        <button
+            class="map-bar__crumb"
+            type="button"
+            [attr.aria-current]="path().length === 0 ? 'location' : null"
+            (click)="go([])"
+        >
+            {{ t.mapRoot }}
+        </button>
+        @for (step of path(); track step.id; let i = $index; let last = $last) {
+            <span aria-hidden="true" class="map-bar__sep">›</span>
+            <button
+                class="map-bar__crumb"
+                type="button"
+                [attr.aria-current]="last ? 'location' : null"
+                [title]="step.label"
+                (click)="go(trail().slice(0, i + 1))"
+            >
+                {{ step.label }}
+            </button>
+        }
+    </nav>
+
+    <div class="map-bar__tools">
+        <input
+            class="field map-bar__search"
+            type="search"
+            [attr.aria-label]="t.mapSearch"
+            [placeholder]="t.mapSearch"
+            [value]="query()"
+            (input)="setQuery($any($event.target).value)"
+        />
+        @if (query()) {
+            <span aria-live="polite" class="map-bar__hits">{{ t.mapMatches(hits()) }}</span>
+        }
+
+        <div class="map-bar__zones" role="group" [attr.aria-label]="t.secMap">
+            @for (option of zones; track option) {
+                <button
+                    class="ctl"
+                    type="button"
+                    [attr.aria-pressed]="zone() === option"
+                    [class.ctl--active]="zone() === option"
+                    (click)="setZone(option)"
+                >
+                    <i aria-hidden="true" class="dot" [attr.data-zone]="option"></i>
+                    {{ zoneLabel(option) }}
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+<p class="map-note">
+    <span>{{ areaNote() }}</span>
+    <span aria-hidden="true" class="map-note__key"></span>{{ t.mapLegendPackage }}
+    <span aria-hidden="true" class="map-note__key map-note__key--own"></span>{{ t.mapLegendOwn }}
+    <span class="map-note__hint">{{ t.mapHint }}</span>
+</p>
+
+<div class="map-layout">
+    <!--
+    The rectangles. Each one is a button: it takes focus in size order, says its name, figure and
+    share to a screen reader, and opens on Enter. What is drawn inside a rectangle is a picture of
+    its contents — one press on it opens that part directly.
+    -->
+    <div
+        #frame
+        class="map"
+        role="group"
+        [attr.aria-label]="areaNote()"
+        [style.height.px]="height()"
+        (keydown)="onKey($event)"
+    >
+        @for (tile of tiles(); track tile.node.id) {
+            <button
+                class="map__tile"
+                type="button"
+                [attr.aria-label]="ariaOf(tile)"
+                [attr.data-kind]="tile.node.kind"
+                [attr.data-zone]="tile.node.zone"
+                [class.map__tile--dim]="tile.hit === false"
+                [class.map__tile--hit]="tile.hit === true"
+                [class.map__tile--own]="tile.node.own"
+                [style.height.px]="tile.rect.h"
+                [style.left.px]="tile.rect.x"
+                [style.top.px]="tile.rect.y"
+                [style.width.px]="tile.rect.w"
+                (blur)="picked.set(null)"
+                (click)="openAt(tile, $event)"
+                (focus)="picked.set(tile.node)"
+                (mousemove)="pointAt(tile, $event)"
+            >
+                @if (tile.named) {
+                    <span class="map__name">{{ tile.node.label }}</span>
+                }
+                @if (tile.sized) {
+                    <span class="map__size">{{ figureOf(tile.node) }} · {{ tile.share }}</span>
+                }
+                @for (cell of tile.inner; track cell.node.id) {
+                    <span
+                        class="map__cell"
+                        [attr.data-cell]="cell.node.id"
+                        [attr.data-kind]="cell.node.kind"
+                        [class.map__cell--hit]="cell.hit"
+                        [class.map__cell--own]="cell.node.own"
+                        [style.height.px]="cell.rect.h"
+                        [style.left.px]="cell.rect.x"
+                        [style.top.px]="cell.rect.y"
+                        [style.width.px]="cell.rect.w"
+                    >
+                        @if (cell.named) {
+                            <span class="map__cell-name">{{ cell.node.label }}</span>
+                        }
+                        @if (cell.sized) {
+                            <span class="map__cell-size">{{ cell.node.raw | bytes }}</span>
+                        }
+                    </span>
+                }
+            </button>
+        } @empty {
+            <p class="empty map__empty">{{ t.mapEmpty }}</p>
+        }
+    </div>
+
+    <!-- What the pointer or the focus is on, in words: the part of a treemap a rectangle cannot say. -->
+    <app-map-detail
+        [canGoUp]="path().length > 0"
+        [current]="current()"
+        [node]="detail()"
+        [roots]="roots()"
+        (found)="findIt($event)"
+        (opened)="open($event)"
+        (upped)="up()"
+    />
+</div>

@@ -80,11 +80,9 @@ describe('criteria', () => {
     });
 
     it('every editable criterion exists in the recommended set', () => {
-        for (const field of CRITERIA_FIELDS) {
-            expect(RECOMMENDED.gzip).toHaveProperty(field.key);
-            if (field.pairWith) {
-                expect(RECOMMENDED.gzip).toHaveProperty(field.pairWith);
-            }
+        const keys = CRITERIA_FIELDS.flatMap(field => (field.pairWith ? [field.key, field.pairWith] : [field.key]));
+        for (const key of keys) {
+            expect(RECOMMENDED.gzip).toHaveProperty(key);
         }
     });
 

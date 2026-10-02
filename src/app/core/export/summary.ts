@@ -13,6 +13,7 @@ import { type Analysis } from '../analysis/analysis.types';
 import { type Comparison } from '../baseline/baseline.types';
 import { rankActions, totalSaving } from '../findings/actions';
 import { type Finding } from '../findings/finding.types';
+import { plainText } from '../findings/finding-plain';
 import { formatBytes, formatDelta } from '../format/format.utils';
 
 export interface SummaryInput {
@@ -26,6 +27,8 @@ export interface SummaryInput {
     /** Everything the page asks for before anything appears, when a folder was read. */
     firstTrip: number | null;
     lang: 'es' | 'en';
+    /** What moved since the previous run, as one line, when the command remembers one. */
+    since?: string | null;
 }
 
 const WORDS = {
@@ -37,7 +40,6 @@ const WORDS = {
         signals: 'Signals',
         actions: 'What to fix first',
         saving: 'All of it is worth',
-        none: 'nothing that can be measured',
         tail: (unit: string) => `— Loadline, figures ${unit}`,
     },
     es: {
@@ -46,9 +48,8 @@ const WORDS = {
         screens: 'Pantallas',
         worst: 'Pantalla más pesada',
         signals: 'Señales',
-        actions: 'Qué arreglar primero',
+        actions: 'Qué arreglo primero',
         saving: 'Todo junto vale',
-        none: 'nada que se pueda medir',
         tail: (unit: string) => `— Loadline, cifras ${unit}`,
     },
 };
@@ -63,6 +64,7 @@ export const summaryText = (input: SummaryInput): string => {
     const worst = analysis.screens[0];
     const problems = input.findings.filter(finding => finding.severity === 'high' || finding.severity === 'mid');
     const total = totalSaving(analysis, input.findings);
+    const actions = rankActions(input.findings).slice(0, 3);
 
     const bootLine = comparison
         ? `${formatBytes(analysis.bootBytes)} (${formatDelta(comparison.boot.diff)} vs ${comparison.baselineName})`
@@ -72,20 +74,25 @@ export const summaryText = (input: SummaryInput): string => {
         `Loadline · ${input.name}`,
         '',
         `${words.boot}: ${bootLine}`,
+        ...(input.since ? [input.since] : []),
         ...(input.firstTrip === null ? [] : [`${words.trip}: ${formatBytes(input.firstTrip)}`]),
         `${words.screens}: ${analysis.screens.length}`,
         ...(worst ? [`${words.worst}: ${worst.label} — ${formatBytes(worst.total)}`] : []),
         `${words.signals}: ${problems.length}`,
+        ...(actions.length > 0
+            ? [
+                  '',
+                  `${words.actions}:`,
+                  ...actions.map(
+                      (action, index) =>
+                          `  ${index + 1}. ${plainText(action.finding.title)}${action.saving > 0 ? ` — ${formatBytes(action.saving)}` : ''}`,
+                  ),
+              ]
+            : []),
+        // Only when there is something to say. "All of it is worth: nothing that can be measured"
+        // was a line in every paste that carried no information at all.
+        ...(total.counted > 0 && total.bytes > 0 ? ['', `${words.saving}: ${formatBytes(total.bytes)}`] : []),
         '',
-        `${words.actions}:`,
-        ...rankActions(input.findings)
-            .slice(0, 3)
-            .map(
-                (action, index) =>
-                    `  ${index + 1}. ${action.finding.title}${action.saving > 0 ? ` — ${formatBytes(action.saving)}` : ''}`,
-            ),
-        '',
-        `${words.saving}: ${total.counted > 0 ? formatBytes(total.bytes) : words.none}`,
         words.tail(input.unit),
     ];
 

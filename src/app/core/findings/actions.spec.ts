@@ -6,8 +6,16 @@ import { type Finding, type FindingKind } from './finding.types';
 
 const KB = 1024;
 
-const finding = (kind: FindingKind, saving?: number, sources?: string[]): Finding =>
-    ({ kind, severity: 'mid', chip: '', title: kind, body: '', fix: '', saving, sources }) as Finding;
+const finding = (kind: FindingKind, saving?: number, sources?: string[]): Finding => ({
+    kind,
+    severity: 'mid',
+    chip: '',
+    title: kind,
+    body: '',
+    fix: '',
+    saving,
+    sources,
+});
 
 /** An analysis whose only job is to answer "what would go without these files". */
 const analysisWith = (exclusiveOf: (files: Iterable<string>) => number, bootTotal: number): Analysis =>

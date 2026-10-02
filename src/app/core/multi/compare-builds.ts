@@ -114,7 +114,7 @@ const isFramework = (name: string): boolean =>
  * The version pnpm writes into the installed path: `.pnpm/lodash@4.17.21/node_modules/lodash/…`.
  * `null` for every other layout, which is most of them.
  */
-const versionIn = (path: string): string | null => /\.pnpm\/(?:@[^/]+\+)?[^@/]+@([^/_]+)/.exec(path)?.[1] ?? null;
+const versionIn = (path: string): string | null => /\.pnpm\/(?:@[^/+]+\+)?[^@/]+@([^/_]+)/.exec(path)?.[1] ?? null;
 
 /** What one build weighs: the bootstrap, the screens, and every chunk of it added up. */
 const totalsOf = (build: Build): BuildTotals => {

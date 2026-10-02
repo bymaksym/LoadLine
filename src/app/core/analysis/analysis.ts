@@ -17,7 +17,7 @@ import {
 } from './analysis.types';
 import { chunkImportersOf } from './blast';
 import { depthOf, startupOf, wavesFrom, widthOf } from './delivery';
-import { browserSide, classifyLazyEntries, labelledByWeight, lazyLoadersOf } from './entries';
+import { browserSide, classifyLazyEntries, initialFiguresOf, labelledByWeight, lazyLoadersOf } from './entries';
 import { importGraphOf } from './importers';
 import { graphInsightsOf } from './insights';
 import { type GraphInsights } from './insights.types';
@@ -122,12 +122,12 @@ export const analyze = (
 ): Analysis => {
     // The keys of `gzip` are every asset of the build folder: the measured answer to what a
     // browser can actually download, which is what tells the two sides of an SSR build apart.
-    const { outputs, serverOutputs } = browserSide(meta.outputs, gzip ? new Set(gzip.keys()) : null);
-    const inputs = meta.inputs ?? {};
+    const { outputs, serverOutputs, componentStyles } = browserSide(meta.outputs, gzip ? new Set(gzip.keys()) : null);
+    const inputs = meta.inputs;
     // `.mjs` is what esbuild writes with `--out-extension:.js=.mjs`, and what several setups ship.
     // Filtering on `.js` alone left those builds with no entry at all and threw `NO_ENTRIES`.
     const isJs = (file: string) => /\.m?js$/.test(file);
-    const isOwn = (input: string) => !/node_modules/.test(input);
+    const isOwn = (input: string) => !input.includes('node_modules');
     /** Source-graph edges that keep files in the same chunk: anything but a lazy boundary or an external. */
     const travelsTogether = (imp: { kind: string; external?: boolean }) =>
         !imp.external && imp.kind !== 'dynamic-import';
@@ -278,7 +278,7 @@ export const analyze = (
         .filter(([file]) => reachable.has(file))
         .map(([file, out]) => ({ chunk: file, source: out.entryPoint ?? '', set: reach(file) }))
         // A screen is project code: an `await import('xlsx')` also produces a lazy entry and is not one.
-        .filter(entry => !/node_modules/.test(entry.source));
+        .filter(entry => !entry.source.includes('node_modules'));
 
     // Which of them are screens, which are pieces of one and which only group routes. The three
     // rules and their reasons are in `entries.ts`; a mark, when there is one, overrules them.
@@ -317,6 +317,7 @@ export const analyze = (
 
     const bootBytes = sumOf(boot);
     const bootRawBytes = [...boot].reduce((total, chunk) => total + (outputs[chunk]?.bytes ?? 0), 0);
+    const { initialRawBytes, largestScript } = initialFiguresOf(outputs, boot);
 
     const screens: ScreenCost[] = kinds.screens
         .map(entry => {
@@ -756,6 +757,8 @@ export const analyze = (
         insights,
         bootBytes,
         bootRawBytes,
+        initialRawBytes,
+        largestScript,
         bootFiles: boot.size,
         bootChunks: [...boot],
         startup,
@@ -763,6 +766,7 @@ export const analyze = (
         bootBuckets: [...buckets.values()].toSorted((a, b) => b.bytes - a.bytes),
         bootBucketTotal,
         serverOutputs,
+        componentStyles,
         deferredBlocks: labelledByWeight(kinds.blocks, screenLabel, sizeOf),
         routeGroupers: labelledByWeight(kinds.groupers, screenLabel, sizeOf),
         lazyData: labelledByWeight(kinds.data, screenLabel, sizeOf),

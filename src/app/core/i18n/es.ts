@@ -66,10 +66,9 @@ export const ES: UiStrings = {
         if (mode === 'brotli') {
             return 'Estás editando los criterios para cifras en brotli, las reales de los ficheros .br de la carpeta. Son más bajos que los de gzip en la misma proporción en que brotli comprime mejor.';
         }
-        if (mode === 'gzip') {
-            return 'Estás editando los criterios para cifras comprimidas en gzip (hay carpeta de build cargada).';
-        }
-        return 'Estás editando los criterios para cifras en crudo. Con la carpeta de build cargada se aplican otros: el bootstrap, por ejemplo, pasa a 170 / 350 kB.';
+        return mode === 'gzip'
+            ? 'Estás editando los criterios para cifras comprimidas en gzip (hay carpeta de build cargada).'
+            : 'Estás editando los criterios para cifras en crudo. Con la carpeta de build cargada se aplican otros: el bootstrap, por ejemplo, pasa a 170 / 350 kB.';
     },
     criteriaFigures: 'Cifras',
     criteriaGzipBtn: 'gzip',
@@ -289,7 +288,7 @@ export const ES: UiStrings = {
     paletteTab: 'pestaña',
     paletteAction: 'acción',
     paletteCount: (shown, total) =>
-        total > shown ? `${shown} de ${total} — la pestaña Buscar las nombra todas` : `${total}`,
+        total > shown ? `${shown} de ${total} — la pestaña Buscar las nombra todas` : String(total),
     paletteKeysHint: '? para los atajos',
     keysTitle: 'Teclado',
     keyJump: 'Ir a una pestaña, una pantalla o un paquete',
@@ -364,7 +363,6 @@ export const ES: UiStrings = {
     rereadBtn: 'Releer la carpeta',
     rereadHelp:
         'Vuelve a leer la misma carpeta de compilación, para después de recompilar. Solo sale donde el navegador puede quedarse con una carpeta, que no es desde una página file:// ni en todos los navegadores; en el resto, se vuelve a soltar la carpeta.',
-    intakeChangeStats: 'Cambiar stats.json',
     intakeShow: 'Ver zonas de carga',
     intakeHide: 'Ocultar zonas de carga',
     intakeAddBaseline: 'Añadir línea base para comparar',
@@ -455,9 +453,6 @@ export const ES: UiStrings = {
 
     headLeadGzip: 'Antes de ver nada se descargan (en gzip)',
     headLeadRaw: 'Antes de ver nada se descargan (sin comprimir)',
-    headFigure: (size, files) => `${size} · ${files} ficheros`,
-    headNote: (s, unit) =>
-        `La pantalla más cara es <strong>${s.label}</strong>, con ${s.total} en ${s.files} ficheros — de los cuales ${s.shared} los comparte con otras pantallas y solo ${s.own} son suyos. Cifras ${unit}.`,
     unitGzip: 'comprimidas en gzip',
     unitRaw: 'en crudo',
     unitBrotli: 'comprimidas en brotli',
@@ -486,8 +481,6 @@ export const ES: UiStrings = {
         'Baja sacando del bootstrap lo que solo se usa en algunas pantallas. La pestaña Bootstrap lo lista por peso y marca en rojo los paquetes cuyo único consumidor está en una pantalla lazy: por ahí se empieza.',
     adviceEffective:
         'La diferencia con el bootstrap declarado son chunks que el bundler marca como lazy y descarga casi todo el mundo. No se corrige en el bootstrap, sino en esos chunks: pestaña Compartidos.',
-    adviceScreens:
-        'Es bootstrap + compartido + propio. Si la pantalla típica sale cara pero su código propio es pequeño, lo que hay que mirar es el bootstrap: bajarlo baja todas las pantallas a la vez.',
     adviceShared:
         'Un chunk que cargan casi todas las pantallas no mejora solo con partirlo. Compensa sacar de él lo que use una sola pantalla; lo que usan todas se seguirá descargando esté donde esté.',
     adviceFindings:
@@ -518,6 +511,7 @@ export const ES: UiStrings = {
     tabBoot: 'Bootstrap',
     tabShared: 'Compartidos',
     tabTree: 'Árbol',
+    tabMap: 'Mapa',
     howTo: 'Cómo leer esta pestaña',
     howToFindings:
         '<p>Cada señal es un patrón concreto encontrado en <strong>tu</strong> grafo de importaciones, con su umbral y su arreglo. No son reglas genéricas de rendimiento.</p><p><strong>Importante</strong> significa que hay peso que paga todo el mundo sin necesidad. <strong>A revisar</strong> señala algo que merece una mirada pero puede tener explicación. El botón de cada señal lleva a la fila del informe de la que sale.</p>',
@@ -536,6 +530,39 @@ export const ES: UiStrings = {
     secScreensSub: 'Pulsa una fila para ver qué la compone. Las barras comparten escala.',
     secTree: 'El bundle por dentro',
     secTreeSub: 'Chunk, paquete y fichero. Filtra por zona para ver solo lo que paga todo el mundo.',
+
+    howToMap:
+        '<p>Cada rectángulo es un chunk, y su <strong>área es lo que pesa en la unidad del informe</strong>: comprimido si se leyó la carpeta. Dentro de cada chunk se ve qué lo ocupa, por paquete y por carpeta tuya. El color dice quién lo paga: gris el bootstrap, naranja lo compartido entre pantallas, verde lo de una sola pantalla. Lo rayado es código tuyo; lo liso, paquetes.</p><p><strong>Dentro de un chunk el reparto es en crudo</strong>, porque gzip comprime el fichero entero y el peso comprimido de un paquete dentro de él no existe. Por eso el área de dentro es la parte que ocupa cada uno, no una cifra comprimida inventada.</p><p>Pulsa un rectángulo para entrar en él y las migas de arriba para volver. Con el teclado: Tab recorre los rectángulos de mayor a menor, Intro entra y Escape sube un nivel. Lo que escribas en la búsqueda se ilumina, también dentro de los chunks que lo llevan.</p>',
+    secMap: 'Mapa del bundle',
+    secMapSub: 'Abre un chunk y mira de un vistazo qué ocupa dentro.',
+    mapRoot: 'Todo el build',
+    mapSearch: 'Iluminar un paquete, carpeta o fichero…',
+    mapMatches: hits => (hits === 1 ? '1 coincide' : `${hits} coinciden`),
+    mapUnattributed: 'sin atribuir (código del bundler)',
+    mapRest: count => `${count} más pequeños`,
+    mapKind: {
+        chunk: 'chunk',
+        package: 'paquete',
+        folder: 'carpeta tuya',
+        file: 'fichero',
+        rest: 'grupo de pequeños',
+        unattributed: 'sin atribuir',
+        build: 'todos los chunks',
+    },
+    mapAreaRoot: unit => `Área: lo que pesa cada chunk, en cifras ${unit}.`,
+    mapAreaInside: 'Área: la parte del chunk que ocupa cada uno, en crudo.',
+    mapShareOfParent: (percent, parent) => `${percent} de ${parent}`,
+    mapShareOfAll: percent => `${percent} de todo el JavaScript`,
+    mapRawInside: raw => `${raw} en crudo dentro del chunk`,
+    mapContents: 'Lo que más ocupa',
+    mapOpen: 'Entrar',
+    mapUp: 'Subir',
+    mapFindIt: 'Buscar dónde más está',
+    mapHint: 'Intro entra · Escape sube',
+    mapLegendPackage: 'paquete',
+    mapLegendOwn: 'código tuyo',
+    mapEmpty: 'Nada que dibujar con este filtro.',
+    mapPick: 'Pasa el ratón por un rectángulo o recórrelos con Tab para ver qué es.',
     secBoot: 'Qué hay en el bootstrap',
     secBootSub: 'Lo que se descarga antes de ver nada, agrupado por paquete y por carpeta tuya.',
     secShared: 'Chunks compartidos',

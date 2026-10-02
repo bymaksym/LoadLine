@@ -14,11 +14,13 @@ import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
 import { REPORT_TABS, type ReportTab } from '@state/report-nav.types';
+import { labelOfTab } from '@state/report-tab-label';
 import { SituationService } from '@state/situation.service';
 import { BootTabComponent } from './panels/boot/boot-tab';
 import { CompareTabComponent } from './panels/compare/compare-tab';
 import { CriteriaTabComponent } from './panels/criteria/criteria-tab';
 import { FindingsTabComponent } from './panels/findings/findings-tab';
+import { MapTabComponent } from './panels/map/map-tab';
 import { MeasuredTabComponent } from './panels/measured/measured-tab';
 import { ProjectTabComponent } from './panels/project/project-tab';
 import { ScreensTabComponent } from './panels/screens/screens-tab';
@@ -43,6 +45,7 @@ const PARAGRAPH = '\n\n';
         BootTabComponent,
         SharedTabComponent,
         TreeTabComponent,
+        MapTabComponent,
         SearchTabComponent,
         ProjectTabComponent,
         SituationTabComponent,
@@ -254,6 +257,7 @@ export class ReportPageComponent {
             boot: analysis?.bootBuckets.length ?? 0,
             shared: analysis?.sharedChunks.length ?? 0,
             tree: analysis?.tree.length ?? 0,
+            map: 0,
             search: this.store.searchIndex().total,
             project: this.store.contextInfo()?.files.length ?? 0,
             situation: this.situationService.answered(),
@@ -273,26 +277,12 @@ export class ReportPageComponent {
     }
 
     protected tabLabel(tab: ReportTab): string {
-        const t = this.i18n.ui();
-        const labels: Record<ReportTab, string> = {
-            findings: t.tabFindings,
-            screens: t.tabScreens,
-            measured: t.tabMeasured,
-            boot: t.tabBoot,
-            shared: t.tabShared,
-            tree: t.tabTree,
-            search: t.tabSearch,
-            project: t.tabProject,
-            situation: t.tabSituation,
-            compare: t.tabCompare,
-            criteria: t.tabCriteria,
-        };
-        return labels[tab];
+        return labelOfTab(tab, this.i18n.ui());
     }
 
     /** Tabs whose counter is only shown when there is something to count. */
     protected showsCount(tab: ReportTab): boolean {
-        const quiet: ReportTab[] = ['criteria', 'project', 'search', 'measured', 'compare', 'situation'];
+        const quiet: ReportTab[] = ['criteria', 'project', 'search', 'measured', 'compare', 'situation', 'map'];
         return !quiet.includes(tab) || this.counts()[tab] > 0;
     }
 

@@ -80,6 +80,16 @@ export interface Options {
      * two paths that share no code, and fail when they disagree. Prints the check and nothing else.
      */
     selfCheck: boolean;
+    /** Write the page with this build already loaded into it, at this path. */
+    html: string | null;
+    /** Open what `--html` wrote, with whatever the system opens HTML with. */
+    open: boolean;
+    /**
+     * Remember this run in `node_modules/.cache/loadline` and say what moved since the last one.
+     * On by default: it is what answers "did that change make the bootstrap smaller?" without a
+     * `--baseline`. `--no-cache` turns it off.
+     */
+    cache: boolean;
 }
 
 export type ParsedArgs = { ok: true; options: Options } | { ok: false; message: string };

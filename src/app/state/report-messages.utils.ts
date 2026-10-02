@@ -25,11 +25,7 @@ export const foreignMessage = (format: ForeignFormat, t: UiStrings): string => {
     if (format === 'viteManifest') {
         return t.errViteManifest;
     }
-    if (format === 'visualizer') {
-        return t.errVisualizer;
-    }
-
-    return t.errNotMetafile;
+    return format === 'visualizer' ? t.errVisualizer : t.errNotMetafile;
 };
 
 /**

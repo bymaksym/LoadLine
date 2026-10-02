@@ -108,10 +108,12 @@ export class ScreenDetailComponent {
             screen.source,
         ].join('\t');
 
-        if (await copyText(line)) {
-            this.copied.set(true);
-            setTimeout(() => this.copied.set(false), 1800);
+        if (!(await copyText(line))) {
+            return;
         }
+
+        this.copied.set(true);
+        setTimeout(() => this.copied.set(false), 1800);
     }
 
     /**

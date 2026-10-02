@@ -3,7 +3,7 @@
 .ctl {
     cursor: pointer;
 
-    padding: 0.4rem 0.8rem;
+    padding: var(--space-3) var(--space-6);
     border: 1px solid var(--line-strong);
     border-radius: var(--radius);
 
@@ -36,7 +36,7 @@
 
     /* Counter inside a filter button: "Bad 3". */
     &__n {
-        margin-left: 0.3rem;
+        margin-left: var(--space-2);
         font-family: var(--font-data);
         font-variant-numeric: tabular-nums;
         opacity: 0.8;
@@ -72,7 +72,7 @@
 .field {
     width: 100%;
     max-width: 22rem;
-    padding: 0.42rem 0.7rem;
+    padding: var(--space-3) var(--space-6);
     border: 1px solid var(--line);
     border-radius: var(--radius);
 
@@ -97,16 +97,16 @@
 .toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem 1rem;
+    gap: var(--space-5) var(--space-8);
     align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 0.7rem;
+    margin-bottom: var(--space-6);
 
     &__group {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.35rem;
+        gap: var(--space-3);
         align-items: center;
 
         font-size: var(--fs-body);
@@ -154,7 +154,7 @@
 
     display: inline-block;
 
-    padding: 0.45rem 0.9rem;
+    padding: var(--space-4) var(--space-7);
     border: 1px solid var(--accent);
     border-radius: var(--radius);
 

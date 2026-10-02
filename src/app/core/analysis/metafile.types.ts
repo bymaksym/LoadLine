@@ -5,8 +5,13 @@
 
 import { asRecord } from '../json/json.utils';
 
-/** `import-statement` keeps files in the same chunk; `dynamic-import` is the lazy boundary. */
-export type ImportKind = 'import-statement' | 'dynamic-import' | 'require-call' | 'url-token' | string;
+/**
+ * `import-statement` keeps files in the same chunk; `dynamic-import` is the lazy boundary.
+ * `require-call` and `url-token` are the other two esbuild writes. A plain `string` because a
+ * metafile from another tool can name kinds of its own: listing the known ones next to `| string`
+ * reads as a narrower type and is not one (the union collapses to `string`).
+ */
+export type ImportKind = string;
 
 export interface MetafileImport {
     path: string;
@@ -14,8 +19,11 @@ export interface MetafileImport {
     external?: boolean;
 }
 
-/** Module format esbuild detected in the file. `cjs` cannot be tree-shaken. Absent for CSS, JSON… */
-export type ModuleFormat = 'esm' | 'cjs' | string;
+/**
+ * Module format esbuild detected in the file: `esm` or `cjs`, and `cjs` cannot be tree-shaken.
+ * Absent for CSS, JSON… A plain `string` for the same reason as `ImportKind`.
+ */
+export type ModuleFormat = string;
 
 export interface MetafileInput {
     bytes: number;
@@ -33,6 +41,12 @@ export interface MetafileOutput {
     entryPoint?: string;
     imports?: MetafileImport[];
     inputs?: Record<string, MetafileOutputInput>;
+    /**
+     * Angular's mark on a component stylesheet. Its compiler bundles each one apart, merges the
+     * result into the metafile and then inlines the CSS into the JavaScript of the component, so the
+     * output is named in the metafile and is never a file in the folder.
+     */
+    'ng-component'?: boolean;
 }
 
 export interface Metafile {
@@ -40,9 +54,19 @@ export interface Metafile {
     outputs: Record<string, MetafileOutput>;
 }
 
-/** Checks that what was dropped is a metafile before trying to analyse it. */
-export const isMetafile = (value: unknown): value is Metafile =>
-    !!value && typeof value === 'object' && 'outputs' in value && typeof (value as Metafile).outputs === 'object';
+/**
+ * Checks that what was dropped is a metafile before trying to analyse it. Every way in goes through
+ * here — the page, the command, a comparison — so this is what makes the type above true.
+ *
+ * Both halves, and as objects: `typeof null` is `'object'`, and until 02/10/2026 only `outputs` was
+ * checked. A file without `inputs` passed as a metafile and then failed halfway through the analysis,
+ * in whichever of the seven places that read `inputs` came first; now it is refused at the door with
+ * the message for a file that is not a stats file.
+ */
+export const isMetafile = (value: unknown): value is Metafile => {
+    const record = asRecord(value);
+    return asRecord(record?.['inputs']) !== null && asRecord(record?.['outputs']) !== null;
+};
 
 /**
  * What was dropped, when it is not a metafile. Every one of these is a file somebody can reasonably
@@ -83,9 +107,5 @@ export const foreignFormat = (value: unknown): ForeignFormat => {
     // Vite's manifest: every value is an entry with the file it produced.
     const values = Object.values(data);
     const looksLikeEntry = (entry: unknown): boolean => typeof asRecord(entry)?.['file'] === 'string';
-    if (values.length > 0 && values.every(entry => looksLikeEntry(entry))) {
-        return 'viteManifest';
-    }
-
-    return 'unknown';
+    return values.length > 0 && values.every(entry => looksLikeEntry(entry)) ? 'viteManifest' : 'unknown';
 };

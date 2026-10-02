@@ -6,16 +6,16 @@
 .figures {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 0.6rem;
-    margin-bottom: 0.9rem;
+    gap: var(--space-5);
+    margin-bottom: var(--space-7);
 }
 
 .figure {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: var(--space-1);
 
-    padding: 0.6rem 0.75rem;
+    padding: var(--space-5) var(--space-6);
     border: 1px solid var(--line);
     border-radius: var(--radius);
 
@@ -31,7 +31,7 @@
 
     &__value {
         font-family: var(--font-data);
-        font-size: 1.15rem;
+        font-size: var(--fs-4);
         font-variant-numeric: tabular-nums;
         color: var(--ink);
 
@@ -57,20 +57,20 @@
 }
 
 .block-title {
-    margin: 1.2rem 0 0.2rem;
-    font-size: 0.92rem;
+    margin: var(--space-10) 0 var(--space-2);
+    font-size: var(--fs-2);
     color: var(--ink);
 }
 
 .note {
     max-width: 84ch;
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--space-4);
     font-size: var(--fs-body);
     color: var(--muted);
 }
 
 .status {
-    margin: 0.4rem 0;
+    margin: var(--space-3) 0;
     font-family: var(--font-data);
     font-size: var(--fs-body);
     color: var(--muted);
@@ -83,14 +83,14 @@
 /* Intake: three steps, the snippet and the paste box. */
 .steps {
     max-width: 84ch;
-    margin: 0 0 0.8rem;
-    padding-left: 1.2rem;
+    margin: 0 0 var(--space-6);
+    padding-left: var(--space-10);
 
     font-size: var(--fs-body);
     color: var(--ink);
 
     li + li {
-        margin-top: 0.6rem;
+        margin-top: var(--space-5);
     }
 }
 
@@ -101,11 +101,12 @@
 */
 .snippet {
     position: relative;
-    margin-top: 0.4rem;
+    margin-top: var(--space-3);
 
     pre {
         margin: 0;
-        padding: 0.6rem 6.5rem 0.6rem 0.7rem;
+        /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- room on the right for the Copy button laid over the box, so the line never runs under it: the width of a button, not a step of air */
+        padding: var(--space-5) 6.5rem var(--space-5) var(--space-6);
         border: 1px solid var(--line);
         border-radius: var(--radius);
 
@@ -140,7 +141,7 @@
 
 .measure-run {
     display: flex;
-    gap: 0.7rem;
+    gap: var(--space-6);
     align-items: center;
-    margin: 0.6rem 0;
+    margin: var(--space-5) 0;
 }

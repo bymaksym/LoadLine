@@ -17,7 +17,7 @@
  * an optimistic answer produces silence where the honest answer is noise.
  */
 
-import { type MeasuredEntry, type Measurement } from './measurement.types';
+import { type EntryTiming, type MeasuredEntry, type Measurement } from './measurement.types';
 
 /** The protocol most of the build's own JavaScript came over, and how unanimous that was. */
 export interface ObservedProtocol {
@@ -133,11 +133,7 @@ export const isStale = (takenAt: string | null, today: string): boolean => {
 
     const taken = Date.parse(takenAt);
     const now = Date.parse(`${today}T00:00:00Z`);
-    if (Number.isNaN(taken) || Number.isNaN(now)) {
-        return false;
-    }
-
-    return now - taken > OBSERVED_FRESH_DAYS * 24 * 60 * 60 * 1000;
+    return !Number.isNaN(taken) && !Number.isNaN(now) && now - taken > OBSERVED_FRESH_DAYS * 24 * 60 * 60 * 1000;
 };
 
 const originOf = (url: string | null | undefined): string | null => {
@@ -178,7 +174,9 @@ const UNCOMPRESSED_AT = 0.95;
  * bootstrap twice by two routes and fails when the two disagree.
  */
 export const wavesOf = (entries: MeasuredEntry[]): MeasuredWave[] => {
-    const timed = entries.filter(entry => entry.timing).toSorted((a, b) => a.timing!.start - b.timing!.start);
+    const timed = entries
+        .filter((entry): entry is MeasuredEntry & { timing: EntryTiming } => Boolean(entry.timing))
+        .toSorted((a, b) => a.timing.start - b.timing.start);
     const first = timed[0];
     if (!first) {
         return [];
@@ -189,13 +187,13 @@ export const wavesOf = (entries: MeasuredEntry[]): MeasuredWave[] => {
 
     const waves: MeasuredWave[] = [];
     let files = [first.file];
-    let startedAt = first.timing!.start;
-    let endedAt = first.timing!.responseEnd;
+    let startedAt = first.timing.start;
+    let endedAt = first.timing.responseEnd;
     /** The earliest moment anything of this trip had come back: the soonest it could reveal more. */
-    let boundary = first.timing!.responseEnd;
+    let boundary = first.timing.responseEnd;
 
     for (const entry of timed.slice(1)) {
-        const timing = entry.timing!;
+        const { timing } = entry;
         if (timing.start >= boundary - TOLERANCE) {
             waves.push({ files, startedAt, endedAt });
             files = [entry.file];
@@ -274,16 +272,20 @@ export const observedFrom = (measurement: Measurement, build: ReadonlySet<string
         }
 
         const timing = entry.timing;
-        if (timing) {
-            // A cache hit has no round trip to measure and would drag the median to zero.
-            if (timing.responseStart > timing.requestStart && (transfer === null || transfer > 0)) {
-                trips.push(timing.responseStart - timing.requestStart);
-            }
-            if (timing.connectEnd > timing.connectStart) {
-                opened += 1;
-                lastAt = Math.max(lastAt ?? 0, timing.connectStart);
-            }
+        if (!timing) {
+            continue;
         }
+
+        // A cache hit has no round trip to measure and would drag the median to zero.
+        if (timing.responseStart > timing.requestStart && (transfer === null || transfer > 0)) {
+            trips.push(timing.responseStart - timing.requestStart);
+        }
+        if (!(timing.connectEnd > timing.connectStart)) {
+            continue;
+        }
+
+        opened += 1;
+        lastAt = Math.max(lastAt ?? 0, timing.connectStart);
     }
 
     const thirdOrigins = new Set<string>();
@@ -294,10 +296,12 @@ export const observedFrom = (measurement: Measurement, build: ReadonlySet<string
         }
 
         const origin = originOf(entry.url);
-        if (origin && pageOrigin && origin !== pageOrigin) {
-            thirdOrigins.add(origin);
-            thirdRequests += 1;
+        if (!(origin && pageOrigin) || origin === pageOrigin) {
+            continue;
         }
+
+        thirdOrigins.add(origin);
+        thirdRequests += 1;
     }
 
     return {

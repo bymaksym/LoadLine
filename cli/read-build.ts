@@ -238,7 +238,9 @@ export const readDist = async (folder: string, derive = false): Promise<DistSize
         );
     }
 
-    const named = html ? assetsIn(html) : { referenced: [], preloaded: [], prefetched: [], hrefs: [] };
+    const named = html
+        ? assetsIn(html)
+        : { referenced: [], preloaded: [], prefetched: [], hrefs: [], icons: [], alternates: [] };
     const assets = readAssets({
         files: assetFiles,
         html,
@@ -247,6 +249,7 @@ export const readDist = async (folder: string, derive = false): Promise<DistSize
         inPage: new Set([...named.referenced, ...(html ? announcedIn(html) : []), ...(html ? stylesIn(html) : [])]),
         preloaded: new Set(named.preloaded),
         prefetched: new Set(named.prefetched),
+        icons: new Set(named.icons),
         bootChunks: new Set<string>(),
         // The same figures the rest of the report is in, so the first trip and the headline are
         // not the same bytes quoted in two units.
@@ -373,10 +376,11 @@ const pipelinePaths = async (folder: string): Promise<string[]> => {
 
     for (const segments of PIPELINE_FOLDERS) {
         const directory = join(folder, ...segments);
-        if (await exists(directory)) {
-            const paths = await filesUnder(directory);
-            found.push(...paths.filter(path => /\.ya?ml$/i.test(path)));
+        if (!(await exists(directory))) {
+            continue;
         }
+        const paths = await filesUnder(directory);
+        found.push(...paths.filter(path => /\.ya?ml$/i.test(path)));
     }
 
     return found;

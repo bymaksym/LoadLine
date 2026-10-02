@@ -57,7 +57,7 @@ export class ProjectTabComponent {
     protected readonly rows = computed<BudgetRow[]>(() => {
         const context = this.store.context();
         const angular = context.angular;
-        const boot = this.store.analysis()?.bootRawBytes ?? 0;
+        const boot = this.store.analysis()?.initialRawBytes ?? 0;
         const factor = this.store.criteria().budgetSlackFactor;
 
         return configurationBudgets(context).map(row => {

@@ -63,6 +63,15 @@ export interface CliReport {
     /** A baseline measured in another unit: the figures are not comparable and nothing is shown. */
     comparisonBlocked: boolean;
     /**
+     * Against the previous run of the same build, remembered in `node_modules/.cache/loadline`.
+     * Shown as one line and a column, never as signals and never against a gate: it answers "did
+     * that change help?", and a pipeline that wants a comparison asks for one with `--baseline`.
+     * `null` when there is no memory, it was in another unit, or `--baseline` was given.
+     */
+    sinceLast: Comparison | null;
+    /** The files found inside the build root that was named, when the command looked for them. */
+    located: string[];
+    /**
      * The signals, with whatever `loadline.json` accepted taken out. An acceptance that ran out or
      * that no longer covers the figure is **not** taken out: it is in here, and `accepted` says so.
      */

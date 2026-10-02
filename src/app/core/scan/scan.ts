@@ -10,7 +10,7 @@
 
 import { type ModuleEntry } from '../analysis/analysis.types';
 import { isSourceMap, segmentsOf, sourceAt } from '../analysis/sourcemap';
-import { packageOf } from '../format/format.utils';
+import { baseName, packageOf } from '../format/format.utils';
 import { asArray, asRecord, asText } from '../json/json.utils';
 import { categoryOf } from './catalog';
 import {
@@ -21,10 +21,10 @@ import {
     type SourceMapExposure,
     type ThirdPartyGroup,
 } from './scan.types';
-import { findSecrets } from './secrets';
+import { findSecrets, type OwnerOf } from './secrets';
 
 /** The legal comments a minifier keeps on purpose: `/*!` and anything with `@license`. */
-const LEGAL_COMMENT = /\/\*[!*][\S\s]*?\*\//g;
+const LEGAL_COMMENT = /\/\*[!*][\s\S]*?\*\//g;
 
 /**
  * Licence identifiers, and how each one has to be treated.
@@ -66,7 +66,7 @@ const LICENCES: { id: string; pattern: RegExp; class: LicenceClass }[] = [
  */
 const DEV_MARKERS: { kind: Leftover['kind']; pattern: RegExp }[] = [
     { kind: 'consoleLogs', pattern: /\bconsole\.log\(/g },
-    { kind: 'debugger', pattern: /\bdebugger\b\s*[;}]/g },
+    { kind: 'debugger', pattern: /\bdebugger\s*[;}]/g },
 ];
 
 /**
@@ -123,26 +123,27 @@ const licencesOf = (texts: ReadonlyMap<string, string>): LicenceFound[] => {
     return [...found.values()].toSorted((a, b) => rank[a.class] - rank[b.class]);
 };
 
-const leftoversOf = (
-    texts: ReadonlyMap<string, string>,
-    modules: readonly ModuleEntry[],
-    maps: readonly { name: string; text: string }[],
-): Leftover[] => {
-    const found: Leftover[] = [];
-    const readers = new Map<string, ((index: number) => string | null) | null>();
+/** Where a position of a chunk came from: a source path, or `null` when the chunk carries no map. */
+type Reader = (index: number) => string | null;
 
-    /**
-     * Where a position of a chunk came from, when the chunk has a map next to it. Built once per
-     * chunk and only for a chunk something matched in, so a build nobody has a leftover in pays
-     * nothing for this.
-     */
-    const readerFor = (chunk: string, text: string): ((index: number) => string | null) | null => {
+/**
+ * One reader per chunk, built on first use and only for a chunk something matched in, so a build
+ * nobody has anything to attribute in pays nothing for it.
+ */
+const mapReaders = (
+    texts: ReadonlyMap<string, string>,
+    maps: readonly { name: string; text: string }[],
+): ((chunk: string) => Reader | null) => {
+    const readers = new Map<string, Reader | null>();
+
+    return (chunk: string): Reader | null => {
         if (readers.has(chunk)) {
             return readers.get(chunk) ?? null;
         }
 
+        const text = texts.get(chunk) ?? '';
         const map = maps.find(entry => entry.name === `${chunk}.map`);
-        let reader: ((index: number) => string | null) | null = null;
+        let reader: Reader | null = null;
         try {
             const parsed: unknown = map ? JSON.parse(map.text) : null;
             if (isSourceMap(parsed)) {
@@ -174,6 +175,49 @@ const leftoversOf = (
         readers.set(chunk, reader);
         return reader;
     };
+};
+
+/**
+ * Which package a `process.env.X` left in a chunk belongs to.
+ *
+ * With a source map, the position says it outright. Without one, the metafile still says which
+ * packages are inside that chunk, and a variable named after one of them is that package reading
+ * its own switch: `process.env.DEBUG` in a chunk carrying `debug` is the `debug` package, not a
+ * variable of the project that the build forgot to substitute. Anything else stays unattributed —
+ * guessing an author is the thing this file refuses to do everywhere else.
+ */
+const envOwners = (modules: readonly ModuleEntry[], readerFor: (chunk: string) => Reader | null): OwnerOf => {
+    const packagesIn = new Map<string, Set<string>>();
+    for (const module of modules) {
+        const pkg = module.pkg ?? packageOf(module.path);
+        if (!pkg) {
+            continue;
+        }
+        for (const place of module.places) {
+            const name = baseName(place.chunk);
+            packagesIn.set(name, (packagesIn.get(name) ?? new Set()).add(pkg));
+        }
+    }
+
+    return (chunk, index, match) => {
+        const source = readerFor(chunk)?.(index) ?? null;
+        if (source !== null) {
+            return source.includes('node_modules') ? packageOf(source.replace(/^(?:\.\.\/)+/, '')) : null;
+        }
+
+        const variable = match.replace(/^process\.env\./, '').toLowerCase();
+        const candidates = new Set([variable, variable.replaceAll('_', '-')]);
+        const inside = packagesIn.get(chunk) ?? new Set<string>();
+        return [...inside].find(pkg => candidates.has(pkg.replace(/^@[^/]+\//, ''))) ?? null;
+    };
+};
+
+const leftoversOf = (
+    texts: ReadonlyMap<string, string>,
+    modules: readonly ModuleEntry[],
+    readerFor: (chunk: string) => Reader | null,
+): Leftover[] => {
+    const found: Leftover[] = [];
 
     /**
      * How many of a marker's matches in one chunk are the project's own, and whether that could be
@@ -185,7 +229,7 @@ const leftoversOf = (
             return { count: 0, attributed: true };
         }
 
-        const reader = readerFor(chunk, text);
+        const reader = readerFor(chunk);
         if (!reader) {
             return { count: hits.length, attributed: false };
         }
@@ -204,10 +248,12 @@ const leftoversOf = (
         for (const [chunk, text] of texts) {
             const hits = countIn(chunk, text, pattern);
             attributed &&= hits.attributed;
-            if (hits.count > 0) {
-                count += hits.count;
-                where.push(chunk);
+            if (!(hits.count > 0)) {
+                continue;
             }
+
+            count += hits.count;
+            where.push(chunk);
         }
         if (count > 0) {
             found.push({ kind, count, where, attributed });
@@ -317,10 +363,14 @@ export interface ScanInput {
     maps: readonly { name: string; text: string }[];
 }
 
-export const scanBuild = (input: ScanInput): ScanReport => ({
-    secrets: findSecrets(input.texts),
-    leftovers: leftoversOf(input.texts, input.modules, input.maps),
-    licences: licencesOf(input.texts),
-    thirdParty: thirdPartyOf(input.modules, input.boot),
-    exposure: exposureOf(input.maps),
-});
+export const scanBuild = (input: ScanInput): ScanReport => {
+    const readerFor = mapReaders(input.texts, input.maps);
+
+    return {
+        secrets: findSecrets(input.texts, envOwners(input.modules, readerFor)),
+        leftovers: leftoversOf(input.texts, input.modules, readerFor),
+        licences: licencesOf(input.texts),
+        thirdParty: thirdPartyOf(input.modules, input.boot),
+        exposure: exposureOf(input.maps),
+    };
+};

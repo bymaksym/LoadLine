@@ -34,6 +34,7 @@ const INPUT: BuildInput = {
     splits: null,
     announced,
     graph: null,
+    pageCss: null,
     baseline: null,
     context: EMPTY_CONTEXT,
     criteria: null,

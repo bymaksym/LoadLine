@@ -61,7 +61,7 @@ export const remember = (history: History, point: HistoryPoint): History => {
     // The same build measured twice is one point. It happens constantly — somebody drops the folder,
     // then drops `angular.json`, then reloads — and each of those would otherwise be a step.
     const last = history.points.at(-1);
-    const same = last && last.name === point.name && last.boot === point.boot && last.mode === point.mode;
+    const same = last?.name === point.name && last.boot === point.boot && last.mode === point.mode;
 
     const points = same ? [...history.points.slice(0, -1), point] : [...history.points, point];
     return { ...history, points: points.slice(-MAX_POINTS) };

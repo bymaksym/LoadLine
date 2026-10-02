@@ -10,10 +10,10 @@
 .row {
     display: grid;
     grid-template-columns: var(--tree-cols);
-    gap: 0.5rem;
+    gap: var(--space-4);
     align-items: center;
 
-    padding: calc(var(--row-y) * 0.5) 0.5rem calc(var(--row-y) * 0.5) 0;
+    padding: calc(var(--row-y) * 0.5) var(--space-4) calc(var(--row-y) * 0.5) 0;
     border-radius: 3px;
 
     &:hover {
@@ -24,12 +24,12 @@
 .twist {
     cursor: pointer;
 
-    width: 1.3rem;
+    width: var(--tree-twist);
     padding: 0;
     border: none;
 
     font-family: var(--font-data);
-    font-size: 0.9rem;
+    font-size: var(--fs-2);
     line-height: 1;
     color: var(--muted);
 
@@ -43,7 +43,7 @@
 
 .row__label-cell {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-4);
     align-items: center;
     min-width: 0;
 }
@@ -142,7 +142,7 @@
     padding: 0;
     border: none;
 
-    font-size: 0.85rem;
+    font-size: var(--fs-body);
     line-height: 1;
     color: var(--muted);
 
@@ -165,9 +165,9 @@
     }
 }
 
-/* The chunk's file tree, indented under its row. */
+/* The chunk's file tree, indented under its row: past the expand button and the gap, under the name. */
 .chunk-files {
-    margin: 0.2rem 0 0.6rem 1.8rem;
+    margin: var(--space-2) 0 var(--space-5) calc(var(--tree-twist) + var(--space-4));
 }
 
 @media (width < 600px) {
@@ -176,6 +176,6 @@
     }
 
     .chunk-files {
-        margin-left: 0.6rem;
+        margin-left: var(--space-5);
     }
 }

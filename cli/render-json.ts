@@ -56,7 +56,7 @@ export const renderJson = (report: CliReport, violations: Violation[], anyAsked:
     const { analysis, criteria } = report;
     const asking = new Set<JsonFinding['kind']>(['budgetNone', 'budgetTooHigh', 'budgetWarnOnly']);
     const advice = report.findings.some(finding => asking.has(finding.kind))
-        ? budgetAdvice(analysis.bootRawBytes + (report.pageCssRawBytes ?? 0))
+        ? budgetAdvice(analysis.initialRawBytes)
         : null;
 
     const payload: JsonReport = {
@@ -102,8 +102,8 @@ export const renderJson = (report: CliReport, violations: Violation[], anyAsked:
         findings: report.findings.map(finding => ({
             kind: finding.kind,
             severity: finding.severity,
-            chip: finding.chip,
-            title: finding.title,
+            chip: plainText(finding.chip),
+            title: plainText(finding.title),
             body: plainText(finding.body),
             fix: plainText(finding.fix),
             ...(finding.saving !== undefined && { saving: finding.saving }),
@@ -111,7 +111,7 @@ export const renderJson = (report: CliReport, violations: Violation[], anyAsked:
         })),
         actions: rankActions(report.findings).map(action => ({
             kind: action.finding.kind,
-            title: action.finding.title,
+            title: plainText(action.finding.title),
             saving: action.saving,
             effort: action.effort,
         })),
@@ -125,7 +125,8 @@ export const renderJson = (report: CliReport, violations: Violation[], anyAsked:
         budget: advice,
         caching: report.caching,
         scan: report.scan,
-        deps: report.deps,
+        // Without the declared ranges: they are an input the signals already read, not a finding.
+        deps: (({ declared: _declared, ...rest }) => rest)(report.deps),
         comparison: comparisonOf(report),
         comparable: !report.comparisonBlocked,
         gates: { asked: anyAsked, violations },

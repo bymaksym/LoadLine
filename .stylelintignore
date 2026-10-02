@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .angular/
+.claude/
 
 # Self-contained build artifact (CSS inlined by scripts/inline-build.mjs)
 loadline.html

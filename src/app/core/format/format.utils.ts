@@ -39,10 +39,7 @@ export const formatBytes = (bytes: number): string => {
     if (bytes >= KB * KB) {
         return `${numbers.decimals.format(bytes / KB / KB)} MB`;
     }
-    if (bytes >= KB) {
-        return `${Math.round(bytes / KB)} kB`;
-    }
-    return `${bytes} B`;
+    return bytes >= KB ? `${Math.round(bytes / KB)} kB` : `${bytes} B`;
 };
 
 /**
@@ -158,7 +155,7 @@ const EXTENSION = new RegExp(String.raw`\.${SOURCE_EXTENSION}$`);
  * SvelteKit names a route file by its role and the route by its folder: `+page.svelte` in every
  * one of them. Left alone, three screens came out as three rows called `+page.svelte`.
  */
-const ROLE_FILE = /^\+/;
+const ROLE_PREFIX = '+';
 
 /** Folders that are the root of the routes rather than one route: there the file name is all there is. */
 const ROUTE_ROOTS = new Set(['routes', 'pages', 'app', 'src']);
@@ -170,7 +167,7 @@ const ROUTE_ROOTS = new Set(['routes', 'pages', 'app', 'src']);
  */
 export const screenLabel = (source: string): string => {
     const name = baseName(source).replace(SUFFIX, '').replace(EXTENSION, '') || baseName(source);
-    if (!ROLE_FILE.test(name)) {
+    if (!name.startsWith(ROLE_PREFIX)) {
         return name;
     }
 

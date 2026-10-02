@@ -100,7 +100,7 @@ let counter = 0;
 
             width: max-content;
             max-width: min(34rem, 70vw);
-            padding: 0.5rem 0.7rem;
+            padding: var(--space-4) var(--space-6);
             border: 1px solid var(--line-strong);
             border-radius: var(--radius);
 

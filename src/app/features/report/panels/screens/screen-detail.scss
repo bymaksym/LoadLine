@@ -3,14 +3,14 @@
 }
 
 .detail__origin {
-    margin: 0 0 0.6rem;
+    margin: 0 0 var(--space-5);
     font-size: var(--fs-body);
     color: var(--muted);
 }
 
 /* The heading of the chain: it names the answer under it, so it goes in the small step. */
 .detail__why {
-    margin: 0 0 0.15rem;
+    margin: 0 0 var(--space-1);
     font-size: var(--fs-note);
     font-weight: 600;
     color: var(--muted);
@@ -20,10 +20,10 @@
 .detail__parts {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.1rem 0.4rem;
+    gap: var(--space-1) var(--space-3);
     align-items: baseline;
 
-    margin: 0 0 0.9rem;
+    margin: 0 0 var(--space-7);
 
     font-family: var(--font-data);
     font-size: var(--fs-body);
@@ -36,7 +36,7 @@
 }
 
 .scroller + .scroller {
-    margin-top: 0.9rem;
+    margin-top: var(--space-7);
 }
 
 .twist {

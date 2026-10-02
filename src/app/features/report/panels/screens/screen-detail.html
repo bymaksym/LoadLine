@@ -83,11 +83,11 @@ bytes chained across three requests land later than the same bytes in one.
         <table>
             <thead>
                 <tr>
-                    <th>{{ group.heading }}</th>
-                    <th class="num">{{ t.thScreens }}<app-explain [text]="t.helpScreens" /></th>
-                    <th class="num">{{ t.colWaves }}<app-explain [text]="t.helpWaves" /></th>
-                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
-                    <th>{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
+                    <th scope="col">{{ group.heading }}</th>
+                    <th class="num" scope="col">{{ t.thScreens }}<app-explain [text]="t.helpScreens" /></th>
+                    <th class="num" scope="col">{{ t.colWaves }}<app-explain [text]="t.helpWaves" /></th>
+                    <th class="num" scope="col">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                    <th scope="col">{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
                 </tr>
             </thead>
             <tbody>

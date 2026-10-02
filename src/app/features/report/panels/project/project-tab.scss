@@ -4,10 +4,10 @@
 
 .empty-state {
     display: grid;
-    gap: 0.8rem;
+    gap: var(--space-6);
     justify-items: start;
 
-    padding: 1.5rem;
+    padding: var(--space-12);
     border: 1.5px dashed var(--line-strong);
     border-radius: var(--radius);
 
@@ -16,7 +16,7 @@
     p {
         max-width: 60ch;
         margin: 0;
-        font-size: 0.9rem;
+        font-size: var(--fs-2);
         color: var(--muted);
     }
 }
@@ -25,9 +25,9 @@
 .facts {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1.4rem;
+    gap: var(--space-3) var(--space-12);
 
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-8);
 
     font-size: var(--fs-body);
     color: var(--muted);
@@ -62,13 +62,13 @@
 }
 
 .sub {
-    margin: 1.2rem 0 0.5rem;
-    font-size: 0.9rem;
+    margin: var(--space-10) 0 var(--space-4);
+    font-size: var(--fs-2);
     font-weight: 600;
 }
 
 .scroller + .sub {
-    margin-top: 1.4rem;
+    margin-top: var(--space-12);
 }
 
 /* The configurations the pipeline builds are the ones that matter: a stronger row. */

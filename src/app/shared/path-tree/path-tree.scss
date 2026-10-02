@@ -5,11 +5,11 @@
 .head {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 0.8rem;
+    gap: var(--space-3) var(--space-6);
     align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 0.3rem;
+    margin-bottom: var(--space-2);
 
     font-size: var(--fs-body);
     color: var(--muted);
@@ -17,7 +17,7 @@
 
 /* The unit of the breakdown and what is left unattributed: said, not left to be guessed. */
 .unit {
-    margin-left: 0.25rem;
+    margin-left: var(--space-2);
     border-bottom: 1px dotted var(--line);
     font-size: var(--fs-note);
     color: var(--muted);
@@ -25,16 +25,16 @@
 
 .head__btns {
     display: flex;
-    gap: 0.3rem;
+    gap: var(--space-2);
 }
 
 .head .ctl {
-    padding: 0.2rem 0.55rem;
+    padding: var(--space-2) var(--space-4);
     font-size: var(--fs-note);
 }
 
 .roots {
-    padding: 0.25rem 0.35rem 0.25rem 0.15rem;
+    padding: var(--space-2) var(--space-3) var(--space-2) var(--space-1);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--surface);

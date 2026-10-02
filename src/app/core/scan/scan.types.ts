@@ -22,6 +22,19 @@ export interface SecretMatch {
     redacted: string;
     /** How many times that same string appears across the build. */
     count: number;
+    /**
+     * Why this one is not a leak even though it has the shape of one, when that can be read off the
+     * text around it. `firebaseConfig`: a Google key sitting next to `authDomain`, `projectId` or
+     * `messagingSenderId` is the `apiKey` of a Firebase web configuration, which identifies the
+     * project and is public by design — what protects it is the security rules, not the key.
+     */
+    benign?: 'firebaseConfig' | null;
+    /**
+     * Whose code the match is in: a package name, or `null` when it is the project's or cannot be
+     * told. A `process.env.DEBUG` inside the `debug` package is that package reading its own switch,
+     * not a variable of yours the build forgot to substitute.
+     */
+    owner?: string | null;
 }
 
 /** Something that belongs to a development build and is in a deployed one. */

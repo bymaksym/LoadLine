@@ -46,8 +46,8 @@ export const renderSarif = (report: CliReport): string => {
         return {
             id: kind,
             name: kind,
-            shortDescription: { text: example?.chip ?? kind },
-            fullDescription: { text: example?.title ?? kind },
+            shortDescription: { text: example ? plainText(example.chip) : kind },
+            fullDescription: { text: example ? plainText(example.title) : kind },
             help: { text: example ? plainText(example.fix) : '' },
         };
     });
@@ -55,7 +55,7 @@ export const renderSarif = (report: CliReport): string => {
     const results = report.findings.map(finding => ({
         ruleId: finding.kind,
         level: LEVEL[finding.severity],
-        message: { text: `${finding.title} — ${plainText(finding.body)}` },
+        message: { text: `${plainText(finding.title)} — ${plainText(finding.body)}` },
         locations: [
             {
                 physicalLocation: {

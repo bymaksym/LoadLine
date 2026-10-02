@@ -19,6 +19,7 @@
 import { type ModuleEntry } from '../analysis/analysis.types';
 import { asArray, asMember, asRecord, asText } from '../json/json.utils';
 import { type Advisory, type DepsReport, type LockedPackage, type Severity } from './deps.types';
+import { declaredFromLock } from './pins';
 
 /** `  /lodash@4.17.21:` in pnpm, `"node_modules/lodash": {` in npm, `lodash@^4.0.0:` in yarn. */
 const PNPM_ENTRY = /^ {2}\/?((?:@[^/@]+\/)?[^@/\s]+)@([^(:\s]+)/;
@@ -48,9 +49,15 @@ const readNpmLock = (lock: Record<string, unknown>): LockedPackage[] => {
     for (const [path, entry] of installed) {
         const name = nameFromPath(path);
         const version = versionOf(entry);
-        if (name && version) {
-            found.set(`${name}@${version}`, { name, version, requiredBy: [] });
+        if (!name || !version) {
+            continue;
         }
+        const declares = Object.fromEntries(
+            Object.entries(asRecord(asRecord(entry)?.['dependencies']) ?? {}).filter(
+                (pair): pair is [string, string] => typeof pair[1] === 'string',
+            ),
+        );
+        found.set(`${name}@${version}`, { name, version, requiredBy: [], declares });
     }
 
     // The older format, for a lock file written before npm 7. Same two fields, one level in.
@@ -72,13 +79,34 @@ const readNpmLock = (lock: Record<string, unknown>): LockedPackage[] => {
  * does not use `DOMParser`: what is wanted is two fields per entry, and a parser would be the only
  * runtime dependency of a tool whose whole point is having none.
  */
-const readYamlLock = (text: string): LockedPackage[] => {
+const readYamlLock = (text: string, yarn: boolean): LockedPackage[] => {
     const found = new Map<string, LockedPackage>();
     const lines = text.split('\n');
     let pending: string | null = null;
+    /** The yarn entry whose `dependencies:` block is being read, if one is. */
+    let current: LockedPackage | null = null;
+    let inDependencies = false;
 
     for (const line of lines) {
-        const pnpm = PNPM_ENTRY.exec(line);
+        // A yarn entry's own dependencies, with the range each one is declared at. pnpm writes a
+        // block of the same shape under `snapshots:` with **resolved** versions, which would read
+        // as every dependency pinned exactly — so this is only done for yarn.
+        if (yarn && current) {
+            if (/^ {2}dependencies:\s*$/.test(line)) {
+                inDependencies = true;
+                continue;
+            }
+            const dependency = /^ {4}"?((?:@[^\s"/]+\/)?[^\s":]+)"?:?\s+"?([^"\s]+)"?\s*$/.exec(line);
+            if (inDependencies && dependency?.[1] && dependency[2]) {
+                current.declares = { ...current.declares, [dependency[1]]: dependency[2] };
+                continue;
+            }
+            if (!/^ {4}/.test(line)) {
+                inDependencies = false;
+            }
+        }
+
+        const pnpm = yarn ? null : PNPM_ENTRY.exec(line);
         if (pnpm?.[1] && pnpm[2]) {
             found.set(`${pnpm[1]}@${pnpm[2]}`, { name: pnpm[1], version: pnpm[2], requiredBy: [] });
             pending = null;
@@ -88,12 +116,18 @@ const readYamlLock = (text: string): LockedPackage[] => {
         // yarn writes the name on one line and the version on the next.
         const version = YARN_VERSION.exec(line);
         if (pending && version?.[1]) {
-            found.set(`${pending}@${version[1]}`, { name: pending, version: version[1], requiredBy: [] });
+            current = { name: pending, version: version[1], requiredBy: [] };
+            found.set(`${pending}@${version[1]}`, current);
             pending = null;
             continue;
         }
 
-        pending = YARN_ENTRY.exec(line)?.[1] ?? null;
+        const entry = YARN_ENTRY.exec(line)?.[1] ?? null;
+        if (entry) {
+            current = null;
+            inDependencies = false;
+        }
+        pending = entry;
     }
 
     return [...found.values()];
@@ -112,7 +146,7 @@ export const readLock = (name: string, text: string): LockedPackage[] | null => 
         return lock ? readNpmLock(lock) : null;
     }
 
-    return /lock\.ya?ml$|yarn\.lock$/i.test(name) ? readYamlLock(text) : null;
+    return /lock\.ya?ml$|yarn\.lock$/i.test(name) ? readYamlLock(text, /yarn\.lock$/i.test(name)) : null;
 };
 
 /**
@@ -251,5 +285,6 @@ export const readDeps = (input: DepsInput): DepsReport => {
         multipleVersions: [...byName]
             .filter(([name, entries]) => entries.length > 1 && shippedBytes.has(name))
             .map(([name, entries]) => ({ name, versions: entries.map(entry => entry.version) })),
+        declared: declaredFromLock(input.lock),
     };
 };

@@ -54,11 +54,7 @@ export class PathNodeComponent {
      */
     protected readonly chain = computed<string[] | null>(() => {
         const analysis = this.store.analysis();
-        if (!analysis || !this.whyOpen()) {
-            return null;
-        }
-
-        return whyHere(analysis, this.node().id)?.steps ?? null;
+        return !analysis || !this.whyOpen() ? null : (whyHere(analysis, this.node().id)?.steps ?? null);
     });
 
     protected readonly sharePercent = computed(() => {

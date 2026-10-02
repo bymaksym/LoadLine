@@ -1,6 +1,9 @@
 # Report, NOT a gate: the `|| true` is intentional and the push goes through regardless.
 # It lives in pre-push rather than pre-commit because knip scans the whole repo (not the
 # staged files): on every commit it would be the same report over and over.
+#
+# Through scripts/knip.mjs and never `knip` directly: without the variable that script sets, a busy
+# Windows machine reports files that are in use as "Unused files".
 
 echo -e "\nDead code (knip)...\n"
-pnpm exec knip --cache || true
+node scripts/knip.mjs --cache || true

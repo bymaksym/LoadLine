@@ -3,6 +3,7 @@ coverage
 dist
 public
 .angular
+.claude
 pnpm-lock.yaml
 *.yml
 *.yaml

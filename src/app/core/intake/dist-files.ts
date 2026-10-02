@@ -26,11 +26,14 @@ export const isSearchable = (name: string): boolean => /\.(?:m?js|css|json|webma
  * the report says so, rather than reporting "no duplicates" and meaning "nobody looked".
  */
 export const hashOf = async (file: File): Promise<string | null> => {
-    if (file.size > 8 * 1024 * 1024 || typeof crypto?.subtle?.digest !== 'function') {
+    // Read as possibly absent: `crypto.subtle` is undefined outside a secure context (a page opened
+    // over plain http), whatever lib.dom says.
+    const subtle = (crypto as { subtle?: SubtleCrypto }).subtle;
+    if (file.size > 8 * 1024 * 1024 || !subtle) {
         return null;
     }
 
-    const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+    const digest = await subtle.digest('SHA-256', await file.arrayBuffer());
     return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 };
 

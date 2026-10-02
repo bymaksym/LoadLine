@@ -24,7 +24,7 @@ describe('splitDriftOf', () => {
     it('measures how far apart they are', () => {
         const drift = splitDriftOf(drifting.outputs, null);
 
-        expect(drift).toEqual({ file: 800, measured: 1000, ratio: 1.25, chunks: 1 });
+        expect(drift).toEqual({ file: 800, measured: 1000, ratio: 1.25, chunks: 1, angular: false });
     });
 
     /** Where a source map measured the generated file itself, there is nothing left to drift. */

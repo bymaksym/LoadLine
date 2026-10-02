@@ -62,10 +62,12 @@ export class ReportNav {
         // Back and forward, and a hash somebody pasted or edited by hand.
         addEventListener('hashchange', () => {
             const { tab, params } = parseHash();
-            if (tab) {
-                this.tab.set(tab);
-                this.params.set(params);
+            if (!tab) {
+                return;
             }
+
+            this.tab.set(tab);
+            this.params.set(params);
         });
     }
 

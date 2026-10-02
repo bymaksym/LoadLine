@@ -8,12 +8,12 @@
 .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1.1rem;
-    margin-bottom: 0.6rem;
+    gap: var(--space-3) var(--space-8);
+    margin-bottom: var(--space-5);
 
     span {
         display: inline-flex;
-        gap: 0.4rem;
+        gap: var(--space-3);
         align-items: center;
 
         font-size: var(--fs-body);
@@ -41,7 +41,7 @@
 
     width: 8px;
     height: 8px;
-    margin-right: 0.3rem;
+    margin-right: var(--space-2);
     border-radius: 2px;
 
     vertical-align: middle;

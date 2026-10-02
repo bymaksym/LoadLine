@@ -9,13 +9,24 @@ const unicorn = require('eslint-plugin-unicorn').default;
 const simpleImportSort = require('eslint-plugin-simple-import-sort');
 /** @type {any} */
 const importX = require('eslint-plugin-import-x');
+const { createTypeScriptImportResolver } = require('eslint-import-resolver-typescript');
+/** @type {any} */
+const regexp = require('eslint-plugin-regexp');
+const eslintComments = require('@eslint-community/eslint-plugin-eslint-comments');
+/** @type {any} */
+const baselineJs = require('eslint-plugin-baseline-js').default;
+/** @type {any} */
+const vitest = require('@vitest/eslint-plugin');
+/** @type {any} */
+const angularModern = require('eslint-plugin-angular-modern');
 
 module.exports = defineConfig([
     {
         // `loadline.html` is the self-contained build artifact (JS inlined by scripts/inline-build.mjs).
         // `fixtures/vite-app/dist` is a bundler's output kept byte for byte; the sources next to it are
-        // a throwaway application, not code this project ships.
-        ignores: ['.angular/**', 'coverage/**', 'dist/**', 'fixtures/**', 'loadline.html'],
+        // a throwaway application, not code this project ships. `.claude/**` holds the worktrees
+        // agents work in: whole copies of the repository that would be linted twice.
+        ignores: ['.angular/**', '.claude/**', 'coverage/**', 'dist/**', 'fixtures/**', 'loadline.html'],
     },
     // Flag `// eslint-disable` comments that no longer suppress anything (no zombie disables).
     {
@@ -29,16 +40,28 @@ module.exports = defineConfig([
             'unused-imports': unusedImports,
             'simple-import-sort': simpleImportSort,
             'import-x': importX,
+            '@eslint-community/eslint-comments': eslintComments,
         },
         extends: [
             eslint.configs.recommended,
-            tseslint.configs.recommended,
+            tseslint.configs.strict,
             tseslint.configs.stylistic,
             angular.configs.tsRecommended,
             unicorn.configs.recommended,
+            // Regular expressions: backtracking that can hang on a long input, redundant classes,
+            // escapes that do nothing. This project reads minified bundles of several megabytes with
+            // them, which is exactly the input that turns a slow pattern into a hung command.
+            regexp.configs['flat/recommended'],
             eslintConfigPrettier,
         ],
         processor: angular.processInlineTemplates,
+        // Without a resolver, import-x looks the tsconfig aliases (@core, @shared, @state) up as
+        // packages in node_modules: it fails and retries on every import, and it cannot see that two
+        // spellings name the same file. Measured in another project from the same template:
+        // no-duplicates + no-self-import went from 157 ms to 45 ms per file.
+        settings: {
+            'import-x/resolver-next': [createTypeScriptImportResolver({ project: 'tsconfig.json' })],
+        },
         rules: {
             // Angular best practices
             '@angular-eslint/directive-selector': [
@@ -57,25 +80,19 @@ module.exports = defineConfig([
                     style: 'kebab-case',
                 },
             ],
-            '@angular-eslint/no-empty-lifecycle-method': 'warn',
-            '@angular-eslint/prefer-on-push-component-change-detection': 'warn',
-            '@angular-eslint/prefer-output-readonly': 'warn',
-            '@angular-eslint/prefer-signals': 'warn',
-            '@angular-eslint/prefer-standalone': 'warn',
+            '@angular-eslint/prefer-output-readonly': 'error',
+            '@angular-eslint/prefer-signals': 'error',
             '@angular-eslint/component-class-suffix': 'off', // Angular >= 20 convention
             '@angular-eslint/no-async-lifecycle-method': 'error',
             '@angular-eslint/no-attribute-decorator': 'error',
-            '@angular-eslint/sort-lifecycle-methods': 'warn',
+            '@angular-eslint/sort-lifecycle-methods': 'error',
             '@angular-eslint/contextual-decorator': 'error',
             '@angular-eslint/no-duplicates-in-metadata-arrays': 'error',
             '@angular-eslint/no-lifecycle-call': 'error',
             '@angular-eslint/use-lifecycle-interface': 'error',
 
             // TypeScript best practices
-            '@typescript-eslint/array-type': ['warn'],
             '@typescript-eslint/consistent-indexed-object-style': 'off',
-            '@typescript-eslint/consistent-type-assertions': 'warn',
-            '@typescript-eslint/consistent-type-definitions': ['warn', 'interface'],
             // Inline `import type` for type-only imports (inline avoids clashing with import-x/no-duplicates)
             '@typescript-eslint/consistent-type-imports': [
                 'error',
@@ -88,10 +105,12 @@ module.exports = defineConfig([
                 },
             ],
             '@typescript-eslint/naming-convention': [
-                'warn',
+                'error',
                 {
                     selector: 'variable',
                     format: ['camelCase', 'UPPER_CASE', 'PascalCase'],
+                    // The same convention no-unused-vars reads: `_previous` is taken out on purpose.
+                    leadingUnderscore: 'allow',
                 },
                 {
                     selector: 'interface',
@@ -106,17 +125,10 @@ module.exports = defineConfig([
                     format: ['PascalCase'],
                 },
             ],
-            '@typescript-eslint/no-empty-function': 'warn',
-            '@typescript-eslint/no-empty-interface': [
-                'error',
-                {
-                    allowSingleExtends: true,
-                },
-            ],
-            '@typescript-eslint/no-explicit-any': 'warn',
-            '@typescript-eslint/no-shadow': 'warn',
+            '@typescript-eslint/no-empty-object-type': ['error', { allowInterfaces: 'with-single-extends' }],
+            '@typescript-eslint/no-shadow': 'error',
             '@typescript-eslint/no-unused-vars': [
-                'warn',
+                'error',
                 {
                     vars: 'all',
                     varsIgnorePattern: '^_',
@@ -126,7 +138,7 @@ module.exports = defineConfig([
                 },
             ],
             '@typescript-eslint/no-inferrable-types': [
-                'warn',
+                'error',
                 {
                     ignoreProperties: true,
                 },
@@ -145,33 +157,19 @@ module.exports = defineConfig([
             'no-bitwise': 'error',
             'no-new-wrappers': 'error',
             'no-useless-concat': 'error',
-            'no-var': 'error',
-            'no-shadow': 'error',
             'one-var': ['error', 'never'],
             'func-style': 'error',
             'prefer-arrow-callback': 'error',
-            'prefer-const': 'error',
-            'sort-imports': [
-                'error',
-                {
-                    ignoreCase: true,
-                    ignoreDeclarationSort: true,
-                    allowSeparatedGroups: true,
-                },
-            ],
             'no-eval': 'error',
             'array-callback-return': ['error', { checkForEach: true }],
-            'no-constant-binary-expression': 'error',
             'no-constructor-return': 'error',
             'no-promise-executor-return': 'error',
             'no-self-compare': 'error',
             'no-template-curly-in-string': 'error',
             'no-unmodified-loop-condition': 'error',
             'no-unreachable-loop': 'error',
-            'no-unused-private-class-members': 'error',
             'require-atomic-updates': 'error',
             camelcase: 'error',
-            'no-array-constructor': 'error',
             'no-console': ['error', { allow: ['debug', 'error'] }],
             // Past ~400 lines of actual code a file stops being read top to bottom and starts
             // being searched. Blank lines and comments do not count: this project comments a lot,
@@ -179,12 +177,12 @@ module.exports = defineConfig([
             // today have their own entry further down, each with the reason.
             'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
             // Project convention turned into a rule: every read/write of localStorage goes through
-            // the two services that already guard it with try/catch (private mode, blocked storage).
+            // the one module that guards it with try/catch (private mode, blocked storage).
             'no-restricted-globals': [
                 'error',
                 {
                     name: 'localStorage',
-                    message: 'Persist through CriteriaService or I18nService, which already guard localStorage.',
+                    message: 'Persist through core/session/local-store.ts, which guards localStorage.',
                 },
             ],
             'no-else-return': ['error', { allowElseIf: false }],
@@ -194,12 +192,9 @@ module.exports = defineConfig([
             'no-return-assign': 'error',
             'no-throw-literal': 'error',
             'object-shorthand': 'error',
-            'prefer-rest-params': 'error',
-            'prefer-spread': 'error',
             'prefer-template': 'error',
             radix: 'error',
             yoda: 'error',
-            semi: ['error', 'always'],
             quotes: [
                 'error',
                 'single',
@@ -211,7 +206,6 @@ module.exports = defineConfig([
             'require-await': 'error',
 
             // Unused imports
-            'no-unused-vars': 'off',
             'unused-imports/no-unused-vars': 'off',
             'unused-imports/no-unused-imports': 'error',
 
@@ -241,12 +235,16 @@ module.exports = defineConfig([
             'import-x/no-useless-path-segments': 'error',
             'import-x/newline-after-import': 'error',
 
+            // A silence names its rule and says why, and a disable has its enable: the reason sits
+            // next to the line that needs it, and a forgotten `eslint-enable` cannot switch a rule
+            // off for the rest of the file by accident.
+            '@eslint-community/eslint-comments/require-description': 'error',
+            '@eslint-community/eslint-comments/no-unlimited-disable': 'error',
+            '@eslint-community/eslint-comments/disable-enable-pair': ['error', { allowWholeFile: true }],
+
             // Unicorn
-            'unicorn/no-useless-spread': 'error',
             'unicorn/no-null': 'off',
-            'unicorn/prevent-abbreviations': 'off',
             'unicorn/consistent-function-scoping': 'off', // Angular: helpers next to the component that uses them
-            'unicorn/filename-case': ['error', { case: 'kebabCase' }],
             'unicorn/prefer-https': 'off',
             'unicorn/consistent-class-member-order': 'off',
             'unicorn/prefer-minimal-ternary': 'off',
@@ -264,20 +262,186 @@ module.exports = defineConfig([
             'unicorn/max-nested-calls': 'off', // computed(() => ...map(...)) chains exceed depth 3 naturally
             'unicorn/single-line-block-comment-style': 'off', // its fixer turns `/** summary */` into a multi-line block without `*` prefixes
             'unicorn/better-dom-traversing': 'off', // false positives: tree nodes have `children` and are not DOM elements
+            // New in unicorn 76 (02/10/2026). A ternary only when both branches fit on one line: a guard
+            // returning a whole object stays an `if`, where the condition and the result read apart.
+            'unicorn/prefer-ternary': ['error', 'only-single-line'],
+            // It asks for `Set#difference()` / `#intersection()`, which do not exist on Node 20 (they
+            // arrived in 22), and `src/app/core` is also the command that `engines` promises runs on
+            // 20.19. Following it would pass every check here and break `npx` for that floor with
+            // "difference is not a function". Measured on 02/10/2026 with Node 20.19.0.
+            'unicorn/prefer-set-methods': 'off',
             '@angular-eslint/no-input-rename': 'off',
         },
     },
-    // Type-aware linting is OFF for now: `projectService` builds the whole type graph and slows the
-    // lint down a lot. Re-enable this block (src/ only) when the cost is acceptable.
-    // {
-    //     files: ['src/**/*.ts'],
-    //     languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: __dirname } },
-    //     rules: {
-    //         '@typescript-eslint/no-floating-promises': 'warn',
-    //         '@typescript-eslint/no-misused-promises': 'error',
-    //         '@typescript-eslint/await-thenable': 'error',
-    //     },
-    // },
+    // The rules that need types (unawaited promises, uncalled signals, non-exhaustive switches) live
+    // in eslint.typed.config.js, which extends this one: they load the whole program, and
+    // `pnpm run lint` and the `.html` files of a commit have no reason to pay for that.
+    {
+        // The page runs in whatever browser opens loadline.html, so it only uses what every current
+        // browser has had for over two years ("widely available"). The command shares
+        // `src/app/core` but runs on Node, whose floor is `engines` and the CI job that holds it.
+        files: ['src/**/*.ts'],
+        ignores: ['src/**/*.spec.ts'],
+        plugins: { 'baseline-js': baselineJs },
+        rules: {
+            'baseline-js/use-baseline': [
+                'error',
+                {
+                    available: 'widely',
+                    includeWebApis: { preset: 'auto', useTypes: 'off' },
+                    includeJsBuiltins: { preset: 'auto', useTypes: 'off' },
+                },
+            ],
+        },
+    },
+    {
+        // Modern Angular, as a guard rather than a cleanup: on 02/10/2026 none of these had a single
+        // hit. Only what angular-eslint does not already cover. Left out on purpose, as in the
+        // project this list comes from: the injection-context rules, which cannot follow a call from
+        // the constructor into a private method and were 26 false positives out of 26 there.
+        files: ['src/**/*.ts'],
+        plugins: { 'angular-modern': angularModern },
+        rules: {
+            // Modules: each component imports the piece it uses, and a whole module is not tree-shaken.
+            'angular-modern/no-commonmodule': 'error',
+            'angular-modern/no-routermodule': 'error',
+            'angular-modern/no-applicationmodule': 'error',
+            'angular-modern/no-browsermodule': 'error',
+            'angular-modern/no-createngmodule': 'error',
+            'angular-modern/no-platformbrowser': 'error',
+            'angular-modern/no-platformbrowserdynamic': 'error',
+            'angular-modern/no-httpclientmodule': 'error',
+            'angular-modern/no-browseranimationsmodule': 'error',
+            'angular-modern/no-noopanimationsmodule': 'error',
+            'angular-modern/no-routertestingmodule': 'error',
+            'angular-modern/no-httpclienttestingmodule': 'error',
+            // Functional guards and interceptors, `inject()` rather than the constructor, signal
+            // inputs and outputs, host bindings in the decorator, `[class.x]` rather than `ngClass`.
+            'angular-modern/no-canactivate-class': 'error',
+            'angular-modern/no-canactivatechild-class': 'error',
+            'angular-modern/no-candeactivate-class': 'error',
+            'angular-modern/no-canmatch-class': 'error',
+            'angular-modern/no-canload-class': 'error',
+            'angular-modern/no-resolve-class': 'error',
+            'angular-modern/no-httpinterceptor-class': 'error',
+            'angular-modern/no-httpinterceptors-token': 'error',
+            'angular-modern/no-withinterceptorsfromdi': 'error',
+            'angular-modern/no-constructor-injection': 'error',
+            'angular-modern/no-inject-decorator': 'error',
+            'angular-modern/no-provider-deps': 'error',
+            'angular-modern/no-input-decorator': 'error',
+            'angular-modern/no-output-decorator': 'error',
+            'angular-modern/no-hostbinding-decorator': 'error',
+            'angular-modern/no-hostlistener-decorator': 'error',
+            'angular-modern/no-ngclass': 'error',
+            'angular-modern/no-ngstyle': 'error',
+            // The page has no zone.js (the analysis even reports that as a virtue in other builds):
+            // `NgZone` and eager change detection would not do what they promise.
+            'angular-modern/no-zonejs-import': 'error',
+            'angular-modern/no-providezonechangedetection': 'error',
+            'angular-modern/no-ngzone': 'error',
+            'angular-modern/no-eager-change-detection': 'error',
+            'angular-modern/no-ngdocheck': 'error',
+        },
+    },
+    {
+        // `src/app/core` is the analysis, and the command runs the very same files on Node with no
+        // dependencies installed. So it imports only itself: an import of the page (`features`,
+        // `state`, `shared`), of Angular or of any package would pass every check of the page and
+        // break `npx` at the first `require`, and a `node:` module would break the page. On
+        // 02/10/2026 it already held — not one such import — and this is what keeps it so.
+        files: ['src/app/core/**/*.ts'],
+        ignores: ['src/app/core/**/*.spec.ts'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            regex: String.raw`^(?!\.{1,2}/|@core/)`,
+                            message:
+                                'src/app/core runs in the command too, with no dependencies installed: import only from core itself.',
+                        },
+                        {
+                            group: ['**/features/**', '**/state/**', '**/shared/**'],
+                            message: 'src/app/core must not reach into the page: the command runs it without one.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
+        // What Node 20.19 does not have, in the code the command runs. `engines` promises that floor,
+        // and the browser check above cannot hold it: Baseline is about browsers, `Object.groupBy` is
+        // already "widely" there and missing on 20, and an instance method like `difference` cannot
+        // be recognised without types. Measured on 02/10/2026: `new Set().difference` is `undefined`
+        // on Node 20.19.0.
+        files: ['src/app/core/**/*.ts', 'cli/**/*.ts'],
+        rules: {
+            'no-restricted-properties': [
+                'error',
+                ...[
+                    'difference',
+                    'intersection',
+                    'union',
+                    'symmetricDifference',
+                    'isSubsetOf',
+                    'isSupersetOf',
+                    'isDisjointFrom',
+                ].map(property => ({
+                    property,
+                    message: 'Set methods arrived in Node 22 and the command runs on 20.19: loop with `has()` instead.',
+                })),
+                ...[
+                    ['Object', 'groupBy'],
+                    ['Map', 'groupBy'],
+                    ['Promise', 'withResolvers'],
+                    ['Array', 'fromAsync'],
+                ].map(([object, property]) => ({
+                    object,
+                    property,
+                    message: `${object}.${property} is missing on Node 20.19, which the command still runs on.`,
+                })),
+            ],
+        },
+    },
+    {
+        // Deliberate uses of what is not "widely" yet. The clipboard is called inside a `try` whose
+        // `catch` is the ordinary answer (a refused clipboard says nothing and changes nothing).
+        // `main.ts` is the bootstrap the Angular CLI writes: a module script, so top-level await is
+        // there by construction, and esbuild lowers it for the browsers the build targets.
+        files: [
+            'src/app/shared/clipboard.utils.ts',
+            'src/app/features/report/panels/measured/measured-tab.ts',
+            'src/main.ts',
+        ],
+        plugins: { 'baseline-js': baselineJs },
+        rules: {
+            'baseline-js/use-baseline': [
+                'error',
+                {
+                    available: 'widely',
+                    includeWebApis: { preset: 'auto', useTypes: 'off' },
+                    includeJsBuiltins: { preset: 'auto', useTypes: 'off' },
+                    ignoreFeatures: ['async-clipboard', 'top-level-await'],
+                },
+            ],
+        },
+    },
+    {
+        // Tests: a forgotten `it.only`, an `expect` outside a test or inside an `if`.
+        files: ['**/*.spec.ts'],
+        extends: [vitest.configs.recommended],
+        rules: {
+            // Vitest takes a message as the second argument (`expect(value, finding.kind)`), which is
+            // what says which item of a loop failed. The rule's default of one is Jest's.
+            'vitest/valid-expect': ['error', { maxArgs: 2 }],
+            // In a test `!` is the assertion itself: "this fixture has a graph". If it does not, the
+            // test fails on the spot, which is what a guard would have been written to do anyway.
+            '@typescript-eslint/no-non-null-assertion': 'off',
+        },
+    },
     {
         // The only place that touches localStorage: it is the guard the rule is asking for, and
         // the services go through it. It used to be two services named here, which meant the third
@@ -340,9 +504,14 @@ module.exports = defineConfig([
         // Raised to 870 the same day (CHECKLIST §5): the five answers reaching the signals that
         // were withholding a colour for want of them. The answers themselves live in a service and
         // the arithmetic in `core/situation/`; what is here is reading them and passing them on.
+        // Raised to 880 on 02/10/2026: where a file nothing names lives in the repository, read off
+        // the `assets` of `angular.json`. One derived value and its import; the mapping is in `core/`,
+        // and loading a build `loadline --html` wrote went to `app.ts` rather than here.
+        // Lowered to 865 the same day: the signals from the folder were written out twice, once per
+        // list of findings, and are one private method now (857 lines after it).
         files: ['src/app/state/report.store.ts'],
         rules: {
-            'max-lines': ['error', { max: 870, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 865, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -406,7 +575,9 @@ module.exports = defineConfig([
             // Raised to 625 on 10/09/2026 (CHECKLIST §5): the five questions. A tab that did not
             // exist, and the bulk of it is four records keyed by question — the question, its
             // options, the metric it stands for and where to look for it — rather than prose.
-            'max-lines': ['error', { max: 625, skipBlankLines: true, skipComments: true }],
+            // Raised to 650 on 02/10/2026: the Map tab. Twenty-five strings of one panel, most of them
+            // one line each — what a rectangle is, what its area means at each level.
+            'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -463,14 +634,12 @@ module.exports = defineConfig([
                     ],
                 },
             ],
-            '@angular-eslint/template/button-has-type': 'warn',
+            '@angular-eslint/template/button-has-type': 'error',
             '@angular-eslint/template/no-positive-tabindex': 'error', // a11y: tabindex>0 breaks the natural focus order
-            '@angular-eslint/template/eqeqeq': 'error',
-            '@angular-eslint/template/prefer-control-flow': 'error',
             '@angular-eslint/template/prefer-ngsrc': 'off', // needs width/height and can break layout
-            '@angular-eslint/template/prefer-self-closing-tags': 'warn',
-            '@angular-eslint/template/use-track-by-function': 'warn',
-            '@angular-eslint/template/prefer-static-string-properties': 'warn',
+            '@angular-eslint/template/prefer-self-closing-tags': 'error',
+            '@angular-eslint/template/use-track-by-function': 'error',
+            '@angular-eslint/template/prefer-static-string-properties': 'error',
         },
     },
 ]);

@@ -43,6 +43,12 @@
         },
         {
             "path": "./tsconfig.spec.json"
+        },
+        {
+            "path": "./tsconfig.cli.json"
+        },
+        {
+            "path": "./tsconfig.cli.spec.json"
         }
     ]
 }

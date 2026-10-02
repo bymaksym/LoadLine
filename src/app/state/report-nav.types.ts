@@ -11,6 +11,9 @@ export const REPORT_TABS = [
     'boot',
     'shared',
     'tree',
+    // Next to the tree, because it is the same bundle drawn instead of listed: what is inside a
+    // chunk, at a glance, which is the one thing a list of rows is slow at.
+    'map',
     'search',
     'project',
     // Next to the project's own files, because it is the same kind of thing: context about the

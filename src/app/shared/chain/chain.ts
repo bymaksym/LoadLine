@@ -36,14 +36,14 @@ import { I18nService } from '@state/i18n.service';
 
         /* One step per file, the last one in bold. Wraps as a paragraph rather than scrolling. */
         .chain {
-            margin: 0 0 0.4rem;
+            margin: 0 0 var(--space-3);
             font-size: var(--fs-body);
             line-height: 1.7;
             overflow-wrap: anywhere;
         }
 
         .chain__sep {
-            margin: 0 0.35rem;
+            margin: 0 var(--space-3);
             font-weight: 700;
             color: var(--muted);
         }

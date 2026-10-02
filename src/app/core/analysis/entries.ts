@@ -19,7 +19,7 @@ import { type Metafile, type MetafileImport } from './metafile.types';
  * name rule cannot see those without becoming a list of conventions. The other half is
  * `holdsBrowserSide` below, which does not read names at all.
  */
-const SERVER_OUTPUT = /(^|\/)server\//;
+const SERVER_OUTPUT = /(?:^|\/)server\//;
 
 /** A file that only groups routes: it owns no code of its own. `.jsx`/`.tsx` for the React case. */
 export const ROUTE_FILE = new RegExp(String.raw`\.(?:${ROUTE_SUFFIXES.join('|')})\.${SOURCE_EXTENSION}$`);
@@ -75,8 +75,19 @@ const VIEW_FILE = new RegExp(String.raw`\.(?:${VIEW_SUFFIXES.join('|')})\.${SOUR
 export const browserSide = (
     all: Metafile['outputs'],
     inFolder: ReadonlySet<string> | null = null,
-): { outputs: Metafile['outputs']; serverOutputs: number } => {
-    const files = Object.keys(all);
+): { outputs: Metafile['outputs']; serverOutputs: number; componentStyles: number } => {
+    /**
+     * Component stylesheets first, and on their own: they are not missing from the folder, they are
+     * inside the JavaScript. Angular bundles each one apart, merges its output into the metafile and
+     * inlines the CSS into the component, so the name is in the metafile and never on disk. Counted
+     * by rule 2 they were reported as "the server side of a rendered build" on applications that
+     * have no server at all — fourteen of them on one, twenty-six on Loadline's own build.
+     */
+    const componentStyles = Object.keys(all).filter(file => all[file]?.['ng-component'] === true);
+    const styled = new Set(componentStyles);
+    const files = Object.keys(all).filter(file => !styled.has(file));
+    const browserOnly = Object.fromEntries(Object.entries(all).filter(([file]) => !styled.has(file)));
+
     const elsewhere = (file: string) =>
         SERVER_OUTPUT.test(file) || (inFolder !== null && !inFolder.has(baseName(file)));
     const server = files.filter(file => elsewhere(file));
@@ -86,11 +97,40 @@ export const browserSide = (
     // build than the stats file, where every name mismatches. Both are better read whole than
     // reported as an empty application.
     if (server.length === 0 || server.length === files.length) {
-        return { outputs: all, serverOutputs: 0 };
+        return { outputs: browserOnly, serverOutputs: 0, componentStyles: componentStyles.length };
     }
 
-    const outputs = Object.fromEntries(files.filter(file => !elsewhere(file)).map(file => [file, all[file]!]));
-    return { outputs, serverOutputs: server.length };
+    const outputs = Object.fromEntries(Object.entries(browserOnly).filter(([file]) => !elsewhere(file)));
+    return { outputs, serverOutputs: server.length, componentStyles: componentStyles.length };
+};
+
+/**
+ * The figure Angular's `initial` budget checks, and the file an `anyScript` budget meets first.
+ *
+ * `initial` sums every initial file, scripts **and** the global stylesheet, raw. A stylesheet is
+ * initial when it is an entry of its own — `styles.css` is written with `angular:styles/global` as
+ * its entry point — and the component ones are already gone, inlined into the JavaScript. It is
+ * kept apart from the bootstrap's own figure because a budget suggested against one and checked
+ * against the other contradicted itself: 650/850 kB was proposed over 551 kB of JavaScript and
+ * CSS, and then reported as too loose against the 404 kB of JavaScript alone.
+ *
+ * @param boot the bootstrap chunks, already worked out from the graph.
+ */
+export const initialFiguresOf = (
+    outputs: Metafile['outputs'],
+    boot: ReadonlySet<string>,
+): { initialRawBytes: number; largestScript: { name: string; bytes: number; boot: boolean } | null } => {
+    const entries = Object.entries(outputs);
+    const bootRaw = [...boot].reduce((total, chunk) => total + (outputs[chunk]?.bytes ?? 0), 0);
+    const css = entries
+        .filter(([file, output]) => /\.css$/i.test(file) && !!output.entryPoint)
+        .reduce((total, [, output]) => total + output.bytes, 0);
+    const largest = entries
+        .filter(([file]) => /\.m?js$/.test(file))
+        .map(([file, output]) => ({ name: baseName(file), bytes: output.bytes, boot: boot.has(file) }))
+        .toSorted((a, b) => b.bytes - a.bytes)[0];
+
+    return { initialRawBytes: bootRaw + css, largestScript: largest ?? null };
 };
 
 /**

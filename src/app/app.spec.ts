@@ -24,7 +24,7 @@ import { ReportNav } from './state/report-nav.service';
 import { REPORT_TABS } from './state/report-nav.types';
 
 const textOf = (fixture: ComponentFixture<App>, selector: string): string =>
-    (fixture.nativeElement as HTMLElement).querySelector(selector)?.textContent?.trim() ?? '';
+    (fixture.nativeElement as HTMLElement).querySelector(selector)?.textContent.trim() ?? '';
 
 const countOf = (fixture: ComponentFixture<App>, selector: string): number =>
     (fixture.nativeElement as HTMLElement).querySelectorAll(selector).length;

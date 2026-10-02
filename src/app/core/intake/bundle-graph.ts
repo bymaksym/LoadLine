@@ -34,7 +34,7 @@ const JS_FILE = /\.m?js$/i;
  * fetch the other file as soon as it has parsed this one, which is the only thing that matters
  * here. The character class stops at `;` so a match cannot run past the end of its statement.
  */
-const STATIC_IMPORT = /\b(?:import|export)\b(?:[^'"`;()]*\bfrom\s*)?['"]([^'"]+)['"]/g;
+const STATIC_IMPORT = /\b(?:import|export)\b(?:[^'"`;()]+\bfrom\s*)?['"]([^'"]+)['"]/g;
 
 /** `import("x")` in the three quotes a minifier may leave behind — Rolldown writes backticks. */
 const DYNAMIC_IMPORT = /\bimport\s*\(\s*(['"`])([^'"`]+)\1\s*\)/g;
@@ -180,7 +180,7 @@ const groupsIn = (code: string, exists: (path: string) => boolean): string[][] =
         const group = inTable
             ? null
             : groupOf(
-                  [...(list[0].matchAll(QUOTED) ?? [])].map(m => m[1] ?? ''),
+                  [...list[0].matchAll(QUOTED)].map(m => m[1] ?? ''),
                   exists,
               );
         if (group) {
@@ -325,10 +325,11 @@ const parallelOf = (read: ReadonlyMap<string, ReadChunk>): Map<string, string[]>
         const lazy = new Set(info.dynamics.map(entry => entry.target));
         for (const group of info.groups) {
             const target = targetOf(group, lazy);
-            if (target) {
-                const rest = group.filter(path => path !== target);
-                parallel.set(target, [...new Set([...(parallel.get(target) ?? []), ...rest])]);
+            if (!target) {
+                continue;
             }
+            const rest = group.filter(path => path !== target);
+            parallel.set(target, [...new Set([...(parallel.get(target) ?? []), ...rest])]);
         }
     }
 

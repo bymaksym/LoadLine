@@ -137,6 +137,12 @@ export interface AssetInput {
      * which is why it is carried through instead of dropped on the floor.
      */
     prefetched?: ReadonlySet<string>;
+    /**
+     * Every icon the page names in a `<link>`: the favicon alternatives and the touch icons. The
+     * browser fetches one of them at most, so two of them holding the same picture is not a file
+     * that travels twice.
+     */
+    icons?: ReadonlySet<string>;
     /** The chunks of the bootstrap, to attribute the styles they pull in to the first load. */
     bootChunks: ReadonlySet<string>;
     /**
@@ -381,11 +387,15 @@ export const readAssets = (input: AssetInput): AssetReport => {
                       kindOf(file.name) !== 'map' &&
                       !PRE_COMPRESSED.test(file.name) &&
                       !input.texts.has(file.name) &&
-                      !/^index(\.[\w-]+)?\.html$/i.test(file.name),
+                      !/^index(?:\.[\w-]+)?\.html$/i.test(file.name),
               )
             : [],
         referencesRead,
-        duplicates: duplicatesOf(input.files, input.hashes),
+        // A favicon and a touch icon holding the same picture are alternatives the browser picks one
+        // of, not a file downloaded twice under two names.
+        duplicates: duplicatesOf(input.files, input.hashes).filter(entry =>
+            entry.names.some(path => !input.icons?.has(path.split('/').at(-1) ?? path)),
+        ),
         contentCompared: !!input.hashes && input.hashes.size > 0,
         inlined,
         inlinedBytes: inlined.reduce((sum, row) => sum + row.bytes, 0),

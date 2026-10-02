@@ -65,7 +65,7 @@ export const renderPrComment = (report: CliReport, violations: Violation[], anyA
         const total = totalSaving(analysis, report.findings);
         const rows = actions.map(
             (action, index) =>
-                `| ${index + 1} | ${action.finding.title} | ${action.saving > 0 ? formatBytes(action.saving) : '—'} | ${text.effortLabel[action.effort]} |`,
+                `| ${index + 1} | ${plainText(action.finding.title)} | ${action.saving > 0 ? formatBytes(action.saving) : '—'} | ${text.effortLabel[action.effort]} |`,
         );
         lines.push(
             '',
@@ -96,7 +96,8 @@ export const renderPrComment = (report: CliReport, violations: Violation[], anyA
         '',
         `#### ${text.headSignals}`,
         ...report.findings.map(
-            finding => `- **${finding.title}** — ${plainText(finding.body)}\n  ${text.fix}: ${plainText(finding.fix)}`,
+            finding =>
+                `- **${plainText(finding.title)}** — ${plainText(finding.body)}\n  ${text.fix}: ${plainText(finding.fix)}`,
         ),
     ].join('\n');
 

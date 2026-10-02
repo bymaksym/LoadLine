@@ -24,7 +24,7 @@ export const renderMarkdown = (report: CliReport, violations: Violation[], anyAs
             report.findings
                 .map(
                     finding =>
-                        `- **${finding.title}** — ${plainText(finding.body)}\n  ${text.fix}: ${plainText(finding.fix)}`,
+                        `- **${plainText(finding.title)}** — ${plainText(finding.body)}\n  ${text.fix}: ${plainText(finding.fix)}`,
                 )
                 .join('\n'),
         );

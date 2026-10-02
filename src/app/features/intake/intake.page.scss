@@ -1,13 +1,13 @@
 :host {
     display: block;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-12);
 }
 
 .intake {
     position: relative;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: var(--space-8);
 
     &__hide {
         justify-self: end;
@@ -29,11 +29,11 @@
     display: flex;
     grid-column: 1 / -1;
     flex-wrap: wrap;
-    gap: 0.5rem 1rem;
+    gap: var(--space-4) var(--space-8);
     align-items: center;
     justify-content: space-between;
 
-    padding: 0.6rem 0.9rem;
+    padding: var(--space-5) var(--space-7);
     border: 1px dashed var(--line-strong);
     border-radius: var(--radius);
 
@@ -43,14 +43,14 @@
 
     &__actions {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-4);
     }
 }
 
 .drop__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-4);
     align-items: center;
 
     .file-btn {
@@ -61,10 +61,10 @@
 .drop {
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: var(--space-4);
     align-items: flex-start;
 
-    padding: 1.6rem;
+    padding: var(--space-12);
     border: 1.5px dashed var(--line-strong);
     border-radius: var(--radius);
 
@@ -86,7 +86,7 @@
 
     h2 {
         margin: 0;
-        font-size: 1rem;
+        font-size: var(--fs-3);
         font-weight: 600;
     }
 
@@ -102,11 +102,11 @@
 .loadbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem 1.25rem;
+    gap: var(--space-5) var(--space-10);
     align-items: center;
     justify-content: space-between;
 
-    padding: 0.6rem 0.9rem;
+    padding: var(--space-5) var(--space-7);
     border: 1px dashed var(--line-strong);
     border-radius: var(--radius);
 
@@ -126,7 +126,7 @@
     &__status {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: var(--space-4);
         align-items: center;
 
         color: var(--muted);
@@ -153,7 +153,7 @@
     &__actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.4rem;
+        gap: var(--space-3);
         align-items: center;
 
         .file-btn {
@@ -168,11 +168,11 @@
    the paragraph.
 */
 .file-btn {
-    margin-top: 0.35rem;
+    margin-top: var(--space-3);
 }
 
 .loadbar .file-btn {
-    padding: 0.35rem 0.75rem;
+    padding: var(--space-3) var(--space-6);
     font-size: var(--fs-body);
 }
 
@@ -188,7 +188,7 @@ input[type='file'] {
 }
 
 .status {
-    margin-top: 0.5rem;
+    margin-top: var(--space-4);
     font-family: var(--font-data);
     font-size: var(--fs-body);
     color: var(--muted);
@@ -206,10 +206,11 @@ input[type='file'] {
 .progress {
     width: 100%;
     max-width: 22rem;
-    margin-top: 0.4rem;
+    margin-top: var(--space-3);
 
     i {
         background: var(--accent);
+        /* stylelint-disable-next-line plugin/no-low-performance-animation-properties -- one small bar that moves once per file read; `.track` sets its fill as a width, and a `scaleX` would need the template to pass a ratio instead */
         transition: width 0.1s linear;
     }
 }

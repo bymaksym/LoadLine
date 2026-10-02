@@ -24,7 +24,7 @@ import {
  * version number somebody wrote by hand, which is exactly the case this is meant to catch rather
  * than accept.
  */
-const HASHED = /[.\-_][\dA-Za-z_-]{8,}\.[\da-z]+$/;
+const HASHED = /[.\-_][\w-]{8,}\.[\da-z]+$/;
 
 /**
  * The same thing when the hash **is** the whole name: `ChDGvcpR.js`, `DkjDNEOM.js`, `BauOL-29.js`.
@@ -37,7 +37,7 @@ const HASHED = /[.\-_][\dA-Za-z_-]{8,}\.[\da-z]+$/;
  * no hash and stay reported. It costs a hand-written `AppShell.js` being taken for a hash, and that
  * is the right way round to be wrong: the price is one missing line, not a false claim.
  */
-const BARE_HASH = /^[\dA-Za-z_-]{8,}\.[\da-z]+$/;
+const BARE_HASH = /^[\w-]{8,}\.[\da-z]+$/;
 const MIXED_CASE = /(?=.*[a-z])(?=.*[A-Z])/;
 
 /**
@@ -53,7 +53,7 @@ const WRITTEN_PREFIX = /^[a-z]{3,}[.\-_]/;
 const VERSIONED_QUERY = /[?&]v(?:er|ersion)?=/i;
 
 /** The name with its content hash taken off, which is what makes two builds' files comparable. */
-export const unhashedName = (name: string): string => name.replace(/[.\-_][\dA-Za-z_-]{8,}(\.[\da-z]+)$/, '$1');
+export const unhashedName = (name: string): string => name.replace(/[.\-_][\w-]{8,}(\.[\da-z]+)$/, '$1');
 
 /** A name that is nothing but a hash: `ChDGvcpR.js`. Taking the hash off it would leave `.js`. */
 const isBareHash = (name: string): boolean =>

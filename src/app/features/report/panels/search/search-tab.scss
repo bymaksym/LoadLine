@@ -23,7 +23,7 @@ mark {
 
 /* The name carries up to three tags; without this they run into it and into each other. */
 td.path .tag {
-    margin-left: 0.3rem;
+    margin-left: var(--space-2);
 }
 
 .who {
@@ -33,21 +33,21 @@ td.path .tag {
 }
 
 .note {
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--space-4);
     font-size: var(--fs-body);
     color: var(--muted);
 }
 
 .empty--pad {
-    padding: 1.5rem 0.85rem;
+    padding: var(--space-12) var(--space-7);
 }
 
 /* Detail: where it is on the left, what it carries on the right. */
 .detail__grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1rem 2rem;
-    padding-top: 0.4rem;
+    gap: var(--space-8) var(--space-16);
+    padding-top: var(--space-3);
 }
 
 @media (width >= 900px) {
@@ -58,11 +58,11 @@ td.path .tag {
 
 /* Chunk list inside the detail: no header, tighter than the outer table. */
 table.inner {
-    margin-bottom: 0.3rem;
+    margin-bottom: var(--space-2);
     font-size: var(--fs-body);
 
     td {
-        padding: 0.22rem 0.6rem 0.22rem 0;
+        padding: var(--space-2) var(--space-5) var(--space-2) 0;
         border-bottom: 1px solid var(--line);
     }
 
@@ -73,23 +73,23 @@ table.inner {
 
 /* One copy of a duplicated package: version, where it lands, and what brings it. */
 .copy {
-    margin-bottom: 0.7rem;
-    padding-left: 0.6rem;
+    margin-bottom: var(--space-6);
+    padding-left: var(--space-5);
     border-left: 2px solid var(--line-strong);
 
     &__head {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.4rem;
+        gap: var(--space-3);
         align-items: baseline;
 
-        margin: 0 0 0.2rem;
+        margin: 0 0 var(--space-2);
 
         font-size: var(--fs-body);
     }
 
     &__brought {
-        margin: 0 0 0.1rem;
+        margin: 0 0 var(--space-1);
         font-size: var(--fs-note);
         color: var(--muted);
     }

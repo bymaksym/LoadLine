@@ -45,6 +45,7 @@ const WITH_VALUE = new Set([
     '--max-growth',
     '--max-growth-pct',
     '--fail-on',
+    '--html',
 ]);
 
 const EMPTY: Options = {
@@ -74,6 +75,9 @@ const EMPTY: Options = {
     help: false,
     version: false,
     selfCheck: false,
+    html: null,
+    open: false,
+    cache: true,
 };
 
 /** A percentage as it is written on the command line (`10`) into the fraction the code compares. */
@@ -107,6 +111,18 @@ const apply = (options: Options, flag: string, value: string, positional: string
         }
         case '--self-check': {
             options.selfCheck = true;
+            return null;
+        }
+        case '--html': {
+            options.html = value;
+            return null;
+        }
+        case '--open': {
+            options.open = true;
+            return null;
+        }
+        case '--no-cache': {
+            options.cache = false;
             return null;
         }
         case '--dist': {
@@ -248,16 +264,20 @@ export const parseArgs = (argv: string[]): ParsedArgs => {
     if (positional.length > 1) {
         return { ok: false, message: `Unexpected argument: ${positional[1]}` };
     }
-
-    return { ok: true, options: { ...options, target } };
+    return options.open && !options.html
+        ? { ok: false, message: '--open opens what --html writes: add --html <file>.' }
+        : { ok: true, options: { ...options, target } };
 };
 
 export const USAGE = `Loadline — weight per screen, from the terminal.
 
 Usage
-  loadline <stats.json|build folder> [options]
+  loadline <build root|stats.json|browser folder> [options]
 
-  A build folder works on its own: its chunks carry the import graph, so anything that emits ES
+  The root of an Angular build — dist/<app> — is enough: browser-stats.json (Angular 22.2+) or
+  stats.json, and the browser/ folder next to it, are found on their own.
+
+  A build folder works on its own too: its chunks carry the import graph, so anything that emits ES
   modules — Vite, Rollup, Rolldown, esbuild — is read without a stats file. It has to hold the
   index.html of the build, which is what names the chunk the application starts at.
 
@@ -294,8 +314,15 @@ Output
                                 an HTML marker so the next run edits it instead of adding a
                                 sixteenth one. sarif anchors each signal to a file, which is what
                                 GitHub's code scanning reads.
+  --html <file>                 Also write the page — treemap, search, every chunk — with this build
+                                already loaded into it. One self-contained file: nothing to drag in,
+                                nothing fetched, opens offline.
+  --open                        Open what --html wrote.
   --lang en|es                  Default: en.
   --no-color                    Never emit colour. It is off already when stdout is not a terminal.
+  --no-cache                    Do not remember this run. By default each run is kept in
+                                node_modules/.cache/loadline and the next one says what moved —
+                                "bootstrap 156 kB → 129 kB" — without a --baseline.
 
 Failing the build
   --max-boot <size>        Fail when the bootstrap is over it.
@@ -329,6 +356,8 @@ Exit codes
   2  the arguments or the files could not be used.
 
 Examples
+  loadline dist/app
+  loadline dist/app --html loadline.html --open
   loadline dist/app/browser
   loadline dist/app/stats.json --dist dist/app/browser
   loadline dist/app/stats.json --dist dist/app/browser --max-boot 350kB --fail-on high

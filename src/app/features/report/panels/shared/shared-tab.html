@@ -36,6 +36,7 @@
             <tr>
                 <th
                     app-sort
+                    scope="col"
                     [active]="order().key === 'name'"
                     [dir]="order().dir"
                     [sortLabel]="t.sortByColumn"
@@ -46,6 +47,7 @@
                 <th
                     app-sort
                     class="cov-col"
+                    scope="col"
                     [active]="order().key === 'coverage'"
                     [dir]="order().dir"
                     [help]="t.helpCoverage + ' ' + coverageRule()"
@@ -57,6 +59,7 @@
                 <th
                     app-sort
                     class="num"
+                    scope="col"
                     [active]="order().key === 'bytes'"
                     [dir]="order().dir"
                     [help]="t.helpSize"
@@ -65,7 +68,7 @@
                 >
                     {{ t.thSize }}
                 </th>
-                <th>{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
+                <th scope="col">{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
             </tr>
         </thead>
         <tbody>

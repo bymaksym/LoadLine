@@ -57,10 +57,7 @@ export class CompareTabComponent {
     /** The version column, or the reason it is empty — which is not the same as "they agree". */
     protected versionsOf(entry: SharedPackage): string {
         const t = this.i18n.ui();
-        if (entry.versions.length === 0) {
-            return t.compareVersionUnknown;
-        }
-        return entry.versions.join(' · ');
+        return entry.versions.length === 0 ? t.compareVersionUnknown : entry.versions.join(' · ');
     }
 
     protected onFiles(event: Event): void {

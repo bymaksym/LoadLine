@@ -10,7 +10,8 @@
     display: flex;
     justify-content: center;
 
-    padding: 12vh 1rem 1rem;
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the palette sits a share of the window down, wherever the window is; a step of the scale would pin it to the top of a tall screen */
+    padding: 12vh var(--space-8) var(--space-8);
 
     background: rgb(0 0 0 / 0.35);
 }
@@ -36,12 +37,12 @@
 
     &__box {
         width: 100%;
-        padding: 0.5rem 0.7rem;
+        padding: var(--space-4) var(--space-6);
         border: 1px solid var(--line-strong);
         border-radius: var(--radius);
 
         font: inherit;
-        font-size: 1rem;
+        font-size: var(--fs-3);
         color: var(--ink);
 
         background: var(--ground);
@@ -68,7 +69,7 @@
         justify-content: space-between;
 
         width: 100%;
-        padding: 0.35rem 0.5rem;
+        padding: var(--space-3) var(--space-4);
         border: none;
         border-radius: var(--radius);
 
@@ -132,7 +133,7 @@
 }
 
 kbd {
-    padding: 0.1rem 0.35rem;
+    padding: var(--space-1) var(--space-3);
     border: 1px solid var(--line-strong);
     border-radius: 4px;
 

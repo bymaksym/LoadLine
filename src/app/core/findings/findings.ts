@@ -2,6 +2,7 @@ import { type Analysis } from '../analysis/analysis.types';
 import { type Comparison } from '../baseline/baseline.types';
 import { RECOMMENDED } from '../criteria/criteria';
 import { type Criteria, type Mode } from '../criteria/criteria.types';
+import { type Declared } from '../deps/pins';
 import { baseName, chainSteps, formatBytes, formatDelta, packageOf, projectFolderOf } from '../format/format.utils';
 import { type Lang } from '../i18n/ui-strings';
 import { type MeasuredReport } from '../measurement/measurement.types';
@@ -9,7 +10,9 @@ import { configurationBudgets, isZoneless, pipelineKnown } from '../project/proj
 import { type ProjectContext } from '../project/project-context.types';
 import { EMPTY_SITUATION } from '../situation/situation';
 import { type Situation } from '../situation/situation.types';
+import { buildBootSingleFindings } from './boot-single';
 import { buildCascadeShapeFindings } from './caching';
+import { buildDupesFindings } from './dupes';
 import { type Finding } from './finding.types';
 import { chainHtml, mono } from './finding-html';
 import { TEXT } from './finding-text';
@@ -41,6 +44,12 @@ export const buildFindings = (
      * and it defaults to nobody having answered, which is what every caller did before it existed.
      */
     situation: Situation = EMPTY_SITUATION,
+    /**
+     * What each package declares as its dependencies, from the lock file or from `node_modules`.
+     * It reaches one signal: whether a duplicate is pinned to an exact version by its parent, which
+     * turns "force the resolution" from advice into a breaking change.
+     */
+    declared: Declared | null = null,
 ): Finding[] => {
     const text = TEXT[lang];
     const findings: Finding[] = [];
@@ -113,6 +122,11 @@ export const buildFindings = (
         });
     }
 
+    // 2b · The same package, imported by a single file of yours that everybody runs: a candidate for
+    //      an `await import()` where it is used. Its own module, like the folder version below.
+    const lazyFlagged = new Set(findings.filter(finding => finding.kind === 'bootLazy').map(f => f.target?.key ?? ''));
+    findings.push(...buildBootSingleFindings(analysis, lang, c, lazyFlagged));
+
     // 3 · Own files too large inside the bootstrap: one signal listing all of them, no cut-off.
     const bigFiles = analysis.ownFilesInBoot.filter(file => file.bytes > c.bigOwnFileBytes);
     const first = bigFiles[0];
@@ -133,41 +147,9 @@ export const buildFindings = (
         });
     }
 
-    // 4 · Two versions of the same package, each copy followed to whatever brings it in. Knowing
-    // there are two says nothing about what to do: the fix depends on where each one comes from.
-    const firstDupe = analysis.duplicates[0];
-    if (firstDupe) {
-        const list = analysis.duplicates
-            .map(dupe => {
-                const copies = dupe.copies
-                    .map(copy =>
-                        text.dupeCopy({
-                            version: copy.version,
-                            under: copy.under,
-                            size: formatBytes(copy.bytes),
-                            zone: text.dupeZone[copy.zone],
-                            chain: copy.chain ? chainHtml(chainSteps(copy.chain)) : null,
-                            own: copy.importers.length > 0 ? copy.importers.map(file => mono(file)).join(', ') : null,
-                            via: copy.viaPackages.length > 0 ? copy.viaPackages.map(pkg => mono(pkg)).join(', ') : null,
-                        }),
-                    )
-                    .join(' ');
-                return `<strong>${dupe.name}</strong> — ${copies}`;
-            })
-            .join(' ');
-
-        findings.push({
-            severity: 'mid',
-            target: { tab: 'search', key: firstDupe.name },
-            kind: 'dupes',
-            ...text.dupes({
-                count: analysis.duplicates.length,
-                list,
-                viaDependency: analysis.duplicates.some(dupe => dupe.copies.some(copy => copy.importers.length === 0)),
-                inBoot: analysis.duplicates.some(dupe => dupe.inBoot),
-            }),
-        });
-    }
+    // 4 · Two versions of the same package, each copy followed to whatever brings it in — and, when
+    //     the ranges are known, whether a parent pins its copy so it cannot be moved at all.
+    findings.push(...buildDupesFindings(analysis, lang, declared));
 
     // 5 · A screen much more expensive than the rest.
     if (analysis.screens.length >= c.heavyScreenMinScreens) {
@@ -409,7 +391,8 @@ export const buildComparisonFindings = (comparison: Comparison, lang: Lang, c: C
 
 /**
  * What `angular.json`, `package.json` and the pipeline say. The budget signals compare against
- * the raw bootstrap, because that is what Angular's budgets measure, whatever the report shows.
+ * the raw initial load — JavaScript and the global stylesheet — because that is what Angular's
+ * `initial` budget adds up, whatever the report shows, and it is the figure the suggestion uses.
  */
 export const buildContextFindings = (
     context: ProjectContext,
@@ -443,7 +426,7 @@ export const buildContextFindings = (
                 kind: 'budgetNone',
                 ...text.budgetNone({ configs: names(rows) }),
             });
-        } else if (known && built.length > 0 && strictest && strictest.builtBy.length === 0) {
+        } else if (known && built.length > 0 && strictest?.builtBy.length === 0) {
             findings.push({
                 severity: 'high',
                 target: { tab: 'project', key: strictest.name },
@@ -487,8 +470,8 @@ export const buildContextFindings = (
         const tooHigh = examined.filter(
             row =>
                 row.error !== null &&
-                analysis.bootRawBytes > 0 &&
-                row.error >= analysis.bootRawBytes * c.budgetSlackFactor,
+                analysis.initialRawBytes > 0 &&
+                row.error >= analysis.initialRawBytes * c.budgetSlackFactor,
         );
         const byError = groupBy(tooHigh, row => row.error ?? 0);
         for (const [error, group] of byError) {
@@ -500,7 +483,7 @@ export const buildContextFindings = (
                     configs: plainNames(group),
                     count: group.length,
                     error: formatBytes(error),
-                    boot: formatBytes(analysis.bootRawBytes),
+                    boot: formatBytes(analysis.initialRawBytes),
                     factor: c.budgetSlackFactor,
                 }),
             });

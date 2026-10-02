@@ -62,10 +62,14 @@ const reportWith = (opts: Options): CliReport =>
     buildReport(
         {
             meta,
+            parallel: null,
             statsName: 'stats.json',
             gzip: null,
             brotli: null,
             splits: null,
+            announced: null,
+            graph: null,
+            pageCss: null,
             baseline: null,
             context: EMPTY_CONTEXT,
             criteria: null,

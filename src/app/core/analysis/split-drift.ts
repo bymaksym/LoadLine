@@ -40,15 +40,25 @@ export const splitDriftOf = (
             continue;
         }
 
-        const sum = Object.values(output.inputs ?? {}).reduce((total, one) => total + (one.bytesInOutput ?? 0), 0);
+        const sum = Object.values(output.inputs ?? {}).reduce((total, one) => total + one.bytesInOutput, 0);
         // A chunk the metafile does not break down says nothing either way, and counting its
         // `bytes` against a sum of zero would invent a drift of 100 % on every folder read.
-        if (sum > 0 && output.bytes > 0) {
-            file += output.bytes;
-            measured += sum;
-            chunks += 1;
+        if (!(sum > 0 && output.bytes > 0)) {
+            continue;
         }
+
+        file += output.bytes;
+        measured += sum;
+        chunks += 1;
     }
 
-    return chunks > 0 ? { file, measured, ratio: measured / file, chunks } : null;
+    // Why they differ is knowable for one bundler, and it is the one this was measured on: Angular's
+    // chunk optimizer bundles the chunks again with Rolldown after esbuild, and rewrites every
+    // per-file weight as that pass's rendered length shared out in proportion — before the final
+    // minification. So the parts add up to more than the file, by the same factor in every chunk.
+    const angular = Object.values(outputs).some(output =>
+        Object.keys(output.inputs ?? {}).some(input => input.includes('@angular/core')),
+    );
+
+    return chunks > 0 ? { file, measured, ratio: measured / file, chunks, angular } : null;
 };

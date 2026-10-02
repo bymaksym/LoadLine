@@ -105,6 +105,9 @@ export interface PackageBarrelInput {
     minRatio: number;
 }
 
+/** A file of a package published as flat ES module bundles: `fesm2022/core.mjs`, `fesm2022/_signal-chunk.mjs`. */
+const FLAT_BUNDLE = /\/fesm\d{4}\//;
+
 /**
  * Packages that ship many more files than anything outside them imports.
  *
@@ -160,18 +163,26 @@ export const packageBarrels = (input: PackageBarrelInput): PackageBarrel[] => {
         count(id, path);
     }
 
-    return [...byPackage]
-        .map(([name, tally]): PackageBarrel => ({
-            name,
-            files: tally.files.size,
-            entryPoints: tally.entries.size,
-            bytes: tally.bytes,
-            entryBytes: tally.entryBytes,
-            inBoot: tally.inBoot,
-            importers: input.importersOf(name),
-        }))
-        .filter(
-            pkg => pkg.files >= input.minFiles && pkg.entryPoints > 0 && pkg.files >= pkg.entryPoints * input.minRatio,
-        )
-        .toSorted((a, b) => Number(b.inBoot) - Number(a.inBoot) || b.bytes - a.bytes);
+    return (
+        [...byPackage]
+            // A package published as one flat ES module bundle — Angular's `fesm2022/`, and the
+            // `_xxx-chunk.mjs` files its build splits out of it — has no submodule to import instead:
+            // `@angular/core` came out as "100 files through one door" on every Angular build, with
+            // advice nobody could follow. The bundler already tree-shakes inside those files.
+            .filter(([, tally]) => [...tally.files].some(path => !FLAT_BUNDLE.test(path)))
+            .map(([name, tally]): PackageBarrel => ({
+                name,
+                files: tally.files.size,
+                entryPoints: tally.entries.size,
+                bytes: tally.bytes,
+                entryBytes: tally.entryBytes,
+                inBoot: tally.inBoot,
+                importers: input.importersOf(name),
+            }))
+            .filter(
+                pkg =>
+                    pkg.files >= input.minFiles && pkg.entryPoints > 0 && pkg.files >= pkg.entryPoints * input.minRatio,
+            )
+            .toSorted((a, b) => Number(b.inBoot) - Number(a.inBoot) || b.bytes - a.bytes)
+    );
 };

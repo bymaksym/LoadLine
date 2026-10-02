@@ -67,12 +67,22 @@ export interface Action {
     score: number;
 }
 
+/** Most severe first. `ok` never reaches the list: a verdict that all is well is not a task. */
+const SEVERITY_RANK: Record<Finding['severity'], number> = { high: 0, mid: 1, info: 2, ok: 3 };
+
 /**
  * The signals in the order somebody would do them.
  *
+ * **Severity first, then bytes per unit of effort.** Sorting by score alone put twelve medium and
+ * informative signals ahead of a high one that names no saving in kilobytes — a key leaked into the
+ * bundle saves nothing and is still the first thing anybody should touch. The score orders within a
+ * severity, which is where comparing kilobytes against effort makes sense.
+ *
  * Only what can be acted on: a signal whose effort is `none` is context — a verdict, a note about
  * the report itself, a growth against the baseline — and putting "the bootstrap has grown" on a
- * list of things to do would be a category mistake.
+ * list of things to do would be a category mistake. **A high one is the exception**: whatever its
+ * effort, leaving it out of "what to fix first" is how the summary came to list three medium
+ * signals and skip the one that mattered.
  */
 export const rankActions = (findings: readonly Finding[]): Action[] =>
     findings
@@ -82,10 +92,11 @@ export const rankActions = (findings: readonly Finding[]): Action[] =>
             const weight = EFFORT_WEIGHT[effort];
             return { finding, saving, effort, score: weight > 0 ? saving / weight : 0 };
         })
-        .filter(action => action.effort !== 'none')
+        .filter(action => action.effort !== 'none' || action.finding.severity === 'high')
+        .filter(action => action.finding.severity !== 'ok')
         .toSorted(
             (a, b) =>
+                SEVERITY_RANK[a.finding.severity] - SEVERITY_RANK[b.finding.severity] ||
                 b.score - a.score ||
-                // With nothing to weigh them by, the severity the signal already carries decides.
-                Number(b.finding.severity === 'high') - Number(a.finding.severity === 'high'),
+                b.saving - a.saving,
         );

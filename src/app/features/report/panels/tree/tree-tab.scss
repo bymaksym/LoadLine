@@ -3,7 +3,7 @@
 }
 
 .tree {
-    padding: 0.5rem 0.5rem 0.5rem 0.25rem;
+    padding: var(--space-4) var(--space-4) var(--space-4) var(--space-2);
 }
 
 /* The header of the list, on the same columns as every row (`--tree-cols`). */
@@ -14,11 +14,11 @@
 
     display: grid;
     grid-template-columns: var(--tree-cols);
-    gap: 0.5rem;
+    gap: var(--space-4);
     align-items: center;
 
-    margin-bottom: 0.2rem;
-    padding: 0.35rem 0.5rem 0.3rem 0;
+    margin-bottom: var(--space-2);
+    padding: var(--space-3) var(--space-4) var(--space-2) 0;
     border-bottom: 1px solid var(--line-strong);
 
     font-size: var(--fs-note);
@@ -45,7 +45,7 @@
     display: block;
 
     width: 100%;
-    padding: 0.35rem 0.5rem;
+    padding: var(--space-3) var(--space-4);
     border: none;
     border-radius: 3px;
 
@@ -75,7 +75,7 @@
 }
 
 .empty--pad {
-    padding: 1.5rem 0.85rem;
+    padding: var(--space-12) var(--space-7);
 }
 
 /*
@@ -84,15 +84,15 @@
 */
 .shape {
     max-width: 84ch;
-    margin-bottom: 0.9rem;
-    padding: 0.7rem 0.9rem;
+    margin-bottom: var(--space-7);
+    padding: var(--space-6) var(--space-7);
     border: 1px solid var(--line);
     border-radius: var(--radius);
 
     background: var(--surface);
 
     &__title {
-        margin: 0 0 0.5rem;
+        margin: 0 0 var(--space-4);
 
         font-size: var(--fs-note);
         font-weight: 600;
@@ -130,12 +130,13 @@
 
         /* The one gap in the bar is the eager/lazy boundary, and the only one. */
         &--break {
+            /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a cut in a bar drawn in px; in rem it would widen with the font while the bar does not */
             margin-left: 3px;
         }
     }
 
     &__split {
-        margin: 0.4rem 0 0.7rem;
+        margin: var(--space-3) 0 var(--space-6);
         font-size: var(--fs-body);
         color: var(--muted);
     }
@@ -143,7 +144,7 @@
     &__rows {
         display: grid;
         grid-template-columns: auto auto 1fr;
-        gap: 0.25rem 1.2rem;
+        gap: var(--space-2) var(--space-10);
         align-items: baseline;
 
         font-size: var(--fs-body);
@@ -151,12 +152,12 @@
 
     &__label {
         display: inline-flex;
-        gap: 0.45rem;
+        gap: var(--space-4);
         align-items: baseline;
 
         /* The two zones are nested under "lazy": the indent is what says they add up to it. */
         &--sub {
-            padding-left: 1.1rem;
+            padding-left: var(--space-8);
             color: var(--muted);
         }
     }
@@ -183,7 +184,7 @@
     }
 
     &__note {
-        margin: 0.6rem 0 0;
+        margin: var(--space-5) 0 0;
         font-size: var(--fs-body);
         color: var(--muted);
     }
@@ -194,8 +195,8 @@
    without it two chunks with nothing to do with each other read as the top two of one ordering.
 */
 .tree__pins {
-    margin-bottom: 0.4rem;
-    padding-bottom: 0.4rem;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
     border-bottom: 1px dashed var(--line-strong);
     border-radius: 3px;
 

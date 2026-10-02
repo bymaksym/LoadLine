@@ -19,6 +19,7 @@ import { formatMs, timingsOf } from '../src/app/core/timing/timing';
 import { violationLines } from './gates';
 import { type Violation } from './gates.types';
 import { type CliReport } from './report.types';
+import { sinceLastLine } from './since-last';
 import { CLI_TEXT } from './text';
 
 const WIDTH = 96;
@@ -131,12 +132,18 @@ const firstTripLines = (report: CliReport, palette: Palette): string[] => {
     const trip = report.assets?.firstTrip;
 
     if (trip && trip.total > 0) {
-        const parts = [
-            `${formatBytes(trip.scripts)} JS`,
-            `${formatBytes(trip.styles)} CSS`,
-            `${formatBytes(trip.fonts)} fonts`,
-            `${formatBytes(trip.images)} images`,
-        ].join(' + ');
+        // The parts that are there: "0 B fonts" is a part of nothing.
+        const parts = (
+            [
+                [trip.scripts, 'JS'],
+                [trip.styles, 'CSS'],
+                [trip.fonts, text.tripFonts],
+                [trip.images, text.tripImages],
+            ] as const
+        )
+            .filter(([bytes]) => bytes > 0)
+            .map(([bytes, label]) => `${formatBytes(bytes)} ${label}`)
+            .join(' + ');
         return [palette.warn(text.firstTrip(formatBytes(trip.total), trip.files, parts))];
     }
 
@@ -167,8 +174,14 @@ const screensTable = (report: CliReport, palette: Palette): string[] => {
         { head: strings.colTotal, right: true },
         { head: strings.colWaves, right: true },
     ];
-    if (comparison) {
-        columns.push({ head: `${strings.colDelta} ${comparison.baselineName}`, right: true });
+    // Against the explicit baseline when there is one; otherwise against the last run, so the table
+    // says which screen moved without anybody having asked for a comparison.
+    const against = comparison ?? report.sinceLast;
+    if (against) {
+        columns.push({
+            head: comparison ? `${strings.colDelta} ${comparison.baselineName}` : strings.colDelta,
+            right: true,
+        });
     }
 
     const rows = analysis.screens.map(screen => {
@@ -181,8 +194,8 @@ const screensTable = (report: CliReport, palette: Palette): string[] => {
             verdictPaint(palette, verdict)(formatBytes(screen.total)),
             String(screen.waves),
         ];
-        if (comparison) {
-            const delta = comparison.screens.get(screen.source);
+        if (against) {
+            const delta = against.screens.get(screen.source);
             cells.push(delta ? formatDelta(delta.total.diff) : strings.compareNew);
         }
         return cells;
@@ -192,12 +205,18 @@ const screensTable = (report: CliReport, palette: Palette): string[] => {
 };
 
 const signalBlock = (finding: Finding, palette: Palette, fixLabel: string): string[] => {
-    const head = severityPaint(palette, finding.severity)(`${finding.severity.padEnd(4)} · ${finding.chip}`);
+    const head = severityPaint(palette, finding.severity)(`${finding.severity.padEnd(4)} · ${plainText(finding.chip)}`);
     const indent = (line: string): string => `      ${line}`;
     const body = wrap(plainText(finding.body), WIDTH - 6).map(element => indent(element));
     const fix = finding.fix ? wrap(`${fixLabel}: ${plainText(finding.fix)}`, WIDTH - 6).map(l => indent(l)) : [];
 
-    return ['', `  ${head}`, `    ${palette.bold(finding.title)}`, ...body, ...(fix.length > 0 ? ['', ...fix] : [])];
+    return [
+        '',
+        `  ${head}`,
+        `    ${palette.bold(plainText(finding.title))}`,
+        ...body,
+        ...(fix.length > 0 ? ['', ...fix] : []),
+    ];
 };
 
 /**
@@ -217,16 +236,18 @@ const actionsBlock = (report: CliReport, palette: Palette): string[] => {
     // colour stops meaning anything.
     const rows = actions.map((action, index) => [
         `${index + 1}.`,
-        severityPaint(palette, action.finding.severity)(action.finding.title),
+        severityPaint(palette, action.finding.severity)(plainText(action.finding.title)),
         text.savingCell(action.saving > 0 ? formatBytes(action.saving) : ''),
         text.effortLabel[action.effort],
     ]);
 
     const total = totalSaving(report.analysis, report.findings);
+    // Said only when there is a figure. "No signal here names a saving that can be measured" under
+    // a table whose saving column is all dashes repeated what the column had already said.
     const summary =
-        total.counted > 0
+        total.counted > 0 && total.bytes > 0
             ? text.totalSaving(formatBytes(total.bytes), formatBytes(total.after), total.counted)
-            : text.nothingToSave;
+            : null;
 
     return [
         '',
@@ -242,8 +263,7 @@ const actionsBlock = (report: CliReport, palette: Palette): string[] => {
             rows,
             palette,
         ),
-        '',
-        ...wrap(summary, WIDTH).map(line => palette.dim(line)),
+        ...(summary ? ['', ...wrap(summary, WIDTH).map(line => palette.dim(line))] : []),
     ];
 };
 
@@ -298,15 +318,16 @@ const budgetBlock = (report: CliReport, palette: Palette): string[] => {
     // `--project` there is nothing to say a budget is missing from.
     const asking = new Set<Finding['kind']>(['budgetNone', 'budgetTooHigh', 'budgetWarnOnly']);
     const wanted = report.findings.some(finding => asking.has(finding.kind));
-    const advice = wanted ? budgetAdvice(report.analysis.bootRawBytes + (report.pageCssRawBytes ?? 0)) : null;
+    const advice = wanted ? budgetAdvice(report.analysis.initialRawBytes) : null;
     if (!advice) {
         return [];
     }
 
-    // The second budget, for a build that has screens: `anyScript` applies to every emitted file,
-    // which is what makes it useful when the names carry hashes and `bundle` budgets cannot.
-    const heaviest = Math.max(0, ...report.analysis.screens.map(screen => screen.own));
-    const perScreen = screenBudgetAdvice(heaviest);
+    // The second budget, for a build that has screens: `anyScript` applies to every emitted file —
+    // the bootstrap's too — which is what makes it useful when the names carry hashes and `bundle`
+    // budgets cannot, and why it is set above the largest script and not above a screen.
+    const largest = report.analysis.largestScript;
+    const perScreen = report.analysis.screens.length > 0 && largest ? screenBudgetAdvice(largest.bytes) : null;
 
     return [
         '',
@@ -320,7 +341,14 @@ const budgetBlock = (report: CliReport, palette: Palette): string[] => {
         ...(perScreen
             ? [
                   '',
-                  ...wrap(text.screenBudgetNote(`${perScreen.warningKb}kB`), WIDTH).map(line => palette.dim(line)),
+                  ...wrap(
+                      text.screenBudgetNote(
+                          `${perScreen.warningKb}kB`,
+                          largest?.name ?? '',
+                          formatBytes(perScreen.currentBytes),
+                      ),
+                      WIDTH,
+                  ).map(line => palette.dim(line)),
                   ...perScreen.snippet.split('\n').map(line => `  ${line}`),
               ]
             : []),
@@ -433,6 +461,13 @@ const header = (report: CliReport, palette: Palette): string[] => {
     if (report.comparisonBlocked) {
         lines.push(palette.warn(text.blocked));
     }
+    if (report.located.length > 0) {
+        lines.push(palette.dim(text.located(report.located.join(' + '))));
+    }
+    const since = sinceLastLine(report);
+    if (since) {
+        lines.push(palette.bold(since));
+    }
     if (report.analysis.splitSource === 'sourcemap') {
         lines.push(palette.dim(text.exactSplit));
     }
@@ -445,6 +480,11 @@ const header = (report: CliReport, palette: Palette): string[] => {
     // sides into one stats file, and the page has said which half it is reading since it could.
     if (report.analysis.serverOutputs > 0) {
         lines.push(palette.dim(text.serverLeftOut(report.analysis.serverOutputs)));
+    }
+    // And the other reason the metafile names files the folder does not hold. Said once, so the
+    // difference between the two is explained rather than left for somebody to count by hand.
+    if (report.analysis.componentStyles > 0) {
+        lines.push(palette.dim(text.componentStyles(report.analysis.componentStyles)));
     }
 
     return lines;

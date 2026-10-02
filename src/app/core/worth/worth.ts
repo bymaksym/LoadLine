@@ -72,9 +72,7 @@ export const worthOfShared = (input: WorthInput): Worth => {
 
     // A package few project files reach has an address: there is a file to open. Reached from all
     // over, there is no single file to point at, and the chunk falls through to `common`.
-    if (top && importers !== null && importers > 0 && importers <= maxImporters) {
-        return { ...base, level: 'try', origin: 'package' };
-    }
-
-    return { ...base, level: 'hard', origin: 'common' };
+    return top && importers !== null && importers > 0 && importers <= maxImporters
+        ? { ...base, level: 'try', origin: 'package' }
+        : { ...base, level: 'hard', origin: 'common' };
 };

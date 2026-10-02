@@ -63,6 +63,7 @@
                 <th
                     app-sort
                     class="name-col"
+                    scope="col"
                     [active]="order().key === 'name'"
                     [dir]="order().dir"
                     [help]="t.helpSource"
@@ -71,10 +72,11 @@
                 >
                     {{ t.thSource }}
                 </th>
-                <th class="bar-col"></th>
+                <th class="bar-col" scope="col"></th>
                 <th
                     app-sort
                     class="num"
+                    scope="col"
                     [active]="order().key === 'bytes'"
                     [dir]="order().dir"
                     [help]="t.helpSize"
@@ -83,10 +85,11 @@
                 >
                     {{ t.thSize }}
                 </th>
-                <th class="num">%<app-explain [text]="t.helpBootPercent" /></th>
+                <th class="num" scope="col">%<app-explain [text]="t.helpBootPercent" /></th>
                 <th
                     app-sort
                     class="num"
+                    scope="col"
                     [active]="order().key === 'exclusive'"
                     [dir]="order().dir"
                     [help]="t.helpExclusive"
@@ -97,6 +100,7 @@
                 </th>
                 <th
                     app-sort
+                    scope="col"
                     [active]="order().key === 'importers'"
                     [dir]="order().dir"
                     [help]="t.helpImporters"

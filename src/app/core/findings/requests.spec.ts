@@ -29,17 +29,16 @@ const chunks = (prefix: string, count: number, bytes: number) => {
  * what was missing was a line saying what to do about it, which is the cheapest fix on the list.
  */
 describe('buildRequestFindings · the first load', () => {
-    const withStartup = (waves: number, byWave: string[][], critical: string[] = []): Analysis =>
-        ({
-            ...analysis([], [], {}),
-            startup: {
-                waves,
-                discovered: byWave.flat(),
-                byWave,
-                width: Math.max(1, ...byWave.map(wave => wave.length)),
-                critical,
-            },
-        }) as Analysis;
+    const withStartup = (waves: number, byWave: string[][], critical: string[] = []): Analysis => ({
+        ...analysis([], [], {}),
+        startup: {
+            waves,
+            discovered: byWave.flat(),
+            byWave,
+            width: Math.max(1, ...byWave.map(wave => wave.length)),
+            critical,
+        },
+    });
 
     it('fires when the page does not name every chunk of the bootstrap', () => {
         const [finding] = buildRequestFindings(withStartup(2, [['assets/chunk-THEME-AAA.js']]), 'en', criteria);

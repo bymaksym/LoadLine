@@ -21,7 +21,8 @@
     //
     // `fixtures/` is a whole application and its compiled output, read as data by
     // `cli/read-build.spec.ts`. Nothing imports it and nothing should: what it tests is a folder,
-    "ignore": [".ncurc.js", "fixtures/**"],
+    // `.htmlvalidate.mjs` is the same case as `.ncurc.js`: html-validate finds it by its name.
+    "ignore": [".ncurc.js", ".htmlvalidate.mjs", "fixtures/**"],
 
     "ignoreDependencies": [
         // Provided by the `angular-eslint` meta-package; angular.json references it as the builder of
@@ -31,6 +32,14 @@
         // The rule pack secretlint loads by name from .secretlintrc.json. Nothing imports it, and
         // removing it would leave the pre-commit secret gate with no rules and passing silently.
         "@secretlint/secretlint-rule-preset-recommend",
+
+        // Loaded by name from .htmlvalidate.mjs, which knip does not read (see `ignore` above).
+        // Without it html-validate cannot parse Angular's bindings and the templates go unchecked.
+        "html-validate-angular",
+
+        // Run by path (`node_modules/jscpd/run-jscpd.js`) from scripts/validate-duplicates.mjs,
+        // which is how the script reads its JSON report; nothing imports it.
+        "jscpd",
     ],
 
     // "Nobody imports it" has two causes and only one is debt: a symbol used INSIDE its own file

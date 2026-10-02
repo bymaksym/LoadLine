@@ -11,27 +11,27 @@
     /* Which of the two compressed figures drives the report, when both are available. */
     &__pick {
         display: inline-flex;
-        gap: 0.3rem;
+        gap: var(--space-2);
         align-items: center;
-        margin-left: 0.4rem;
+        margin-left: var(--space-3);
     }
 
     &__warn {
         display: block;
-        margin-top: 0.35rem;
+        margin-top: var(--space-3);
         color: var(--warn);
     }
 }
 
 .crit-group {
-    margin-bottom: 1.1rem;
+    margin-bottom: var(--space-8);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--surface);
 
     h3 {
         margin: 0;
-        padding: 0.55rem 1rem;
+        padding: var(--space-4) var(--space-8);
         border-bottom: 1px solid var(--line);
 
         font-size: var(--fs-note);
@@ -45,9 +45,9 @@
 .crit {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 0.5rem 1.5rem;
+    gap: var(--space-4) var(--space-12);
 
-    padding: 0.8rem 1rem;
+    padding: var(--space-6) var(--space-8);
     border-bottom: 1px solid var(--line);
     border-left: 3px solid transparent;
 
@@ -63,11 +63,11 @@
 
     &__text {
         display: grid;
-        gap: 0.15rem;
+        gap: var(--space-1);
     }
 
     &__label {
-        font-size: 0.9rem;
+        font-size: var(--fs-2);
         font-weight: 600;
     }
 
@@ -80,12 +80,12 @@
     &__inputs {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.4rem 1rem;
+        gap: var(--space-3) var(--space-8);
         align-items: center;
 
         label {
             display: inline-flex;
-            gap: 0.4rem;
+            gap: var(--space-3);
             align-items: center;
 
             font-size: var(--fs-body);
@@ -118,7 +118,7 @@
 @media (width >= 800px) {
     .crit {
         grid-template-columns: minmax(0, 34rem) auto;
-        gap: 0.5rem 2rem;
+        gap: var(--space-4) var(--space-16);
         align-items: start;
         justify-content: start;
     }

@@ -1,0 +1,296 @@
+:host {
+    display: block;
+}
+
+/* Where the map is, and what it is filtered by: crumbs on the left, search and zones on the right. */
+.map-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: var(--space-4);
+
+    &__crumbs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-1);
+        align-items: center;
+
+        min-width: 0;
+    }
+
+    &__crumb {
+        cursor: pointer;
+
+        overflow: hidden;
+
+        max-width: 28ch;
+        padding: var(--space-2) var(--space-4);
+        border: none;
+        border-radius: 4px;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--accent);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        background: none;
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+
+        &[aria-current='location'] {
+            cursor: default;
+            font-weight: 600;
+            color: var(--ink);
+        }
+    }
+
+    &__sep {
+        color: var(--muted);
+    }
+
+    &__tools {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    &__search {
+        width: min(100%, 34ch);
+    }
+
+    &__hits {
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
+
+    &__zones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+}
+
+/* What the area means, and the two textures, in one line above the map. */
+.map-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+
+    margin: 0 0 var(--space-5);
+
+    font-size: var(--fs-note);
+    color: var(--muted);
+
+    &__key {
+        display: inline-block;
+
+        width: 12px;
+        height: 12px;
+        margin-left: var(--space-3);
+        border: 1px solid var(--line-strong);
+        border-radius: 2px;
+
+        background: color-mix(in oklab, var(--seg-boot) 45%, var(--surface));
+
+        &--own {
+            background: repeating-linear-gradient(
+                135deg,
+                color-mix(in oklab, var(--seg-boot) 45%, var(--surface)) 0 3px,
+                color-mix(in oklab, var(--seg-boot) 20%, var(--surface)) 3px 6px
+            );
+        }
+    }
+
+    &__hint {
+        margin-left: auto;
+    }
+}
+
+/* The map and its detail, side by side when there is room and stacked when there is not. */
+.map-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+    gap: var(--space-7);
+    align-items: start;
+
+    @media (width <= 900px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.map {
+    position: relative;
+
+    overflow: hidden;
+
+    min-height: 240px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+
+    background: var(--surface-sunk);
+
+    /*
+       One rectangle. Its colour is who pays for it — the same three the rest of the report uses —
+       mixed into the surface so a label in ink reads on it in both themes.
+    */
+    &__tile {
+        --tile: var(--line-strong);
+
+        cursor: pointer;
+
+        position: absolute;
+
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        align-items: flex-start;
+
+        box-sizing: border-box;
+        /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the treemap lays its tiles out in px from code; the label inset stays in px so it does not grow with the font inside a tile that does not */
+        padding: 3px 5px;
+        border: 1px solid var(--surface);
+
+        font-family: var(--font-ui);
+        color: var(--ink);
+        text-align: left;
+
+        background: color-mix(in oklab, var(--tile) 22%, var(--surface));
+
+        transition: opacity 0.15s ease;
+
+        &[data-zone='boot'] {
+            --tile: var(--seg-boot);
+        }
+
+        &[data-zone='shared'] {
+            --tile: var(--seg-shared);
+        }
+
+        &[data-zone='own'] {
+            --tile: var(--seg-own);
+        }
+
+        &:focus-visible {
+            z-index: 2;
+            outline: 3px solid var(--accent);
+            outline-offset: -3px;
+        }
+
+        &--own {
+            background: repeating-linear-gradient(
+                135deg,
+                color-mix(in oklab, var(--tile) 34%, var(--surface)) 0 4px,
+                color-mix(in oklab, var(--tile) 18%, var(--surface)) 4px 8px
+            );
+        }
+
+        &--dim {
+            opacity: 0.28;
+        }
+
+        &--hit {
+            z-index: 1;
+            box-shadow: inset 0 0 0 2px var(--accent);
+        }
+
+        &[data-kind='rest'] {
+            border-color: var(--line-strong);
+            border-style: dashed;
+        }
+
+        &[data-kind='unattributed'] {
+            background: var(--surface);
+        }
+    }
+
+    &__name,
+    &__size {
+        overflow: hidden;
+
+        max-width: 100%;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__name {
+        font-weight: 600;
+    }
+
+    &__size {
+        color: var(--muted);
+    }
+
+    /* A part drawn inside a chunk: a deeper shade of the chunk's own colour. */
+    &__cell {
+        position: absolute;
+
+        overflow: hidden;
+
+        box-sizing: border-box;
+        /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the treemap lays its tiles out in px from code; the label inset stays in px so it does not grow with the font inside a tile that does not */
+        padding: 2px 4px;
+        border: 1px solid var(--surface);
+        border-radius: 3px;
+
+        background: color-mix(in oklab, var(--tile) 62%, var(--surface));
+
+        &:hover {
+            z-index: 1;
+            outline: 2px solid var(--ink);
+            outline-offset: -2px;
+        }
+
+        &--own {
+            background: repeating-linear-gradient(
+                135deg,
+                color-mix(in oklab, var(--tile) 62%, var(--surface)) 0 4px,
+                color-mix(in oklab, var(--tile) 36%, var(--surface)) 4px 8px
+            );
+        }
+
+        &--hit {
+            box-shadow: inset 0 0 0 2px var(--accent);
+        }
+
+        &[data-kind='unattributed'],
+        &[data-kind='rest'] {
+            background: color-mix(in oklab, var(--tile) 14%, var(--surface));
+        }
+    }
+
+    &__cell-name,
+    &__cell-size {
+        overflow: hidden;
+        display: block;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__cell-size {
+        color: color-mix(in oklab, var(--ink) 70%, transparent);
+    }
+
+    &__empty {
+        padding: var(--space-12);
+    }
+}

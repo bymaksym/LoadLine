@@ -3,15 +3,15 @@
 .panel__head {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1rem;
+    gap: var(--space-3) var(--space-8);
     align-items: baseline;
     justify-content: space-between;
 
-    margin-bottom: 0.8rem;
+    margin-bottom: var(--space-6);
 
     h2 {
         margin: 0;
-        font-size: 1.08rem;
+        font-size: var(--fs-4);
         font-weight: 600;
         letter-spacing: -0.01em;
     }
@@ -25,7 +25,7 @@
 }
 
 .howto {
-    margin-bottom: 0.9rem;
+    margin-bottom: var(--space-7);
     border: 1px solid var(--line);
     border-radius: var(--radius);
 
@@ -36,7 +36,7 @@
     summary {
         cursor: pointer;
 
-        padding: 0.5rem 0.9rem;
+        padding: var(--space-4) var(--space-7);
 
         font-size: var(--fs-body);
         font-weight: 500;
@@ -54,7 +54,7 @@
 
             width: 1.15rem;
             height: 1.15rem;
-            margin-right: 0.5rem;
+            margin-right: var(--space-4);
             border-radius: 50%;
 
             font-family: var(--font-data);
@@ -83,12 +83,12 @@
     }
 
     &__body {
-        padding: 0.7rem 0.95rem 0.2rem;
+        padding: var(--space-6) var(--space-8) var(--space-2);
         color: var(--muted);
 
         p {
             max-width: 84ch;
-            margin: 0 0 0.6rem;
+            margin: 0 0 var(--space-5);
         }
 
         strong {
@@ -100,12 +100,12 @@
         ol,
         ul {
             max-width: 84ch;
-            margin: 0 0 0.6rem;
-            padding-left: 1.3rem;
+            margin: 0 0 var(--space-5);
+            padding-left: var(--space-10);
         }
 
         li {
-            margin-bottom: 0.3rem;
+            margin-bottom: var(--space-2);
         }
     }
 }

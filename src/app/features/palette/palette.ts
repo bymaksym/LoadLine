@@ -7,6 +7,7 @@ import { PaletteService } from '@state/palette.service';
 import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
 import { REPORT_TABS, type ReportTab } from '@state/report-nav.types';
+import { labelOfTab } from '@state/report-tab-label';
 import { ThemeService } from '@state/theme.service';
 
 /** One thing the palette can take you to, or do. */
@@ -159,7 +160,9 @@ export class PaletteComponent {
         );
     });
 
-    protected readonly rows = computed(() => this.matches().slice(0, SHOWN));
+    // The short list in full: with the map there are as many tabs as the cap, and the actions —
+    // the half of the list that is not a tab — fell off the end of it.
+    protected readonly rows = computed(() => (this.query().trim() ? this.matches().slice(0, SHOWN) : this.matches()));
     protected readonly total = computed(() => this.matches().length);
 
     /** The shortcuts, as the `?` list. Written here because this is the only thing that has any. */
@@ -189,12 +192,13 @@ export class PaletteComponent {
             return;
         }
 
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            const entry = rows[this.cursor()];
-            if (entry) {
-                this.pick(entry);
-            }
+        if (event.key !== 'Enter') {
+            return;
+        }
+        event.preventDefault();
+        const entry = rows[this.cursor()];
+        if (entry) {
+            this.pick(entry);
         }
     }
 
@@ -217,20 +221,6 @@ export class PaletteComponent {
     }
 
     protected tabLabel(tab: ReportTab): string {
-        const t = this.i18n.ui();
-        const labels: Record<ReportTab, string> = {
-            findings: t.tabFindings,
-            screens: t.tabScreens,
-            measured: t.tabMeasured,
-            boot: t.tabBoot,
-            shared: t.tabShared,
-            tree: t.tabTree,
-            search: t.tabSearch,
-            project: t.tabProject,
-            situation: t.tabSituation,
-            compare: t.tabCompare,
-            criteria: t.tabCriteria,
-        };
-        return labels[tab];
+        return labelOfTab(tab, this.i18n.ui());
     }
 }

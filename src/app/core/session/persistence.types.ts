@@ -47,8 +47,11 @@ export interface StoredSession {
      * session saved before there was a Measured tab simply does not have it.
      */
     measurement?: {
-        /** The entries as they were read, so the timings and the sizes survive a reload too. */
-        entries: MeasuredEntry[];
+        /**
+         * The entries as they were read, so the timings and the sizes survive a reload too. A
+         * session saved before the snippet asked for timings kept a `[file, bytes]` pair instead.
+         */
+        entries: (MeasuredEntry | [file: string, bytes: number | null])[];
         url: string | null;
         pick: string | null;
         /** What the page said about itself. Absent in a session saved before the snippet asked. */

@@ -1,0 +1,13 @@
+/*
+ * The tests of the command, which tsconfig.cli.json leaves out so they are not compiled into
+ * `dist/cli`. Without a project of their own, the editor and the type-aware lint
+ * (eslint.typed.config.js) had no tsconfig that claims them and read them with default options.
+ */
+{
+    "extends": "./tsconfig.cli.json",
+    "compilerOptions": {
+        "noEmit": true
+    },
+    "include": ["cli/**/*.spec.ts"],
+    "exclude": []
+}

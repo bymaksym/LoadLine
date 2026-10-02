@@ -10,7 +10,7 @@
 import { type Criteria } from '../criteria/criteria.types';
 import { formatBytes } from '../format/format.utils';
 import { type Lang } from '../i18n/ui-strings';
-import { type ScanReport, type SecretKind } from '../scan/scan.types';
+import { type ScanReport, type SecretKind, type SecretMatch } from '../scan/scan.types';
 import { type Finding } from './finding.types';
 import { mono } from './finding-html';
 import { TEXT } from './finding-text';
@@ -29,20 +29,32 @@ export const buildScanFindings = (scan: ScanReport, lang: Lang, c: Criteria): Fi
     //     no rule for "a long string near the word key", which is what makes a security signal noisy
     //     and then switched off.
     const secrets = scan.secrets;
-    const serious = secrets.filter(match => ALWAYS_SERIOUS.has(match.kind));
+    // A Firebase web `apiKey` is public by design, and a `process.env.X` inside a package is that
+    // package reading its own switch. Both are said, with the reason, and neither raises the card:
+    // a security signal that cries wolf on every Firebase app is one somebody switches off.
+    const explained = (match: SecretMatch): boolean => !!match.benign || !!match.owner;
+    const serious = secrets.filter(match => ALWAYS_SERIOUS.has(match.kind) && !explained(match));
+    const open = secrets.filter(match => !explained(match));
     const first = secrets[0];
     if (first) {
+        const publicKeys = secrets.filter(match => match.benign === 'firebaseConfig');
+        const theirs = secrets.filter(match => !!match.owner);
         findings.push({
-            severity: serious.length > 0 ? 'high' : 'mid',
+            severity: serious.length > 0 ? 'high' : open.length > 0 ? 'mid' : 'info',
             kind: 'secrets',
             ...text.secrets({
                 count: secrets.length,
                 serious: serious.length,
+                open: open.length,
+                publicKeys: publicKeys.length,
+                theirs: [...new Set(theirs.map(match => match.owner ?? ''))].map(pkg => mono(pkg)).join(', '),
                 kinds: [...new Set(secrets.map(match => match.kind))].join(', '),
                 list: secrets
                     .map(
                         match =>
-                            `${mono(match.kind)} ${match.redacted} (${mono(match.chunk)}${match.count > 1 ? `, ×${match.count}` : ''})`,
+                            `${mono(match.kind)} ${match.redacted} (${mono(match.chunk)}${match.count > 1 ? `, ×${match.count}` : ''}${
+                                match.benign ? `, ${text.secretBenign[match.benign]}` : ''
+                            }${match.owner ? `, ${text.secretOwner(mono(match.owner))}` : ''})`,
                     )
                     .join(' · '),
             }),

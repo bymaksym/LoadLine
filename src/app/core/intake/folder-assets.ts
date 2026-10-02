@@ -64,7 +64,9 @@ export const readFolderAssets = async (
         onProgress?.(done, files.length);
     }
 
-    const named = html ? assetsIn(html) : { referenced: [], preloaded: [], prefetched: [], hrefs: [] };
+    const named = html
+        ? assetsIn(html)
+        : { referenced: [], preloaded: [], prefetched: [], hrefs: [], icons: [], alternates: [] };
 
     const report = readAssets({
         files: list,
@@ -74,6 +76,7 @@ export const readFolderAssets = async (
         inPage: new Set([...named.referenced, ...(html ? announcedIn(html) : []), ...(html ? stylesIn(html) : [])]),
         preloaded: new Set(named.preloaded),
         prefetched: new Set(named.prefetched),
+        icons: new Set(named.icons),
         bootChunks: new Set<string>(),
         weigh,
     });

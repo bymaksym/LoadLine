@@ -28,6 +28,22 @@ export interface AngularContext {
     defaultConfiguration: string | null;
     /** Whether `zone.js` is in the polyfills. `null` when the file does not say. */
     zonePolyfill: boolean | null;
+    /**
+     * The folders `build.options.assets` copies into the output as they are: `public/` on a project
+     * created with Angular 17 or later, `src/assets` before. A file of the build folder nothing
+     * names that lives under one of these is a file of the repository, not a leftover of an old
+     * deploy — Angular empties the output folder before every build. Optional: a context read
+     * before this was, or written by hand, has none.
+     */
+    assetFolders?: AssetFolder[];
+}
+
+/** One entry of `assets`: where it is in the repository, and where it lands in the build folder. */
+export interface AssetFolder {
+    /** Path in the repository, relative to the workspace: `public`, `src/assets`. */
+    input: string;
+    /** Path inside the build folder, `''` for its root. */
+    output: string;
 }
 
 export interface PackageContext {

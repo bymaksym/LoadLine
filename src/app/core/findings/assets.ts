@@ -20,7 +20,21 @@ import { TEXT } from './finding-text';
 
 const named = (items: readonly string[]): string => items.map(item => mono(item)).join(', ');
 
-export const buildAssetFindings = (assets: AssetReport, lang: Lang, c: Criteria): Finding[] => {
+/**
+ * @param repoPaths where in the repository each unreferenced file comes from, when `angular.json`
+ *                  copies it from an assets folder: build-folder path → repository path. Those are
+ *                  not leftovers of an old deploy — Angular empties the output before every build
+ *                  — and "clean the folder before building" is advice that changes nothing for them.
+ * @param verified  whether those paths were checked on disk (the command) or only read off
+ *                  `angular.json` (the page).
+ */
+export const buildAssetFindings = (
+    assets: AssetReport,
+    lang: Lang,
+    c: Criteria,
+    repoPaths: ReadonlyMap<string, string> | null = null,
+    verified = false,
+): Finding[] => {
     const text = TEXT[lang];
     const findings: Finding[] = [];
 
@@ -43,7 +57,7 @@ export const buildAssetFindings = (assets: AssetReport, lang: Lang, c: Criteria)
                 list: fonts
                     .map(
                         family =>
-                            `${mono(family.name)} — ${family.files.length} files, ${formatBytes(family.bytes)}, ${family.formats.join('/')}`,
+                            `${mono(family.name)} — ${text.fileCount(family.files.length)}, ${formatBytes(family.bytes)}, ${family.formats.join('/')}`,
                     )
                     .join(' · '),
             }),
@@ -65,7 +79,10 @@ export const buildAssetFindings = (assets: AssetReport, lang: Lang, c: Criteria)
                 outdated: outdated.length,
                 outdatedList: named(outdated.map(file => `${file.name} → .${file.modernNeighbour}`)),
                 list: media
-                    .map(file => `${mono(file.name)} (${formatBytes(file.bytes)}${file.inPage ? ', in the page' : ''})`)
+                    .map(
+                        file =>
+                            `${mono(file.name)} (${formatBytes(file.bytes)}${file.inPage ? `, ${text.inPage}` : ''})`,
+                    )
                     .join(' · '),
             }),
         });
@@ -82,7 +99,9 @@ export const buildAssetFindings = (assets: AssetReport, lang: Lang, c: Criteria)
             ...text.duplicateAssets({
                 count: duplicates.length,
                 size: formatBytes(duplicates.reduce((sum, entry) => sum + entry.wasted, 0)),
-                list: duplicates.map(entry => `${named(entry.names)} (${formatBytes(entry.bytes)} each)`).join(' · '),
+                list: duplicates
+                    .map(entry => `${named(entry.names)} (${formatBytes(entry.bytes)} ${text.each})`)
+                    .join(' · '),
             }),
         });
     }
@@ -118,7 +137,24 @@ export const buildAssetFindings = (assets: AssetReport, lang: Lang, c: Criteria)
             ...text.unreferencedAssets({
                 count: orphans.length,
                 size: formatBytes(orphanBytes),
-                list: orphans.map(file => `${mono(file.path)} (${formatBytes(file.bytes)})`).join(' · '),
+                list: orphans
+                    .map(file => {
+                        const repo = repoPaths?.get(file.path);
+                        return `${mono(file.path)} (${formatBytes(file.bytes)}${repo ? ` ← ${mono(repo)}` : ''})`;
+                    })
+                    .join(' · '),
+                fromRepo: orphans.filter(file => repoPaths?.has(file.path)).length,
+                folders: [
+                    ...new Set(
+                        orphans
+                            .map(file => repoPaths?.get(file.path)?.split('/').slice(0, -1).join('/') ?? null)
+                            .filter((folder): folder is string => !!folder),
+                    ),
+                ]
+                    .slice(0, 3)
+                    .map(folder => mono(`${folder}/`))
+                    .join(', '),
+                verified,
             }),
         });
     }

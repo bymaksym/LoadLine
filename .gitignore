@@ -40,6 +40,11 @@ testem.log
 /typings
 __screenshots__/
 
+# Claude Code: the worktrees agents work in are whole copies of the repository, and the local
+# settings are one person's permissions. Neither belongs in a commit; the rest of .claude/ may.
+/.claude/worktrees/
+/.claude/settings.local.json
+
 # System files
 .DS_Store
 Thumbs.db

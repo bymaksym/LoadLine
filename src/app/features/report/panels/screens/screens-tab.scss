@@ -10,11 +10,11 @@
 .caveat {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.3rem 0.5rem;
+    gap: var(--space-2) var(--space-4);
     align-items: baseline;
 
     max-width: 96ch;
-    margin: 0 0 0.7rem;
+    margin: 0 0 var(--space-6);
 
     font-size: var(--fs-body);
     color: var(--muted);
@@ -30,7 +30,7 @@
 }
 
 .screens {
-    padding: 0 0.35rem 0.35rem;
+    padding: 0 var(--space-3) var(--space-3);
 }
 
 .screen {
@@ -46,10 +46,10 @@
 
     display: grid;
     grid-template-columns: minmax(0, 1fr) 5rem;
-    gap: 0.25rem 0.6rem;
+    gap: var(--space-2) var(--space-5);
 
     width: 100%;
-    padding: calc(var(--row-y) * 1.4) 0.6rem;
+    padding: calc(var(--row-y) * 1.4) var(--space-5);
     border: none;
     border-radius: var(--radius);
 
@@ -76,8 +76,8 @@
         z-index: 1;
         top: 0;
 
-        padding-top: 0.5rem;
-        padding-bottom: 0.4rem;
+        padding-top: var(--space-4);
+        padding-bottom: var(--space-3);
         border-bottom: 1px solid var(--line-strong);
         border-radius: 0;
 
@@ -98,7 +98,7 @@
     &__legend {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.15rem 0.9rem;
+        gap: var(--space-1) var(--space-7);
 
         font-size: var(--fs-note);
         text-transform: none;
@@ -106,7 +106,7 @@
 
         > span {
             display: inline-flex;
-            gap: 0.35rem;
+            gap: var(--space-3);
             align-items: center;
         }
 
@@ -194,7 +194,7 @@
            The fallback is the full set, for the moment before the binding lands.
         */
         grid-template-columns: var(--screen-cols, 13rem minmax(0, 1fr) 5rem 7rem 6rem 7rem);
-        gap: 0.9rem;
+        gap: var(--space-7);
         align-items: center;
 
         &__num--shared,
@@ -243,6 +243,7 @@
 
     overflow: hidden;
     display: flex;
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the cut between segments of a 16 px bar, drawn in px like the bar; in rem it would widen with the font while the bar does not */
     gap: 2px;
 
     height: 16px;
@@ -282,11 +283,11 @@
 }
 
 .screen__detail {
-    padding: 0.5rem 0.75rem 1rem;
+    padding: var(--space-4) var(--space-6) var(--space-8);
 }
 
 .empty--pad {
-    padding: 1.5rem 0.85rem;
+    padding: var(--space-12) var(--space-7);
 }
 
 /*
@@ -311,11 +312,11 @@
         right: 0;
 
         display: grid;
-        gap: 0.15rem;
+        gap: var(--space-1);
 
         min-width: 12rem;
-        margin-top: 0.3rem;
-        padding: 0.5rem 0.7rem;
+        margin-top: var(--space-2);
+        padding: var(--space-4) var(--space-6);
         border: 1px solid var(--line-strong);
         border-radius: var(--radius);
 
@@ -327,7 +328,7 @@
         cursor: pointer;
 
         display: flex;
-        gap: 0.45rem;
+        gap: var(--space-4);
         align-items: center;
 
         font-size: var(--fs-body);

@@ -12,6 +12,7 @@
 
 import {
     type AngularContext,
+    type AssetFolder,
     type Budget,
     type ConfigurationBudget,
     type PackageContext,
@@ -39,7 +40,7 @@ export const parseSize = (value: unknown): number | null => {
         return null;
     }
 
-    const match = /^\s*(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?\s*$/i.exec(value);
+    const match = /^\s*(\d+(?:\.\d+)?)\s*(?:(b|kb|mb|gb)\s*)?$/i.exec(value);
     if (!match?.[1]) {
         return null;
     }
@@ -72,7 +73,7 @@ const readBudgets = (value: unknown): Budget[] => {
 export const isInitialBudget = (budget: Budget): boolean => budget.type === 'initial' || budget.type === 'all';
 
 interface RawTarget {
-    options?: { budgets?: unknown; polyfills?: unknown };
+    options?: { budgets?: unknown; polyfills?: unknown; assets?: unknown };
     configurations?: Record<string, { budgets?: unknown } | undefined>;
     defaultConfiguration?: unknown;
 }
@@ -83,14 +84,41 @@ interface RawProject {
     targets?: Record<string, RawTarget | undefined>;
 }
 
+const trimSlashes = (path: string): string => path.replaceAll('\\', '/').replaceAll(/^\.?\/+|\/+$/g, '');
+
+/**
+ * `build.options.assets`, in both spellings Angular accepts: a path, copied to the same path under
+ * the output (`src/assets` → `assets/`, the old default), or `{ glob, input, output }`, copied from
+ * `input` to `output` (a `glob` over `public`, landing at the root, the default since v17).
+ */
+const assetFoldersOf = (assets: unknown): AssetFolder[] => {
+    if (!Array.isArray(assets)) {
+        return [];
+    }
+
+    return assets.flatMap((entry): AssetFolder[] => {
+        if (typeof entry === 'string') {
+            const input = trimSlashes(entry);
+            // `src/assets` lands as `assets`: Angular drops the source root from a plain path.
+            return input ? [{ input, output: input.replace(/^src\//, '') }] : [];
+        }
+        if (entry && typeof entry === 'object') {
+            const { input, output } = entry as { input?: unknown; output?: unknown };
+            return typeof input === 'string'
+                ? [{ input: trimSlashes(input), output: typeof output === 'string' ? trimSlashes(output) : '' }]
+                : [];
+        }
+        return [];
+    });
+};
+
 const polyfillsHaveZone = (polyfills: unknown): boolean | null => {
     if (typeof polyfills === 'string') {
         return polyfills.includes('zone.js');
     }
-    if (Array.isArray(polyfills)) {
-        return polyfills.some(entry => typeof entry === 'string' && entry.includes('zone.js'));
-    }
-    return null;
+    return Array.isArray(polyfills)
+        ? polyfills.some(entry => typeof entry === 'string' && entry.includes('zone.js'))
+        : null;
 };
 
 /**
@@ -106,7 +134,7 @@ export const readAngularJson = (json: unknown, pick: string | null = null): Angu
         return null;
     }
 
-    const projects = (json as { projects: unknown }).projects;
+    const projects = json.projects;
     if (!projects || typeof projects !== 'object') {
         return null;
     }
@@ -142,7 +170,46 @@ export const readAngularJson = (json: unknown, pick: string | null = null): Angu
         configurations,
         defaultConfiguration: typeof build.defaultConfiguration === 'string' ? build.defaultConfiguration : null,
         zonePolyfill: polyfillsHaveZone(build.options?.polyfills),
+        assetFolders: assetFoldersOf(build.options?.assets),
     };
+};
+
+/**
+ * Where in the repository a file of the build folder comes from, when an `assets` entry of
+ * `angular.json` copies it there. Unverified on its own: the page has `angular.json` and not the
+ * repository, so it says "comes from"; the command can look on disk and drop what is not there.
+ *
+ * @param path the file's path inside the build folder, `/`-separated.
+ */
+export const repoPathsOf = (
+    files: readonly { path: string }[],
+    folders: readonly AssetFolder[],
+): Map<string, string> | null => {
+    if (folders.length === 0) {
+        return null;
+    }
+    const found = new Map<string, string>();
+    for (const { path } of files) {
+        const repo = repoPathOf(path, folders);
+        if (repo) {
+            found.set(path, repo);
+        }
+    }
+    return found;
+};
+
+export const repoPathOf = (path: string, folders: readonly AssetFolder[]): string | null => {
+    const clean = trimSlashes(path);
+    // The most specific folder first: `assets/icons` before the root.
+    const match = folders
+        .filter(folder => folder.output === '' || clean === folder.output || clean.startsWith(`${folder.output}/`))
+        .toSorted((a, b) => b.output.length - a.output.length)[0];
+    if (!match) {
+        return null;
+    }
+
+    const rest = match.output === '' ? clean : clean.slice(match.output.length).replace(/^\//, '');
+    return `${match.input}/${rest}`;
 };
 
 const buildTargetOf = (project: RawProject): RawTarget | undefined =>
@@ -189,10 +256,7 @@ export const isZoneless = (context: ProjectContext): boolean | null => {
     if (context.angular?.zonePolyfill !== null && context.angular?.zonePolyfill !== undefined) {
         return !context.angular.zonePolyfill;
     }
-    if (context.pkg) {
-        return !context.pkg.zoneDependency;
-    }
-    return null;
+    return context.pkg ? !context.pkg.zoneDependency : null;
 };
 
 // --- Pipeline ---------------------------------------------------------------------------------
@@ -216,7 +280,9 @@ const BUILD_COMMANDS = [
     /\brsbuild\s+build\b([^&|;]*)/,
     // esbuild has no `build` subcommand, so it is only recognised when it is being invoked with
     // flags. Matching the bare word would turn `pnpm add esbuild` into a build of the application.
-    /\besbuild\s+([^&|;]*--[\w-][^&|;]*)/,
+    // Both conditions are lookaheads so the whitespace after the word is read once: written as
+    // `\s+` followed by the flags, the two could trade spaces and a long run of them backtracked.
+    /\besbuild(?=\s)(?=[^&|;]+--[\w-])([^&|;]+)/,
 ];
 
 /** The flags of a build command, when one of them is a build command. `null` when none is. */
@@ -304,22 +370,22 @@ export const resolveBuildCommand = (
  * a file nobody recognises is still read line by line rather than skipped.
  */
 const kindOf = (fileName: string, text: string): PipelineKind => {
-    if (/gitlab-ci/.test(fileName)) {
+    if (fileName.includes('gitlab-ci')) {
         return 'gitlab';
     }
-    if (/azure-pipelines/.test(fileName) || /^\s*vmImage:/m.test(text)) {
+    if (fileName.includes('azure-pipelines') || /^\s*vmImage:/m.test(text)) {
         return 'azure';
     }
-    if (/bitbucket-pipelines/.test(fileName) || /^pipelines:/m.test(text)) {
+    if (fileName.includes('bitbucket-pipelines') || /^pipelines:/m.test(text)) {
         return 'bitbucket';
     }
-    if (/circleci/.test(fileName) || /^workflows:/m.test(text)) {
+    if (fileName.includes('circleci') || /^workflows:/m.test(text)) {
         return 'circleci';
     }
     if (/jenkinsfile/i.test(fileName)) {
         return 'jenkins';
     }
-    if (/^jobs:/m.test(text) && /runs-on:/.test(text)) {
+    if (/^jobs:/m.test(text) && text.includes('runs-on:')) {
         return 'github';
     }
     return /^stages:/m.test(text) ? 'gitlab' : 'unknown';

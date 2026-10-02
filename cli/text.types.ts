@@ -23,6 +23,19 @@ export interface CliStrings {
      */
     firstTrip: (total: string, files: number, parts: string) => string;
     /** Outputs of the build the browser folder does not hold: the server side, left out. */
+    /** Where `--html` wrote the page, on stderr so the report on stdout stays clean. */
+    htmlWritten: (file: string) => string;
+    /** What was found inside a build root, for the lead line. */
+    located: (files: string) => string;
+    /** The last run and this one are the same build, as far as the figures go. */
+    lastRunUnchanged: string;
+    /** The parts of the first trip that are not code, named in the report's language. */
+    tripFonts: string;
+    tripImages: string;
+    /** Component stylesheets the metafile names apart and Angular inlines into the JavaScript. */
+    componentStyles: (count: number) => string;
+    /** The change against the previous run of the command, remembered without a `--baseline`. */
+    sinceLast: (date: string, change: string) => string;
     serverLeftOut: (count: number) => string;
     blocked: string;
     exactSplit: string;
@@ -68,7 +81,6 @@ export interface CliStrings {
     /** A saving cell: the figure, or a dash when the signal has none that can be measured. */
     savingCell: (saving: string) => string;
     totalSaving: (bytes: string, after: string, count: number) => string;
-    nothingToSave: string;
 
     profileName: Record<ProfileId, string>;
     /** The estimate label. It is not optional anywhere this appears. */
@@ -76,8 +88,8 @@ export interface CliStrings {
     timeColumns: { profile: string; transfer: string; latency: string; script: string; total: string };
 
     budgetNote: (warning: string, error: string, current: string) => string;
-    /** The second budget, the one that guards a screen rather than the first load. */
-    screenBudgetNote: (warning: string) => string;
+    /** The second budget, `anyScript`: set above the largest script, which it applies to as well. */
+    screenBudgetNote: (warning: string, file: string, size: string) => string;
 
     /** "What would the first load weigh without this?" */
     headWhatIf: string;

@@ -47,7 +47,7 @@ export class SortHeaderComponent {
     readonly sortLabel = input.required<string>();
 
     // * OUTPUTS
-    readonly pick = output<void>();
+    readonly pick = output();
 
     /**
      * The arrow is drawn on every header, faint until the column is the one sorting: a mark that

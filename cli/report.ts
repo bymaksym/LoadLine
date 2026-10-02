@@ -105,7 +105,7 @@ const comparisonOf = (
 export const buildReport = (input: BuildInput, options: Options): CliReport => {
     const mode = resolveMode(input, options.mode);
     const sizes = mode === 'brotli' ? input.brotli : mode === 'gzip' ? input.gzip : null;
-    const exact = resolveSplits(input.splits, Object.keys(input.meta.inputs ?? {}));
+    const exact = resolveSplits(input.splits, Object.keys(input.meta.inputs));
 
     const lang = options.lang;
     const criteria = resolveCriteria(mode, input.config, input.criteria);
@@ -161,7 +161,7 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
     // drifted: the one the snapshot kept was missing caching, scan and deps, so a `devLeftovers`
     // somebody had actually fixed could never show as gone, and a page export — which does carry
     // them — read as three signals fixed the moment the terminal compared against it.
-    const base = buildFindings(analysis, lang, mode, criteria, situation);
+    const base = buildFindings(analysis, lang, mode, criteria, situation, input.declared ?? null);
     const fromContext = buildContextFindings(input.context, analysis, lang, criteria);
     const fromBuild = [
         ...buildFolderFindings(
@@ -173,7 +173,7 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
             },
             lang,
         ),
-        ...(input.assets ? buildAssetFindings(input.assets, lang, criteria) : []),
+        ...(input.assets ? buildAssetFindings(input.assets, lang, criteria, input.assetSources ?? null, true) : []),
         ...buildPageFindings(input.pageOrigins ?? null, lang),
         ...buildCachingFindings(caching, lang, criteria, situation),
         ...(scan ? buildScanFindings(scan, lang, criteria) : []),
@@ -187,6 +187,10 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
     // costs a walk over lists that are already in memory, and having it here is what keeps the
     // exported file and the compared-against file the same shape by construction.
     const snapshot = snapshotOf(analysis, mode, input.statsName, new Date(), own);
+    // The last run, when it was in the same unit: a gzip figure against a raw one would read as a
+    // saving that never happened, which is the rule the explicit baseline follows too.
+    const last = input.lastRun ?? null;
+    const sinceLast = last?.mode === mode ? compare(snapshot, last) : null;
 
     const composed = composeFindings({
         base,
@@ -225,6 +229,8 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
         analysis,
         comparison,
         comparisonBlocked: blocked,
+        sinceLast,
+        located: [],
         findings: kept,
         accepted,
         config: input.config ?? null,

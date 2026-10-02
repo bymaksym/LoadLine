@@ -78,6 +78,18 @@ export interface BuildInput extends DistSizes {
     criteria: Partial<Criteria> | null;
     /** `loadline.json`, when one was passed or found next to the working directory. */
     config?: LoadlineConfig | null;
+    /**
+     * What each bundled package declares as its dependencies — from the lock file, or from its
+     * `package.json` in `node_modules` — for telling a duplicate pinned to one exact version.
+     */
+    declared?: ReadonlyMap<string, Readonly<Record<string, string>>> | null;
+    /**
+     * Files of the folder nothing names, mapped to where they are in the repository, when an
+     * `assets` entry of `angular.json` copies them and the file is really there.
+     */
+    assetSources?: ReadonlyMap<string, string> | null;
+    /** The previous run of this same build, remembered in `node_modules/.cache`. */
+    lastRun?: Snapshot | null;
     configProblems?: string[];
     /** Where it came from, so the lead line can say which file the thresholds are from. */
     configName?: string | null;

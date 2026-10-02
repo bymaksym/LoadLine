@@ -57,7 +57,13 @@ import {
     NO_PAGE,
 } from '../core/measurement/measurement.types';
 import { type Observed, observedFrom } from '../core/measurement/observed';
-import { EMPTY_CONTEXT, readAngularJson, readPackageJson, readPipeline } from '../core/project/project-context';
+import {
+    EMPTY_CONTEXT,
+    readAngularJson,
+    readPackageJson,
+    readPipeline,
+    repoPathsOf,
+} from '../core/project/project-context';
 import { type ProjectContext } from '../core/project/project-context.types';
 import { SAMPLE_CSS, SAMPLE_NAME, SAMPLE_PAGE, SAMPLE_STATS } from '../core/sample/sample-build';
 import { scanBuild } from '../core/scan/scan';
@@ -159,6 +165,13 @@ export class ReportStore {
      */
     readonly lock = signal<LockedPackage[] | null>(null);
     readonly advisories = signal<Advisory[] | null>(null);
+    /**
+     * Where each file nothing names comes from in the repository, going by the `assets` entries of
+     * `angular.json`. Unverified: the page has the configuration and not the repository.
+     */
+    private readonly assetSources = computed(() =>
+        repoPathsOf(this.assets()?.unreferenced ?? [], this.context().angular?.assetFolders ?? []),
+    );
     /** `loadline.json` as it was dropped, so the page can say the thresholds are not its own. */
     readonly config = signal<LoadlineConfig | null>(null);
 
@@ -444,6 +457,39 @@ export class ReportStore {
     });
 
     /**
+     * The signals that come from the folder rather than from the graph: source maps, assets,
+     * caching, the page's origins, what the text says and the declared dependencies. Both lists of
+     * signals below carry them, and they used to be written out in each, so a new source had to be
+     * added twice and could be forgotten in one. The signals are read here, inside the computeds
+     * that call it, so those still track every one of them.
+     */
+    private folderFindings(analysis: Analysis): Finding[] {
+        const lang = this.i18n.lang();
+        const criteria = this.criteria();
+        const assets = this.assets();
+        const caching = this.caching();
+        const scan = this.scan();
+        const deps = this.deps();
+
+        return [
+            ...buildFolderFindings(
+                {
+                    sourceMaps: this.mapFiles() ?? 0,
+                    derived: this.derived(),
+                    screens: analysis.screens.map(s => s.label),
+                    drift: analysis.splitDrift,
+                },
+                lang,
+            ),
+            ...(assets ? buildAssetFindings(assets, lang, criteria, this.assetSources()) : []),
+            ...(caching ? buildCachingFindings(caching, lang, criteria, this.situation.situation()) : []),
+            ...buildPageFindings(this.pageOrigins(), lang),
+            ...(scan ? buildScanFindings(scan, lang, criteria) : []),
+            ...(deps ? buildDepsFindings(deps, lang, criteria) : []),
+        ];
+    }
+
+    /**
      * The signals about this build alone, without the ones about a comparison.
      *
      * They are separate because the comparison needs them — a snapshot carries its signals so the
@@ -457,29 +503,12 @@ export class ReportStore {
 
         const lang = this.i18n.lang();
         const criteria = this.criteria();
-        const assets = this.assets();
-        const caching = this.caching();
-        const scan = this.scan();
-        const deps = this.deps();
         const situation = this.situation.situation();
 
         return [
-            ...buildFindings(analysis, lang, this.mode(), criteria, situation),
+            ...buildFindings(analysis, lang, this.mode(), criteria, situation, this.deps()?.declared ?? null),
             ...buildContextFindings(this.context(), analysis, lang, criteria),
-            ...buildFolderFindings(
-                {
-                    sourceMaps: this.mapFiles() ?? 0,
-                    derived: this.derived(),
-                    screens: analysis.screens.map(s => s.label),
-                    drift: analysis.splitDrift,
-                },
-                lang,
-            ),
-            ...(assets ? buildAssetFindings(assets, lang, criteria) : []),
-            ...(caching ? buildCachingFindings(caching, lang, criteria, situation) : []),
-            ...buildPageFindings(this.pageOrigins(), lang),
-            ...(scan ? buildScanFindings(scan, lang, criteria) : []),
-            ...(deps ? buildDepsFindings(deps, lang, criteria) : []),
+            ...this.folderFindings(analysis),
         ];
     });
 
@@ -495,14 +524,10 @@ export class ReportStore {
         const comparison = this.comparison();
         const measured = this.measured();
         const observed = this.observed();
-        const assets = this.assets();
-        const caching = this.caching();
-        const scan = this.scan();
-        const deps = this.deps();
         const situation = this.situation.situation();
 
         const composed = composeFindings({
-            base: buildFindings(analysis, lang, this.mode(), criteria, situation),
+            base: buildFindings(analysis, lang, this.mode(), criteria, situation, this.deps()?.declared ?? null),
             fromComparison: comparison ? buildComparisonFindings(comparison, lang, criteria) : [],
             fromContext: buildContextFindings(this.context(), analysis, lang, criteria),
             fromMeasurement: measured
@@ -511,22 +536,7 @@ export class ReportStore {
                       ...(observed ? buildObservedFindings(observed, measured, analysis, lang, criteria) : []),
                   ]
                 : [],
-            fromBuild: [
-                ...buildFolderFindings(
-                    {
-                        sourceMaps: this.mapFiles() ?? 0,
-                        derived: this.derived(),
-                        screens: analysis.screens.map(s => s.label),
-                        drift: analysis.splitDrift,
-                    },
-                    lang,
-                ),
-                ...(assets ? buildAssetFindings(assets, lang, criteria) : []),
-                ...(caching ? buildCachingFindings(caching, lang, criteria, situation) : []),
-                ...buildPageFindings(this.pageOrigins(), lang),
-                ...(scan ? buildScanFindings(scan, lang, criteria) : []),
-                ...(deps ? buildDepsFindings(deps, lang, criteria) : []),
-            ],
+            fromBuild: this.folderFindings(analysis),
         });
 
         // Built from the composed list rather than alongside it, because what they say is about the
@@ -541,11 +551,7 @@ export class ReportStore {
     private readonly measuredResult = computed<MeasuredReport | MeasurementError | null>(() => {
         const analysis = this.analysis();
         const measurement = this.measurement();
-        if (!analysis || !measurement) {
-            return null;
-        }
-
-        return contrast(analysis, measurement, this.measurementPick());
+        return !analysis || !measurement ? null : contrast(analysis, measurement, this.measurementPick());
     });
 
     /** The measurement contrasted against the analysis: what came down against what was predicted. */
@@ -565,11 +571,9 @@ export class ReportStore {
     readonly observed = computed<Observed | null>(() => {
         const analysis = this.analysis();
         const measurement = this.measurement();
-        if (!analysis || !measurement) {
-            return null;
-        }
-
-        return observedFrom(measurement, new Set(analysis.allChunks.map(file => baseName(file))));
+        return !analysis || !measurement
+            ? null
+            : observedFrom(measurement, new Set(analysis.allChunks.map(file => baseName(file))));
     });
 
     /**
@@ -1115,7 +1119,7 @@ export class ReportStore {
      */
     markAs(source: string, kind: ScreenMark): void {
         const marks = new Map(this.marks());
-        if (marks.get(source) && marks.get(source) !== kind) {
+        if (marks.has(source) && marks.get(source) !== kind) {
             marks.delete(source);
         } else {
             marks.set(source, kind);

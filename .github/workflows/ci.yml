@@ -45,8 +45,18 @@ jobs:
             - name: Formatting
               run: pnpm run format:check
 
+            # The lint configuration itself: no rule fighting Prettier, no hand-written rule that
+            # repeats a preset, no deprecated rule left on without a reason.
+            - name: ESLint configuration
+              run: |
+                  pnpm run lint:prettier
+                  pnpm run lint:config
+
+            # The type-aware config extends the plain one, so this is every ESLint rule in one pass:
+            # an unawaited promise or an uncalled signal blocks here even if the commit hook was
+            # skipped.
             - name: Lint
-              run: pnpm run lint:ci
+              run: pnpm run lint:types
 
             - name: Lint styles
               run: pnpm run lint-styles:ci
@@ -55,6 +65,20 @@ jobs:
             # names and no rule in that component's scope declares. This can.
             - name: Styles in scope
               run: pnpm run lint-styles:scope
+
+            # What angular-eslint cannot see in a template: a header cell with no scope, a label
+            # pointing at no control.
+            - name: Accessibility of the HTML
+              run: pnpm run a11y:audit
+
+            # The README, the published guide and every string the page and the command print.
+            - name: Spelling
+              run: pnpm run spell:audit
+
+            # The compiler holds the dictionaries to their contract; this holds the contract to the
+            # page: a key nothing reads is text still translated and maintained for nobody.
+            - name: Translation keys nothing reads
+              run: pnpm run i18n:audit
 
             - name: Types
               run: pnpm run typecheck
@@ -68,8 +92,15 @@ jobs:
               continue-on-error: true
               run: pnpm run knip
 
+            # Informs too: a copy breaks nothing, and sometimes extracting it costs more than it
+            # saves. Deliberate copies are listed with their reason in duplicates.json.
+            - name: Copied code
+              continue-on-error: true
+              run: pnpm run duplicates:audit
+
             # The production build, its stats file, and the single self-contained page the tool is
-            # actually distributed as. One `ng build` produces all three.
+            # actually distributed as. One `ng build` produces all three. Since Angular 22.2 the stats
+            # file is `browser-stats.json`, not `stats.json`: the steps below name the new one.
             - name: Build
               run: |
                   pnpm run build:ci
@@ -79,12 +110,12 @@ jobs:
             # Two independent readings of the same build have to agree about which chunks everybody
             # downloads. This is the check that does not depend on a fixture somebody wrote.
             - name: Loadline checks itself
-              run: node bin/loadline.js dist/loadline-app/stats.json --dist dist/loadline-app/browser --self-check
+              run: node bin/loadline.js dist/loadline-app/browser-stats.json --dist dist/loadline-app/browser --self-check
 
             # And the whole thing end to end, on a real build, with the project's own budgets read
             # from angular.json and this very file.
             - name: Loadline analyses itself
-              run: node bin/loadline.js dist/loadline-app/stats.json --dist dist/loadline-app/browser --project .
+              run: node bin/loadline.js dist/loadline-app/browser-stats.json --dist dist/loadline-app/browser --project .
 
             # The same build read the other way: the folder alone, with no stats file, which is the
             # path everything that is not Angular takes. It is here because it broke once and the

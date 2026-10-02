@@ -66,10 +66,9 @@ export const EN: UiStrings = {
         if (mode === 'brotli') {
             return 'You are editing the criteria for brotli figures, the real ones from the .br files in the folder. They are lower than the gzip ones by the same margin brotli compresses better.';
         }
-        if (mode === 'gzip') {
-            return 'You are editing the criteria for gzip-compressed figures (a build folder is loaded).';
-        }
-        return 'You are editing the criteria for raw figures. With the build folder loaded a different set applies: the bootstrap, for instance, becomes 170 / 350 kB.';
+        return mode === 'gzip'
+            ? 'You are editing the criteria for gzip-compressed figures (a build folder is loaded).'
+            : 'You are editing the criteria for raw figures. With the build folder loaded a different set applies: the bootstrap, for instance, becomes 170 / 350 kB.';
     },
     criteriaFigures: 'Figures',
     criteriaGzipBtn: 'gzip',
@@ -282,7 +281,7 @@ export const EN: UiStrings = {
     paletteTab: 'tab',
     paletteAction: 'action',
     paletteCount: (shown, total) =>
-        total > shown ? `${shown} of ${total} — the Search tab names every one of them` : `${total}`,
+        total > shown ? `${shown} of ${total} — the Search tab names every one of them` : String(total),
     paletteKeysHint: '? for the shortcuts',
     keysTitle: 'Keyboard',
     keyJump: 'Jump to a tab, a screen or a package',
@@ -355,7 +354,6 @@ export const EN: UiStrings = {
     rereadBtn: 'Read the folder again',
     rereadHelp:
         'Reads the same build folder again, for after a rebuild. It is offered only where the browser can hold on to a folder, which is not from a file:// page and not in every browser; everywhere else, drop the folder again.',
-    intakeChangeStats: 'Change stats.json',
     intakeShow: 'Show drop zones',
     intakeHide: 'Hide drop zones',
     intakeAddBaseline: 'Add a baseline to compare',
@@ -446,9 +444,6 @@ export const EN: UiStrings = {
 
     headLeadGzip: 'Before anything appears, people download (gzip)',
     headLeadRaw: 'Before anything appears, people download (uncompressed)',
-    headFigure: (size, files) => `${size} · ${files} files`,
-    headNote: (s, unit) =>
-        `The most expensive screen is <strong>${s.label}</strong>, at ${s.total} across ${s.files} files — ${s.shared} of that is shared with other screens and only ${s.own} is its own. Figures are ${unit}.`,
     unitGzip: 'gzip-compressed',
     unitRaw: 'raw',
     unitBrotli: 'brotli-compressed',
@@ -477,8 +472,6 @@ export const EN: UiStrings = {
         'It comes down by taking out of the bootstrap what only some screens use. The Bootstrap tab lists it by weight and marks in red the packages whose only consumer is in a lazy screen: start there.',
     adviceEffective:
         'The gap against the declared bootstrap is chunks the bundler marks as lazy and almost everybody downloads. It is not corrected in the bootstrap but in those chunks: the Shared tab.',
-    adviceScreens:
-        'It is bootstrap + shared + own. If the typical screen is expensive but its own code is small, what to look at is the bootstrap: bringing it down brings every screen down at once.',
     adviceShared:
         'A chunk almost every screen loads does not improve by splitting it alone. Taking out what a single screen uses pays off; what all of them use will download wherever it lives.',
     adviceFindings:
@@ -508,6 +501,7 @@ export const EN: UiStrings = {
     tabBoot: 'Bootstrap',
     tabShared: 'Shared',
     tabTree: 'Tree',
+    tabMap: 'Map',
     howTo: 'How to read this tab',
     howToFindings:
         '<p>Each signal is a concrete pattern found in <strong>your</strong> import graph, with its threshold and its fix. They are not generic performance rules.</p><p><strong>Important</strong> means weight everyone pays without needing to. <strong>To review</strong> flags something worth a look that may have a reason. The button on each signal leads to the report row it comes from.</p>',
@@ -526,6 +520,39 @@ export const EN: UiStrings = {
     secScreensSub: 'Click a row to see what makes it up. The bars share a scale.',
     secTree: 'Inside the bundle',
     secTreeSub: 'Chunk, package and file. Filter by zone to see only what everybody pays for.',
+
+    howToMap:
+        '<p>Each rectangle is a chunk, and its <strong>area is what it weighs in the report’s unit</strong>: compressed when the folder was read. Inside each chunk you see what fills it, by package and by folder of yours. The colour says who pays for it: grey the bootstrap, orange what screens share, green what one screen loads alone. Striped is your own code; plain, packages.</p><p><strong>Inside a chunk the split is raw</strong>, because gzip compresses the file as a whole and the compressed weight of one package inside it does not exist. So the area inside is each part’s share of the chunk, not an invented compressed figure.</p><p>Click a rectangle to go into it and use the crumbs above to come back. With the keyboard: Tab walks the rectangles largest first, Enter goes in and Escape goes up a level. Whatever you type in the search lights up, inside the chunks that carry it too.</p>',
+    secMap: 'Bundle map',
+    secMapSub: 'Open a chunk and see at a glance what fills it.',
+    mapRoot: 'The whole build',
+    mapSearch: 'Light up a package, folder or file…',
+    mapMatches: hits => (hits === 1 ? '1 matches' : `${hits} match`),
+    mapUnattributed: 'unattributed (bundler code)',
+    mapRest: count => `${count} smaller ones`,
+    mapKind: {
+        chunk: 'chunk',
+        package: 'package',
+        folder: 'folder of yours',
+        file: 'file',
+        rest: 'group of small ones',
+        unattributed: 'unattributed',
+        build: 'every chunk',
+    },
+    mapAreaRoot: unit => `Area: what each chunk weighs, figures ${unit}.`,
+    mapAreaInside: 'Area: the share of the chunk each part takes, raw.',
+    mapShareOfParent: (percent, parent) => `${percent} of ${parent}`,
+    mapShareOfAll: percent => `${percent} of all the JavaScript`,
+    mapRawInside: raw => `${raw} raw inside the chunk`,
+    mapContents: 'What takes the most',
+    mapOpen: 'Go in',
+    mapUp: 'Up',
+    mapFindIt: 'Find where else it is',
+    mapHint: 'Enter goes in · Escape goes up',
+    mapLegendPackage: 'package',
+    mapLegendOwn: 'your code',
+    mapEmpty: 'Nothing to draw with this filter.',
+    mapPick: 'Hover a rectangle, or Tab through them, to see what it is.',
     secBoot: 'What is in the bootstrap',
     secBootSub: 'What downloads before anything appears, grouped by package and by your own folders.',
     secShared: 'Shared chunks',

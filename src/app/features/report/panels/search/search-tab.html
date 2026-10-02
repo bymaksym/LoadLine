@@ -41,10 +41,10 @@ already computed, they are the ones anybody would look for first, and they cost 
         <table>
             <thead>
                 <tr>
-                    <th>{{ t.thSource }}</th>
-                    <th>{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
-                    <th class="num">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
-                    <th class="num">{{ t.thChunk }}</th>
+                    <th scope="col">{{ t.thSource }}</th>
+                    <th scope="col">{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
+                    <th class="num" scope="col">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
+                    <th class="num" scope="col">{{ t.thChunk }}</th>
                 </tr>
             </thead>
             <tbody>

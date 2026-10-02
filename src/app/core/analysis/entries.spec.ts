@@ -23,13 +23,13 @@ describe('browserSide', () => {
     it('leaves a build with no server side alone', () => {
         const outputs = { 'dist/main.js': output(100), 'dist/chunk.js': output(50) };
 
-        expect(browserSide(outputs)).toEqual({ outputs, serverOutputs: 0 });
+        expect(browserSide(outputs)).toEqual({ outputs, serverOutputs: 0, componentStyles: 0 });
     });
 
     it('a metafile of nothing but server outputs is somebody analysing their server on purpose', () => {
         const outputs = { 'dist/server/server.mjs': output(900) };
 
-        expect(browserSide(outputs)).toEqual({ outputs, serverOutputs: 0 });
+        expect(browserSide(outputs)).toEqual({ outputs, serverOutputs: 0, componentStyles: 0 });
     });
 });
 

@@ -128,10 +128,9 @@ export class SharedTabComponent {
         if (key === 'name') {
             return rows.toSorted((a, b) => sign * a.name.localeCompare(b.name));
         }
-        if (key === 'coverage') {
-            return rows.toSorted((a, b) => sign * (a.ratio - b.ratio));
-        }
-        return rows.toSorted((a, b) => sign * (a.bytes - b.bytes));
+        return key === 'coverage'
+            ? rows.toSorted((a, b) => sign * (a.ratio - b.ratio))
+            : rows.toSorted((a, b) => sign * (a.bytes - b.bytes));
     });
 
     protected readonly rows = computed<SharedRow[]>(() => {
@@ -239,10 +238,9 @@ export class SharedTabComponent {
         if (worth.origin === 'ownCode') {
             return t.worthOwn(worth.top?.label ?? '', share);
         }
-        if (worth.origin === 'package') {
-            return t.worthPackage(worth.top?.label ?? '', share, worth.importers ?? 0);
-        }
-        return t.worthCommon;
+        return worth.origin === 'package'
+            ? t.worthPackage(worth.top?.label ?? '', share, worth.importers ?? 0)
+            : t.worthCommon;
     }
 
     protected toggle(row: SharedRow): void {

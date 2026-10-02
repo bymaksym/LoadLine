@@ -18,19 +18,20 @@ or a `yarn install` before it can write a second lockfile.
 
 ## Before opening a pull request
 
-Run what CI runs, in the same order — the cheap checks first, so a typo fails in seconds rather than
-after the build:
+Run what CI runs. One command does all of it except the slow parts, and prints a summary of what
+passes and what does not instead of stopping at the first failure:
 
 ```bash
-pnpm run format:check
-pnpm run lint:ci
-pnpm run lint-styles:ci
-pnpm run typecheck
-pnpm test
+pnpm run check:all    # types, lint, format, styles, accessibility, spelling, secrets, dependencies
+pnpm test             # the page's tests and the command's
 ```
 
-`pnpm run fix-all` applies the formatting and the auto-fixable lint in one go; check what it changed
-before committing, since an automatic fix can silence a rule instead of satisfying it.
+`pnpm run check` is the same with a picker, where the checks that write to the repository (the
+dependency update, the autofix) can be ticked too.
+
+`pnpm run fix-all` applies the formatting and the auto-fixable lint, one tool after the other with
+Prettier last; check what it changed before committing, since an automatic fix can silence a rule
+instead of satisfying it.
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org) — `commitlint`
 runs as a local hook, so it fails before the push rather than in CI.

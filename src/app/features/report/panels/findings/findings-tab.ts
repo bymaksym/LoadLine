@@ -150,8 +150,5 @@ const matches = (finding: Finding, filter: FindingFilter): boolean => {
     if (filter === 'all') {
         return true;
     }
-    if (filter === 'rest') {
-        return finding.severity === 'ok' || finding.severity === 'info';
-    }
-    return finding.severity === filter;
+    return filter === 'rest' ? finding.severity === 'ok' || finding.severity === 'info' : finding.severity === filter;
 };

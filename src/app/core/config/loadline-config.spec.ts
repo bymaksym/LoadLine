@@ -3,17 +3,16 @@ import { type Finding, type FindingKind } from '../findings/finding.types';
 import { applyAcceptances, readConfig, writeConfig } from './loadline-config';
 import { type LoadlineConfig } from './loadline-config.types';
 
-const finding = (kind: FindingKind, key = '', saving?: number): Finding =>
-    ({
-        kind,
-        severity: 'mid',
-        chip: '',
-        title: kind,
-        body: '',
-        fix: '',
-        target: { tab: 'boot', key },
-        saving,
-    }) as Finding;
+const finding = (kind: FindingKind, key = '', saving?: number): Finding => ({
+    kind,
+    severity: 'mid',
+    chip: '',
+    title: kind,
+    body: '',
+    fix: '',
+    target: { tab: 'boot', key },
+    saving,
+});
 
 const config = (accepted: LoadlineConfig['accepted']): LoadlineConfig => ({ tool: 'loadline', version: 1, accepted });
 

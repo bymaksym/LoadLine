@@ -6,10 +6,10 @@
 .split {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.4rem 1.5rem;
+    gap: var(--space-3) var(--space-12);
 
-    margin-bottom: 0.9rem;
-    padding: 0.85rem 1rem;
+    margin-bottom: var(--space-7);
+    padding: var(--space-7) var(--space-8);
     border: 1px solid var(--line);
     border-radius: var(--radius);
 
@@ -17,7 +17,7 @@
 
     &__item {
         display: grid;
-        gap: 0.05rem;
+        gap: var(--space-1);
     }
 
     &__item:last-of-type {
@@ -34,7 +34,7 @@
 
     &__figure {
         font-family: var(--font-data);
-        font-size: 1.2rem;
+        font-size: var(--fs-4);
         font-weight: 700;
         font-variant-numeric: tabular-nums;
     }
@@ -59,19 +59,19 @@
     /* Below the bar: the rated total and, in small type, the criterion it is rated with. */
     &__total {
         grid-column: 1 / -1;
-        margin: 0.2rem 0 0;
+        margin: var(--space-2) 0 0;
         font-size: var(--fs-body);
         color: var(--muted);
 
         strong {
             font-family: var(--font-data);
-            font-size: 0.95rem;
+            font-size: var(--fs-3);
             font-variant-numeric: tabular-nums;
         }
     }
 
     &__rule {
-        margin-left: 0.6rem;
+        margin-left: var(--space-5);
         font-size: var(--fs-body);
     }
 }
@@ -103,7 +103,7 @@
     color: var(--ink);
 
     .tag {
-        margin-left: 0.4rem;
+        margin-left: var(--space-3);
         white-space: normal;
     }
 }
@@ -123,7 +123,7 @@ tr.row-btn--lazy td.path {
 .detail__grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1rem 2rem;
+    gap: var(--space-8) var(--space-16);
 
     &--single {
         grid-template-columns: 1fr;
@@ -138,7 +138,7 @@ tr.row-btn--lazy td.path {
 
 /* The way out of this tab: the same entry, seen across the whole bundle. */
 .detail__more {
-    margin: 0.5rem 0 0;
+    margin: var(--space-4) 0 0;
     font-size: var(--fs-body);
 }
 
@@ -151,7 +151,7 @@ tr.row-btn--lazy td.path {
 
 /* Where the row's own figures come from, at the top of the detail it already opens. */
 .detail__figures {
-    margin: 0 0 0.6rem;
+    margin: 0 0 var(--space-5);
     font-size: var(--fs-body);
     color: var(--muted);
 }

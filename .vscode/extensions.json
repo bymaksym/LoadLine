@@ -1,9 +1,12 @@
 {
-    // The settings in settings.json rely on these four.
+    // The settings in settings.json rely on the first four. The last two show in the editor what
+    // `pnpm run a11y:audit` and `pnpm run spell:audit` report, with the same config files.
     "recommendations": [
         "angular.ng-template",
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "stylelint.vscode-stylelint"
+        "stylelint.vscode-stylelint",
+        "html-validate.vscode-html-validate",
+        "streetsidesoftware.code-spell-checker"
     ]
 }

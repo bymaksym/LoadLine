@@ -25,7 +25,7 @@ import {
 } from './measurement.types';
 
 /** Names the browser reports for things that are not part of any bundle. */
-const isAsset = (file: string): boolean => /\.(js|mjs|css)$/i.test(file);
+const isAsset = (file: string): boolean => /\.(?:js|mjs|css)$/i.test(file);
 
 /** File name out of a URL, an absolute path or a bare name. Query and hash go away. */
 const fileNameOf = (raw: string): string => {
@@ -101,24 +101,25 @@ const entriesFrom = (list: unknown[]): MeasuredEntry[] => {
             entries.push({ file: fileNameOf(item), bytes: null, url: item });
             continue;
         }
-        if (item && typeof item === 'object') {
-            const raw = item as RawEntry;
-            if (typeof raw.name === 'string') {
-                entries.push({
-                    file: fileNameOf(raw.name),
-                    bytes: bytesOf(raw),
-                    url: raw.name,
-                    // Either spelling: `nextHopProtocol` is what the browser calls it, `protocol`
-                    // is what the snippet renames it to, and a HAR pasted by hand uses neither
-                    // consistently.
-                    protocol: textOf(raw.protocol) ?? textOf(raw.nextHopProtocol),
-                    transferSize: numberOf(raw.transferSize),
-                    encodedBodySize: numberOf(raw.encodedBodySize),
-                    decodedBodySize: numberOf(raw.decodedBodySize),
-                    timing: timingOf(raw),
-                });
-            }
+        if (!item || typeof item !== 'object') {
+            continue;
         }
+        const raw = item as RawEntry;
+        if (typeof raw.name !== 'string') {
+            continue;
+        }
+        entries.push({
+            file: fileNameOf(raw.name),
+            bytes: bytesOf(raw),
+            url: raw.name,
+            // Either spelling: `nextHopProtocol` is what the browser calls it, `protocol` is what
+            // the snippet renames it to, and a HAR pasted by hand uses neither consistently.
+            protocol: textOf(raw.protocol) ?? textOf(raw.nextHopProtocol),
+            transferSize: numberOf(raw.transferSize),
+            encodedBodySize: numberOf(raw.encodedBodySize),
+            decodedBodySize: numberOf(raw.decodedBodySize),
+            timing: timingOf(raw),
+        });
     }
 
     return entries;
@@ -179,11 +180,7 @@ export const readMeasurement = (text: string): Measurement | MeasurementError =>
 
     const names = trimmed.match(/[\w.@~-]+\.(?:js|mjs|css)\b/gi) ?? [];
     entries = names.map(name => ({ file: fileNameOf(name), bytes: null }));
-    if (entries.length === 0) {
-        return 'noFiles';
-    }
-
-    return { url: null, entries: dedupe(entries), source: 'text', page: NO_PAGE };
+    return entries.length === 0 ? 'noFiles' : { url: null, entries: dedupe(entries), source: 'text', page: NO_PAGE };
 };
 
 /** How much one report of a file carries, to keep the fuller of two reports of the same file. */
@@ -255,10 +252,12 @@ export const contrast = (
         }
 
         downloaded.add(file);
-        if (entry.bytes !== null) {
-            transferOf.set(file, entry.bytes);
-            transferred += entry.bytes;
+        if (entry.bytes === null) {
+            continue;
         }
+
+        transferOf.set(file, entry.bytes);
+        transferred += entry.bytes;
     }
 
     if (downloaded.size === 0) {
@@ -360,10 +359,12 @@ const bestScreen = (analysis: Analysis, downloaded: Set<string>, bootSet: Set<st
         const miss = own.length - hit;
         const score = hit - miss;
         // A screen has to explain something of its own; ties go to the first, already sorted by weight.
-        if (hit > 0 && score > bestScore) {
-            best = screen;
-            bestScore = score;
+        if (!(hit > 0 && score > bestScore)) {
+            continue;
         }
+
+        best = screen;
+        bestScore = score;
     }
 
     return best;

@@ -30,6 +30,8 @@ export const EFFORT_WEIGHT: Record<Effort, number> = { config: 1, import: 2, ref
 export const EFFORT: Record<FindingKind, Effort> = {
     // One import moved, or one import narrowed.
     bootLazy: 'import',
+    // One import turned into an `await import()` where the package is used.
+    bootSingle: 'import',
     ownInBoot: 'refactor',
     mixedImport: 'import',
     ownBarrel: 'import',

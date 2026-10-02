@@ -177,7 +177,10 @@ export const buildCachingFindings = (
                     .map(file => mono(file.path))
                     .join(', '),
                 list: unhashable
-                    .map(file => `${mono(file.path)} (${formatBytes(file.bytes)}${file.inPage ? ', in the page' : ''})`)
+                    .map(
+                        file =>
+                            `${mono(file.path)} (${formatBytes(file.bytes)}${file.inPage ? `, ${text.inPage}` : ''})`,
+                    )
                     .join(' · '),
             }),
         });

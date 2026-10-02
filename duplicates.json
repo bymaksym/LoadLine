@@ -1,0 +1,5 @@
+{
+    "$comment": "Read by scripts/validate-duplicates.mjs (pnpm run duplicates:audit). minTokens is the smallest copy that counts. `allowed` holds the pairs of files copied on purpose, each with its reason.",
+    "minTokens": 100,
+    "allowed": []
+}

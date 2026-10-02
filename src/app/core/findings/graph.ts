@@ -15,7 +15,7 @@ import { type Criteria } from '../criteria/criteria.types';
 import { baseName, formatBytes } from '../format/format.utils';
 import { type Lang } from '../i18n/ui-strings';
 import { type Finding } from './finding.types';
-import { mono } from './finding-html';
+import { fewNamed, mono } from './finding-html';
 import { TEXT } from './finding-text';
 
 const named = (items: readonly string[]): string => items.map(item => mono(item)).join(', ');
@@ -75,13 +75,14 @@ export const buildGraphFindings = (analysis: Analysis, lang: Lang, c: Criteria):
                 name: worstBarrel.path,
                 pulls: worstBarrel.pulls,
                 size: formatBytes(worstBarrel.exclusive),
-                importers: named(worstBarrel.importers.map(file => baseName(file))),
+                importers: fewNamed(
+                    worstBarrel.importers.map(file => baseName(file)),
+                    text.andMore,
+                ),
                 list: barrels
                     .map(
                         barrel =>
-                            `${mono(barrel.path)} — ${barrel.reexports} re-exports, ${barrel.pulls} files, ${formatBytes(
-                                barrel.exclusive,
-                            )}`,
+                            `${mono(barrel.path)} — ${text.ownBarrelRow(barrel.reexports, barrel.pulls, formatBytes(barrel.exclusive))}`,
                     )
                     .join(' · '),
             }),
@@ -102,13 +103,14 @@ export const buildGraphFindings = (analysis: Analysis, lang: Lang, c: Criteria):
                 files: worstPackage.files,
                 entryPoints: worstPackage.entryPoints,
                 size: formatBytes(worstPackage.bytes),
-                importers: named(worstPackage.importers.map(file => baseName(file))),
+                importers: fewNamed(
+                    worstPackage.importers.map(file => baseName(file)),
+                    text.andMore,
+                ),
                 list: packages
                     .map(
                         pkg =>
-                            `${mono(pkg.name)} — ${pkg.files} files in, ${pkg.entryPoints} imported from outside, ${formatBytes(
-                                pkg.bytes,
-                            )}${pkg.inBoot ? ' (bootstrap)' : ''}`,
+                            `${mono(pkg.name)} — ${text.packageBarrelRow(pkg.files, pkg.entryPoints, formatBytes(pkg.bytes), pkg.inBoot)}`,
                     )
                     .join(' · '),
             }),

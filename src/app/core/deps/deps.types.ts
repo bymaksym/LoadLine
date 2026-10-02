@@ -18,6 +18,12 @@ export interface LockedPackage {
     version: string;
     /** What asked for it. Empty for a direct dependency of the project. */
     requiredBy: string[];
+    /**
+     * Its own `dependencies`, name → range as declared, when the lock file records them: npm's and
+     * yarn's do, pnpm's only keeps resolved versions. It is what says a copy is pinned to an exact
+     * version by its parent and cannot be deduplicated without changing that parent.
+     */
+    declares?: Record<string, string>;
 }
 
 export type Severity = 'critical' | 'high' | 'moderate' | 'low' | 'info';
@@ -61,4 +67,9 @@ export interface DepsReport {
     transitive: { name: string; bytes: number; inBoot: boolean; chain: string[] }[];
     /** Packages shipping in more than one version, as the lock file sees it. */
     multipleVersions: { name: string; versions: string[] }[];
+    /**
+     * What each package declares as its dependencies, where the lock file records it (npm, yarn).
+     * It is what says a duplicate is pinned to one exact version by its parent.
+     */
+    declared: Map<string, Record<string, string>>;
 }

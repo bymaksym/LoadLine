@@ -34,7 +34,7 @@ export class TreeNodeComponent {
 
     // * OUTPUTS
     /** Asks the list to keep this row at the top, or to stop. The list owns which rows are pinned. */
-    readonly pinToggled = output<void>();
+    readonly pinToggled = output();
 
     // * ATTRIBUTES
     protected readonly open = signal(false);

@@ -26,9 +26,20 @@ inside the page.
 **In the terminal.**
 
 ```bash
+npx @bymaksym/loadline dist/app                        # the build root: the metafile and browser/ are found
+npx @bymaksym/loadline dist/app --html loadline.html --open   # and the page, with the build already in it
 npx @bymaksym/loadline dist/app/browser                # the build folder on its own
-npx @bymaksym/loadline dist/app/stats.json --dist dist/app/browser
+npx @bymaksym/loadline dist/app/browser-stats.json --dist dist/app/browser
 ```
+
+Pointed at the root of an Angular build, the command finds `browser-stats.json` (Angular 22.2) or
+`stats.json` (up to 22.1) and the `browser/` folder next to it. `--html` writes the same page as
+`loadline.html` with the files the command read inside it, so a script can produce a report somebody
+opens with a double click — treemap, search and every chunk included, nothing to drag in.
+
+Each run is remembered in `node_modules/.cache/loadline`, and the next run of the same build says
+what moved — `since the last run: bootstrap 156 kB → 129 kB (−27 kB)` — without a `--baseline`. It is
+a line and a column, never a gate; `--no-cache` turns it off.
 
 Zero runtime dependencies, no install script, Node 20.19 or newer. `npm i -g @bymaksym/loadline` installs it;
 `pnpm`, `yarn`, `bun` and `deno` all work, as do `pnpm dlx`, `yarn dlx` and `bunx`. The package also
@@ -41,7 +52,7 @@ chunks carry their own import graph.
 
 | Build tool                 | Frameworks                                                        | What to pass                                                               |
 | -------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| esbuild (metafile)         | Angular 17+, plain esbuild                                        | `stats.json`, ideally with `--dist`                                        |
+| esbuild (metafile)         | Angular 17+, plain esbuild                                        | The build root, or the metafile with `--dist`                              |
 | Vite, Rollup, Rolldown     | Vue, React, Svelte, Solid, Nuxt, SvelteKit, Astro, React Router 7 | The build folder                                                           |
 | webpack, Turbopack, Rspack | Angular ≤ 16, Next.js, Create React App                           | Not supported — see [Statoscope](https://github.com/statoscope/statoscope) |
 
@@ -58,6 +69,10 @@ To get a metafile out of Angular:
 ng build --configuration <the-one-your-pipeline-deploys> --stats-json
 ```
 
+Angular 22.2 and later write it as `dist/<app>/browser-stats.json`; earlier versions as
+`dist/<app>/stats.json`.
+Either way, `loadline dist/<app>` finds it.
+
 ## What you get
 
 - **One headline number** — what is downloaded before anything appears.
@@ -69,6 +84,10 @@ ng build --configuration <the-one-your-pipeline-deploys> --stats-json
 - **Signals with a name and a fix** — shared code labelled as deferred, bootstrap pulled in for a
   lazy screen, duplicate package versions, CommonJS packages the bundler cannot tree-shake, large
   data files travelling in the bootstrap, and more.
+- **A map of the bundle** — one rectangle per chunk, sized by what it weighs in the report's unit,
+  with what fills it drawn inside, by package and by folder of yours. Click to open a chunk, as in
+  `esbuild-visualizer`, with the difference that the area between chunks is what travels and the
+  area inside one is each part's raw share, because a compressed share of one module does not exist.
 - **Search by package or file** — which chunks it is in, what it weighs in each, which screens pay
   for it, and the chain of imports that brings it in.
 - **Provenance on every figure** — each threshold says whether it is external, derived or a
@@ -81,6 +100,7 @@ Optional inputs widen the report:
 | The build folder (`--dist`)                 | Gzip and brotli figures, per-file weights, first-load round trips           |
 | A previous build or export (`--baseline`)   | Per-screen deltas, and what a returning visitor re-downloads                |
 | `angular.json`, `package.json`, the CI file | Whether your size budgets sit in the configuration the pipeline builds      |
+| The lock file (`--lock`)                    | Who brings each package in, and whether a duplicate is pinned beyond reach  |
 | A browser measurement, pasted into Measured | What is actually served: compression, 304s, third parties, real round trips |
 | Several apps at once                        | What microfrontends ship twice, and what a shared package would save        |
 

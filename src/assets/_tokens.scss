@@ -62,11 +62,57 @@
     --fs-0: var(--fs-note);
     --fs-1: var(--fs-body);
     --fs-2: 0.9rem;
-    --sp-1: 0.25rem;
-    --sp-2: 0.5rem;
-    --sp-3: 0.75rem;
-    --sp-4: 1rem;
-    --sp-5: 1.5rem;
+
+    /*
+    The steps above the text, for what a block is about rather than what it says. Until 02/10/2026
+    these were fifteen sizes written by hand between 0.8 and 1.45 rem, each a little different from
+    the one in the next panel; every one of them moved to the nearest step here, none by more than
+    1.2 px, and Stylelint now refuses a size that is not a token.
+
+    --fs-3     the title of one item (a finding, a question, a block) and a lead line;
+    --fs-4     a panel's heading and the figure a block exists to show;
+    --fs-5     the headline figures and the name in the masthead;
+    --fs-page  the body's own size, which every `rem`-less text inherits.
+    */
+    --fs-3: 1rem;
+    --fs-4: 1.125rem;
+    --fs-5: 1.45rem;
+    --fs-page: 15px;
+
+    /*
+    Margins, paddings and gaps. `--space-N` is N eighths of a rem — 2 px each at the browser's default
+    root, so `--space-4` is 8 px and `--space-8` is 16 — the same convention as the other apps built
+    from this template, where the same name must not mean another size. In rem, so the air grows with
+    the reader's font size like the text does. Every step up to 16 px, because that is where the
+    small adjustments of a dense table live, then wider ones.
+
+    Until 02/10/2026 these were some thirty values written by hand (0.35, 0.4, 0.42, 0.45 rem…), the
+    same air a little different in every panel. Each moved to the nearest step, none by more than
+    1.6 px, and Stylelint now refuses a margin, padding or gap that is not one of these.
+    */
+    --space-1: 0.125rem;
+    --space-2: 0.25rem;
+    --space-3: 0.375rem;
+    --space-4: 0.5rem;
+    --space-5: 0.625rem;
+    --space-6: 0.75rem;
+    --space-7: 0.875rem;
+    --space-8: 1rem;
+    --space-10: 1.25rem;
+    --space-12: 1.5rem;
+    --space-16: 2rem;
+    --space-20: 2.5rem;
+    --space-24: 3rem;
+
+    /*
+    The part of the scale that the compact mode tightens (below). A block written in `--sp-*` gives
+    up its air when the reader asks for density; one written in `--space-*` keeps it.
+    */
+    --sp-1: var(--space-2);
+    --sp-2: var(--space-4);
+    --sp-3: var(--space-6);
+    --sp-4: var(--space-8);
+    --sp-5: var(--space-12);
 
     /*
     The vertical padding of a row, in every list of the report. A token rather than a number in

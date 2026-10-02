@@ -13,11 +13,11 @@
 
     overflow-x: auto;
     display: flex;
-    gap: 0.15rem;
+    gap: var(--space-1);
 
     height: var(--tabs-h);
-    margin: 1.4rem 0 1rem;
-    padding-top: 0.4rem;
+    margin: var(--space-12) 0 var(--space-8);
+    padding-top: var(--space-3);
     border-bottom: 1px solid var(--line);
 
     background: var(--ground);
@@ -48,12 +48,12 @@
    (signals, screens, measured), the detail behind it, and the configuration. Two gaps say it.
 */
 .tab--detail {
-    margin-left: 1.1rem;
+    margin-left: var(--space-8);
 }
 
 .tab--aside {
     margin-left: auto;
-    padding-left: 1.1rem;
+    padding-left: var(--space-8);
 }
 
 .tab {
@@ -61,11 +61,11 @@
 
     display: inline-flex;
     flex: none;
-    gap: 0.45rem;
+    gap: var(--space-4);
     align-items: center;
 
     margin-bottom: -1px;
-    padding: 0.55rem 0.9rem;
+    padding: var(--space-4) var(--space-7);
     border: none;
     border-bottom: 2px solid transparent;
 
@@ -93,7 +93,7 @@
     }
 
     &__n {
-        padding: 0 0.42rem;
+        padding: 0 var(--space-3);
         border-radius: 999px;
 
         font-family: var(--font-data);
