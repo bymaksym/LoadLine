@@ -3,12 +3,12 @@
 .tag {
     display: inline-block;
 
-    padding: var(--space-1) var(--space-4);
-    border-radius: 999px;
+    padding: 1px var(--space-3);
+    border-radius: var(--radius-chip);
 
     font-family: var(--font-ui);
-    font-size: var(--fs-note);
-    font-weight: 500;
+    font-size: var(--fs-label);
+    font-weight: 600;
     line-height: 1.5;
     color: var(--muted);
     white-space: nowrap;
@@ -43,19 +43,38 @@
     }
 
     /*
-       Which of the four states a figure is in. Measured and derived read as facts; `unknown` is
-       the one that has to stand out, because the failure this whole label exists to prevent is a
-       missing figure quietly becoming an assumed one. It borrows the warning colour rather than a
-       new one: nobody needs a fifth palette to learn.
+       Which of the four states a figure is in, told by the border and never by colour alone: a
+       solid accent edge is measured, a dashed one is derived from the build, a plain one is an
+       answer somebody gave, and a dotted grey one is a figure nobody looked at. The legend at the
+       foot of the report says the same in words. `unknown` stays grey on purpose: the failure this
+       label exists to prevent is a missing figure quietly becoming an assumed one, and a grey that
+       looks unfinished is what keeps it from passing for a fact.
     */
-    &[data-source='unknown'] {
-        color: var(--warn);
-        background: var(--warn-soft);
+    &[data-source] {
+        padding: 0 var(--space-2);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-chip);
+
+        font-family: var(--font-data);
+        font-size: var(--fs-label);
+        font-weight: 400;
+        color: var(--ink);
+
+        background: transparent;
     }
 
-    &[data-source='measured'],
-    &[data-source='declared'] {
-        color: var(--ink);
+    &[data-source='measured'] {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    &[data-source='derived'] {
+        border: 1px dashed var(--muted);
+    }
+
+    &[data-source='unknown'] {
+        border: 1px dotted var(--muted);
+        color: var(--muted);
     }
 }
 

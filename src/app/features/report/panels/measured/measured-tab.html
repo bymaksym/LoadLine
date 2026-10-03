@@ -180,7 +180,7 @@
 
     <h3 class="block-title">{{ t.measureExtra }}</h3>
     <p class="note">{{ t.measureExtraHelp }}</p>
-    <div class="scroller">
+    <div class="card card--scroll">
         <table>
             <thead>
                 <tr>
@@ -245,7 +245,7 @@
 
     <h3 class="block-title">{{ t.measureMissing }}</h3>
     <p class="note">{{ t.measureMissingHelp }}</p>
-    <div class="scroller">
+    <div class="card card--scroll">
         <table>
             <thead>
                 <tr>
@@ -274,34 +274,9 @@
         </table>
     </div>
 } @else {
-    <ol class="steps">
-        <li>{{ t.measureStep1 }}</li>
-        <li>
-            {{ t.measureStep2 }}
-            <div class="snippet">
-                <pre>{{ snippet }}</pre>
-                <button class="ctl" type="button" (click)="copySnippet()">
-                    {{ copied() ? t.measureCopied : t.measureCopy }}
-                </button>
-            </div>
-        </li>
-        <li>{{ t.measureStep3 }}</li>
-    </ol>
-
-    <label class="sr-only" for="measuredPaste">{{ t.measurePlaceholder }}</label>
-    <textarea
-        class="field paste"
-        id="measuredPaste"
-        rows="6"
-        [placeholder]="t.measurePlaceholder"
-        [value]="text()"
-        (input)="text.set($any($event.target).value)"
-    ></textarea>
-
-    <div class="measure-run">
-        <button class="ctl ctl--active" type="button" (click)="run()">{{ t.measureRun }}</button>
-        <span aria-live="polite" class="status" data-tone="error">{{ store.measurementError() }}</span>
-    </div>
-
-    <p class="note">{{ t.measureNotes }}</p>
+    <!--
+    The empty state is the common one: most reports are never measured. The card asks for the paste
+    and the column beside it says what the paste is worth, so the ask comes with its reason.
+    -->
+    <app-measured-intake />
 }

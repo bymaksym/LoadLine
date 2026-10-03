@@ -2,6 +2,7 @@
 @let all = screens();
 @let visible = rows();
 @let counts = verdictCount();
+@let marks = thresholds();
 
 <app-panel-header [howTo]="t.howToScreens" [subtitle]="t.secScreensSub" [title]="t.secScreens" />
 
@@ -60,34 +61,32 @@
     </div>
 
     <!--
-    One line where there were three paragraphs (the legend, the round trips of the first load and
-    "this is computed, not measured"). The colour legend went into the header row, right on top of
-    the bars it explains — it used to sit three blocks above them, out of sight by row ten.
+    One wrapping line where there were three paragraphs: where the figures come from (the same tag
+    the summary and the footer legend use), the rule the Total column is rated by, and the round
+    trips of the first load. Each item wraps as a whole, so a clause never splits from its link.
     -->
-    <p class="caveat">
-        <span>{{ startupNote() }}<app-explain [text]="t.startupHelp" /></span>
-        <!-- Each clause carries its own separator, so a middle dot never opens a line on its own. -->
+    <div class="caveat">
         <span class="caveat__item">
-            <span aria-hidden="true">·</span>&ngsp;<span [innerHTML]="t.screensCaveat"></span>&ngsp;<button
-                class="link-btn"
-                type="button"
-                (click)="nav.go('measured')"
-            >
-                {{ t.measureFromScreens }} →
-            </button>
+            <span class="tag" data-source="derived" [title]="t.dataSourceHelp.derived">{{ t.dataSource.derived }}</span>
+            {{ t.screensCaveat }}
+            <button class="link-btn" type="button" (click)="nav.go('measured')">{{ t.measureFromScreens }} →</button>
         </span>
-        <!-- The rule the Total column is coloured by, written out rather than left in a `title`. -->
-        <span class="caveat__item"><span aria-hidden="true">·</span> {{ totalRule() }}</span>
+        <span class="caveat__rule">{{ totalRule() }}</span>
+        <span class="caveat__item">{{ startupNote() }}<app-explain [text]="t.startupHelp" /></span>
         @if (deltaNote(); as note) {
-            <span class="caveat__item"><span aria-hidden="true">·</span> {{ note }}</span>
+            <span class="caveat__item">{{ note }}</span>
         }
-    </p>
+    </div>
 
+    <!--
+    A card that keeps its columns: narrow, it scrolls sideways inside itself rather than folding the
+    row, because the row IS the comparison and a folded one cannot be read against its neighbours.
+    -->
     <div class="scroller--tall screens">
         <div class="screen-row screen-row--head" [style.--screen-cols]="gridColumns()">
             <span
                 app-sort
-                class="screen-row__name"
+                class="screen-row__th screen-row__th--name"
                 [active]="order().key === 'name'"
                 [dir]="order().dir"
                 [sortLabel]="t.sortByColumn"
@@ -95,27 +94,39 @@
                 >{{ t.colScreen }}</span
             >
 
-            <!-- The legend of the three colours, on top of the bars they colour. -->
+            <!-- The legend of the three colours and of the tick, on top of the bars they mark. -->
             <span class="screen-row__legend">
                 <span>
-                    <i aria-hidden="true" style="background: var(--seg-boot)"></i> {{ t.legBoot
-                    }}<app-explain [text]="t.helpDelivery.eager" />
+                    <i aria-hidden="true" class="screen-row__swatch" style="background: var(--seg-boot)"></i>
+                    {{ t.treeBoot }}<app-explain [text]="t.helpZoneBoot" />
                 </span>
                 <span>
-                    <i aria-hidden="true" style="background: var(--seg-shared)"></i> {{ t.legShared
-                    }}<app-explain [text]="t.helpDelivery.lazy" />
+                    <i aria-hidden="true" class="screen-row__swatch" style="background: var(--seg-shared)"></i>
+                    {{ t.colShared }}<app-explain [text]="t.helpZoneShared" />
                 </span>
                 <span>
-                    <i aria-hidden="true" style="background: var(--seg-own)"></i> {{ t.legOwn
-                    }}<app-explain [text]="t.helpDelivery.lazy" />
+                    <i aria-hidden="true" class="screen-row__swatch" style="background: var(--seg-own)"></i>
+                    {{ t.legOwn }}<app-explain [text]="t.helpOwnCol" />
                 </span>
+                @if (marks.ok !== null) {
+                    <span [title]="totalRule()">
+                        <i aria-hidden="true" class="screen-row__tick"></i>
+                        {{ okLabel() }}
+                    </span>
+                }
+                @if (marks.bad !== null) {
+                    <span [title]="totalRule()">
+                        <i aria-hidden="true" class="screen-row__tick screen-row__tick--bad"></i>
+                        {{ badLabel() }}
+                    </span>
+                }
             </span>
 
             @for (column of numberColumns(); track column.key) {
                 <span
                     app-sort
+                    class="screen-row__th"
                     [active]="order().key === column.key"
-                    [class]="column.cls"
                     [dir]="order().dir"
                     [help]="column.help"
                     [sortLabel]="t.sortByColumn"
@@ -144,33 +155,34 @@
                     hidden: describing it as well would read every size out twice.
                     -->
                     <span aria-hidden="true" class="bar">
-                        <!--
-                        The verdict, drawn where the bars already are. The shared scale makes the
-                        comparison between rows visible without reading a number; these two lines do
-                        the same for "is it over budget", which was a colour on a figure at the far
-                        end of the row.
-                        -->
-                        @if (thresholds().ok !== null) {
-                            <b class="bar__mark" [style.left.%]="thresholds().ok"></b>
-                        }
-                        @if (thresholds().bad !== null) {
-                            <b class="bar__mark bar__mark--bad" [style.left.%]="thresholds().bad"></b>
-                        }
                         <i
+                            class="bar__seg"
                             style="background: var(--seg-boot)"
                             [style.width.%]="percent(screen.boot)"
                             [title]="t.treeBoot + ' ' + (screen.boot | bytes)"
                         ></i>
                         <i
+                            class="bar__seg"
                             style="background: var(--seg-shared)"
                             [style.width.%]="percent(screen.shared)"
                             [title]="t.colShared + ' ' + (screen.shared | bytes)"
                         ></i>
                         <i
+                            class="bar__seg"
                             style="background: var(--seg-own)"
                             [style.width.%]="percent(screen.own)"
                             [title]="t.colOwn + ' ' + (screen.own | bytes)"
                         ></i>
+                        <!--
+                        Where the verdict changes, drawn where the bars already are: a row whose bar
+                        crosses the line is over budget, seen rather than looked up.
+                        -->
+                        @if (marks.ok !== null) {
+                            <b class="bar__mark" [style.left.%]="marks.ok"></b>
+                        }
+                        @if (marks.bad !== null) {
+                            <b class="bar__mark bar__mark--bad" [style.left.%]="marks.bad"></b>
+                        }
                     </span>
 
                     <!--
@@ -180,41 +192,37 @@
                     -->
                     <span class="sr-only">{{ t.treeBoot }} {{ screen.boot | bytes }}.</span>
                     @if (shows('waves')) {
-                        <span class="screen-row__num screen-row__num--waves">
+                        <span class="screen-row__num">
                             <span class="sr-only">{{ t.colWaves }} </span>{{ screen.waves }}
                             <span class="sr-only">.</span>
                         </span>
                     }
                     @if (shows('shared')) {
-                        <span class="screen-row__num screen-row__num--shared">
+                        <span class="screen-row__num screen-row__num--muted">
                             <span class="sr-only">{{ t.colShared }} </span>{{ screen.shared | bytes }}
                             <span class="sr-only">.</span>
                         </span>
                     }
                     <!--
-                    The rating carries a shape as well as a colour: a disc, a square or a triangle.
-                    In a cell there is no room for the word, and the tone on its own is not something
-                    everybody can read.
+                    The figure stays ink and the shape after it carries the rating — a disc, a
+                    square or a triangle — so the column reads as numbers and the verdict as a mark
+                    that survives being printed in grey. The word is there for screen readers.
                     -->
                     @if (shows('own')) {
-                        <span class="screen-row__num screen-row__num--own" [attr.data-v]="ownVerdict(screen)">
+                        <span class="screen-row__num">
                             <span class="sr-only">{{ t.colOwn }} </span>{{ screen.own | bytes }}
                             <i aria-hidden="true" class="dot-v dot-v--after" [attr.data-v]="ownVerdict(screen)"></i>
                             <span class="sr-only">, {{ verdictLabel(ownVerdict(screen)) }}.</span>
                         </span>
                     }
-                    <span class="screen-row__num screen-row__total" [attr.data-v]="totalVerdict(screen)">
+                    <span class="screen-row__num screen-row__num--total">
                         <span class="sr-only">{{ t.colTotal }} </span>{{ screen.total | bytes }}
                         <i aria-hidden="true" class="dot-v dot-v--after" [attr.data-v]="totalVerdict(screen)"></i>
                         <span class="sr-only">, {{ verdictLabel(totalVerdict(screen)) }}.</span>
                     </span>
                     @if (shows('delta') && deltaOf(screen); as delta) {
-                        <!--
-                        Narrow, this cell drops to a line of its own under the bar. The column name
-                        is written out there: a bare `+12 kB` hanging below a row explained nothing.
-                        -->
-                        <span class="screen-row__num screen-row__delta" [attr.data-tone]="delta.tone">
-                            <span class="screen-row__col-label">{{ t.colDelta }} </span>{{ delta.text }}
+                        <span class="screen-row__num screen-row__num--delta" [attr.data-tone]="delta.tone">
+                            <span class="sr-only">{{ t.colDelta }} </span>{{ delta.text }}
                         </span>
                     }
                 </button>

@@ -5,7 +5,6 @@ import { type PathItem } from '@core/analysis/path-tree.types';
 import { granularityOf } from '@core/analysis/shape';
 import { whyHere } from '@core/analysis/why-here';
 import { formatBytes } from '@core/format/format.utils';
-import { ChainComponent } from '@shared/chain/chain';
 import { copyText } from '@shared/clipboard.utils';
 import { ExplainComponent } from '@shared/explain/explain';
 import { PathTreeComponent } from '@shared/path-tree/path-tree';
@@ -26,7 +25,7 @@ import { ReportNav } from '@state/report-nav.service';
     selector: 'app-screen-detail',
     templateUrl: './screen-detail.html',
     styleUrl: './screen-detail.scss',
-    imports: [BytesPipe, PathTreeComponent, ChainComponent, ExplainComponent],
+    imports: [BytesPipe, PathTreeComponent, ExplainComponent],
     /*
      * The same block an expanded table row opens (`tr.detail`), so the parts inside it — the
      * origin line, the chain, the three-way split — are named `detail__…` here as they are there.
@@ -146,15 +145,24 @@ export class ScreenDetailComponent {
         return screen.chunkWaves.get(file) ?? 1;
     }
 
-    protected chunkRows(files: string[]): ChunkInfo[] {
+    /**
+     * The chunks of the screen in the order the total is written: its own first, then the shared
+     * ones, each heaviest first. `shared` is what picks the colour of the square in front of the
+     * name and whether the screens count leads to the Shared tab.
+     */
+    protected chunkRows(screen: ScreenCost): (ChunkInfo & { shared: boolean })[] {
         const analysis = this.store.analysis();
         if (!analysis) {
             return [];
         }
 
-        return files
-            .map(file => analysis.chunkOf(file))
-            .filter((chunk): chunk is ChunkInfo => !!chunk)
-            .toSorted((a, b) => b.bytes - a.bytes);
+        const rows = (files: string[], shared: boolean) =>
+            files
+                .map(file => analysis.chunkOf(file))
+                .filter((chunk): chunk is ChunkInfo => !!chunk)
+                .toSorted((a, b) => b.bytes - a.bytes)
+                .map(chunk => ({ ...chunk, shared }));
+
+        return [...rows(screen.ownChunks, false), ...rows(screen.sharedChunks, true)];
     }
 }

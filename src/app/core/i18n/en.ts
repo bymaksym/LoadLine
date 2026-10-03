@@ -25,6 +25,9 @@ export const EN: UiStrings = {
     compareAddCurrent: 'Add the build on screen',
     compareClear: 'Clear',
     compareRemove: 'Remove',
+    compareState: builds =>
+        builds === 0 ? 'no application yet · needs two' : `${builds} of 2 applications · needs one more`,
+    compareEmptyTitle: 'See what several applications ship twice',
     compareEmpty: 'Nothing to compare yet. Add the stats.json of two or more applications.',
     compareNeedsTwo: 'One application is not a comparison. Add at least one more.',
     compareBuild: 'Application',
@@ -87,6 +90,7 @@ export const EN: UiStrings = {
     critGroupContext: 'Baseline and project context',
     critOkUpTo: 'good up to',
     critBadAbove: 'bad above',
+    critColThreshold: 'Threshold · source',
     blastTitle: 'If you change this file',
     blastBody: (chunks, screens, everyone) =>
         `${chunks === 1 ? '1 chunk is' : `${chunks} chunks are`} invalidated, and ${
@@ -107,7 +111,7 @@ export const EN: UiStrings = {
     historyTitle: 'Measurements kept in this browser',
     historyNote:
         'One figure against one baseline compares two points and says nothing about the shape between them. 950 → 1.017 is information; 820, 790, 910, 1.200, 970 is a story, and it shows which week the problem walked in. It is kept in THIS browser only — no account, no server — so the way to share it is to export the file.',
-    historyEmpty: 'Nothing kept yet. “Keep this one” adds the measurement on screen.',
+    historyEmpty: 'nothing kept yet',
     historyKeep: 'Keep this one',
     historyExport: 'Export the history',
     historyForget: 'Forget it all',
@@ -115,13 +119,18 @@ export const EN: UiStrings = {
     historyScreenPick: 'And one screen:',
     historyScreenNone: 'none — the bootstrap only',
     historyScreenAbsent: 'this screen was not in that build',
-    actionsTitle: 'What to fix first',
-    actionsNote: 'An order over the signals below, not a selection: every one of them is still there.',
     effortLabel: { config: 'configuration', import: 'one import', refactor: 'refactor', none: '' },
-    actionsTotal: count => `Acting on all ${count} would take`,
+    actionsTotal: count => {
+        if (count === 1) {
+            return 'Fixing it would take';
+        }
+        return count === 2 ? 'Fixing both would take' : `Fixing all ${count} would take`;
+    },
     actionsTotalAfter: 'off the first load, leaving it at about',
     actionsTotalNote:
         'Raw minified bytes inside the chunk, and not added up: the graph is walked once with every file named above taken out together, so bytes reachable two ways are counted once.',
+    actionsTotalNoteEstimated:
+        'An estimate in compressed bytes: the raw bytes taken out, at the ratio the bootstrap compresses by, since a single module has no compressed size of its own. Not added up: the graph is walked once with every file named above taken out together, so bytes reachable two ways are counted once.',
     thExclusive: 'Exclusive',
     helpExclusive:
         'What the first load would lose without this row: the part of its weight that has no other way in. It is the figure that says whether removing it is worth an afternoon — chart.js weighing 310 kB means 70 when 240 of those are d3, which three other things also pull in. Raw minified bytes inside the chunk.',
@@ -267,6 +276,32 @@ export const EN: UiStrings = {
     tagline: 'weight per screen',
     lede: 'What someone opening each screen of your app downloads, how much of it everyone else pays too, and what is worth moving.',
     themeBtn: 'Switch theme',
+    themeToDark: 'Dark',
+    themeToLight: 'Light',
+    searchBtn: 'Search',
+    searchKeys: 'Ctrl K',
+    homeAria: 'Loadline: change what is loaded',
+    buildChipHelp: 'Change what is loaded',
+    intakeRequired: 'required',
+    intakeOptional: 'Optional · each one adds detail, now or later',
+    intakeBack: 'Back to the report',
+    contextRawNote: 'Raw figures: bytes on disk, not what travels',
+    contextAddDetail: 'Add detail:',
+    contextAddDist: 'browser/ folder → compressed figures',
+    contextAddBaseline: 'baseline → compare',
+    contextAddContext: 'angular.json + pipeline → budgets',
+    heroCaptionBoot: boot => `${boot} the bundler marks as initial`,
+    heroCaptionExtra: (extra, chunks, ratio) =>
+        `${extra} in ${chunks === 1 ? 'one chunk' : `${chunks} chunks`} marked lazy that at least ${pct(ratio)} of the screens load anyway.`,
+    heroCaptionSame: 'No lazy chunk is loaded by enough screens to add to it.',
+    kpiWorst: 'worst',
+    provenanceTitle: 'Where these figures come from',
+    dataSourceShort: {
+        measured: 'a browser reported it',
+        derived: 'walked from the import graph',
+        declared: 'an answer you gave',
+        unknown: 'grey on purpose',
+    },
     densityCompact: 'Compact',
     densityComfortable: 'Comfortable',
     densityHelp:
@@ -282,7 +317,7 @@ export const EN: UiStrings = {
     paletteAction: 'action',
     paletteCount: (shown, total) =>
         total > shown ? `${shown} of ${total} — the Search tab names every one of them` : String(total),
-    paletteKeysHint: '? for the shortcuts',
+    paletteKeysHint: '↵ open · esc close · ? shortcuts',
     keysTitle: 'Keyboard',
     keyJump: 'Jump to a tab, a screen or a package',
     keySearch: 'The same thing, from anywhere that is not a field',
@@ -291,7 +326,7 @@ export const EN: UiStrings = {
     keyHelp: 'This list',
     keyTabs: 'Between tabs, with a tab focused',
 
-    drop1Title: '1 · Drop your stats.json here',
+    drop1Title: 'Drop your stats.json here',
     drop1Body:
         'Your bundler writes it with <code>ng build --stats-json</code> (Angular) or as an esbuild <code>metafile</code>. It is processed in your browser: nothing leaves your machine.',
     drop1Btn: 'Choose stats.json',
@@ -302,7 +337,7 @@ export const EN: UiStrings = {
     diagnosticsCopied: 'Copied',
     diagnosticsHint:
         'About thirty lines describing the shape of this build and what Loadline decided about it. Package names are real; every path of your own code is replaced by a stable hash. Paste it into an issue.',
-    drop2Title: '2 · Optional: the build folder',
+    drop2Title: 'The build folder',
     drop2Body:
         'Add the <code>browser/</code> folder and every figure becomes <strong>compressed</strong>, which is what gets downloaded. Without it you get raw bytes. If the folder carries the <code>.js.map</code> files, they are also read to get what each file weighs inside each chunk, as a <strong>second measurement</strong> of what the metafile already says.',
     drop2Btn: 'Choose folder',
@@ -327,15 +362,12 @@ export const EN: UiStrings = {
     serverIgnored: n => `${n === 1 ? '1 server output' : `${n} server outputs`} left out`,
     serverIgnoredHelp:
         'The build also carries the server bundle (server-side rendering). Nobody downloads it and it is usually the larger of the two, so only the browser side is analysed.',
-    blocksNote: n => `${n === 1 ? '1 lazy block' : `${n} lazy blocks`} inside screens, which do not count as screens:`,
+    notScreensLabel: 'Not counted as screens:',
+    notScreenKind: { block: 'lazy block inside a screen', grouper: 'route group', data: 'data' },
     blocksHelp:
         'An Angular @defer, or a lazy() inside a component, produces a lazy chunk exactly like a route does. It is not a screen: nobody enters it, it loads when its trigger fires inside the screen holding it. Counting it as a screen would raise the screen count and lower the median with something nobody opens. What the graph cannot say is WHEN that trigger fires: a block behind a button really is bytes nobody pays for until they press it, while one imported as the screen mounts comes down with the first paint, and then the screen weighs more than its row says. Both look identical here. The Measured tab is what settles it.',
-    groupersNote: n =>
-        `${n === 1 ? '1 lazy entry that only groups routes' : `${n} lazy entries that only group routes`}, which do not count as screens either:`,
     groupersHelp:
         'A file that adds practically nothing of its own to its chunk and holds nothing but dynamic imports is grouping routes, whatever it is called. What it loads are the screens; it is not one of them. That is measured rather than read off the file name, so it also holds in a project that does not name its files the Angular way.',
-    dataNote: n =>
-        `${n === 1 ? '1 lazy entry that is data' : `${n} lazy entries that are data`}, not code anybody navigates to:`,
     dataHelp:
         'A language file, a table of countries, a dictionary: an import() of a .json produces a lazy chunk exactly like a route does. Nobody navigates to one, and an application that lazy-loads fifty languages would otherwise report fifty screens. What to do about these is not "is this a screen" but whether the data has to travel inside the bundle at all.',
     markScreen: 'Count as a screen',
@@ -350,23 +382,18 @@ export const EN: UiStrings = {
         'How much each file weighs inside a chunk. It normally comes from the metafile, and with esbuild that figure is already minified: checked against the source maps of a real build, the two agree within 1 %. If the folder brings the .js.map files, the figure from the maps is used instead — the same thing, measured on the generated file itself.',
     intakeCompressed: unit => `${unit} figures`,
     intakeRaw: 'raw figures (bytes on disk)',
-    intakeAddDist: 'Add the browser/ folder for compressed figures',
     rereadBtn: 'Read the folder again',
     rereadHelp:
         'Reads the same build folder again, for after a rebuild. It is offered only where the browser can hold on to a folder, which is not from a file:// page and not in every browser; everywhere else, drop the folder again.',
-    intakeShow: 'Show drop zones',
-    intakeHide: 'Hide drop zones',
-    intakeAddBaseline: 'Add a baseline to compare',
-    intakeAddContext: 'Add angular.json and pipeline',
 
-    drop3Title: '3 · Optional: the previous measurement',
+    drop3Title: 'The previous measurement',
     drop3Body:
         'The <code>stats.json</code> of the previous build, an analysis exported from Loadline, or the whole previous <code>browser/</code> folder (with its <code>stats.json</code>) to compare compressed figures. Every screen shows how much it changed, and a signal fires if something grew or entered the bootstrap.',
     drop3Btn: 'Choose baseline',
     drop3BtnDist: 'Choose previous folder',
     baselineNoStats: 'The folder has no stats.json in it.',
     baselineWorking: 'Compressing the previous folder…',
-    drop4Title: '4 · Optional: the project context',
+    drop4Title: 'The project context',
     drop4Body:
         '<code>angular.json</code>, <code>package.json</code> and the pipeline file (<code>.gitlab-ci.yml</code> or the GitHub workflow). With them Loadline checks where the size budget is and whether the configuration the pipeline builds applies it.',
     drop4Btn: 'Choose files',
@@ -406,8 +433,10 @@ export const EN: UiStrings = {
     secProjectSub: 'Where the size budgets are, what the pipeline builds and whether the budget applies.',
     howToProject:
         '<p>Angular only checks the size budgets (<code>budgets</code>) of the configuration it builds with. If the budget is in <code>production</code> and the pipeline builds <code>preproduction</code>, the budget never applies. This tab crosses the two: the budgets of every configuration in <code>angular.json</code> and the build commands of the pipeline, following the scripts of <code>package.json</code> (<code>pnpm run build:pre</code> → <code>ng build --configuration=preproduction</code>).</p><p>The comparison with the bootstrap is raw and JavaScript only, which is what Angular measures. An error budget above twice the current bootstrap never fires.</p>',
+    projectState: 'unknown · no project files loaded',
+    projectEmptyTitle: 'Where your size budgets are, and whether they apply',
     projectEmpty:
-        'Drop angular.json, package.json and the pipeline file in the drop zone to see where the budgets are and whether they apply.',
+        'Add angular.json, package.json and the pipeline file. Loadline checks which configuration the pipeline builds and whether its budget covers it.',
     projectEmptyBtn: 'Choose project files',
     projectBudgets: project => `Bootstrap budgets by configuration · project ${project}`,
     projectPick: 'Application',
@@ -480,11 +509,9 @@ export const EN: UiStrings = {
     tileBoot: 'Declared bootstrap',
     tileBootCss: (size, files, total) =>
         `+ ${size} of CSS the page asks for${files > 1 ? ` in ${files} sheets` : ''} · ${total} before the first paint`,
-    tileBootSub: files => `what the bundler marks as initial · ${files} files`,
-    tileEffective: 'Effective bootstrap',
-    tileEffectiveSub: (extra, chunks, ratio) =>
-        `+${extra} in ${chunks === 1 ? 'one chunk marked lazy' : `${chunks} chunks marked lazy`} loaded by at least ${pct(ratio)} of screens`,
-    tileEffectiveSame: 'same as declared: no lazy chunk is near-global',
+    bootSplitRaw: total =>
+        `Packages and your code are split in raw bytes, ${total} in all: a compressed file cannot be divided by what is inside it.`,
+    tileBootSub: files => `what the bundler marks as initial · ${files === 1 ? '1 file' : `${files} files`}`,
     tileScreens: 'Lazy screens',
     tileScreensTypical: 'the typical one costs',
     tileScreensTop: (label, size) => `· the most expensive is ${label} · ${size}`,
@@ -493,7 +520,7 @@ export const EN: UiStrings = {
     tileSharedSub: (global, partial) => `${global} near-global · ${partial} partial`,
     tileSharedNone: 'no lazy chunk is shared by two screens',
     tileFindings: 'Signals',
-    tileFindingsSub: (high, mid) => `${high} important · ${mid} to review`,
+    tileFindingsSub: (high, mid, context) => `${high} important · ${mid} to review · ${context} context`,
     tileFindingsNone: 'no signal in the split',
 
     tabFindings: 'Signals',
@@ -569,18 +596,20 @@ export const EN: UiStrings = {
     seeInMeasured: 'See the measurement',
     seeInSituation: 'See the answers',
     findingsRest: 'Context',
-    findingsSee: 'Seen',
+    findingsSee: 'Mark as seen',
     findingsUnsee: 'Seen ✓',
     findingsSeenHelp: 'Tick it off: it drops to the end of the list and stops asking for attention.',
     findingsSeenCount: n => (n === 1 ? '1 ticked off' : `${n} ticked off`),
     findingsSeenReset: 'None ticked off',
     findingsNoneHere: 'No signals of this kind.',
+    findingsColSignal: 'Signal · in the order worth fixing',
+    findingsColOff: 'Off load',
+    findingsColFix: 'Fix',
     fixLabel: 'What to do',
 
     legBoot: 'Bootstrap · always downloaded',
-    legShared: 'Shared · several screens pay for it',
     legOwn: 'This screen only',
-    screensCaveat: 'These figures are <strong>computed</strong> by walking the import graph, not measured.',
+    screensCaveat: 'Computed by walking the import graph, not measured.',
     filterBoot: 'Filter packages',
     filterShared: 'Filter chunks',
     filterScreens: 'Filter screens by name…',
@@ -636,11 +665,20 @@ export const EN: UiStrings = {
         'The only figure in the tool that is measured rather than computed. Paste what your browser downloaded and Loadline says where the two differ.',
     howToMeasured:
         "<p>The rest of the report <strong>computes</strong>: it walks the graph of static imports and adds up. This tab <strong>measures</strong>, and the two figures do not match.</p><p>Entering through the root, the router loads an area's chunk in order to match the route, and only afterwards does the guard check the session and redirect. That chunk is already downloaded, and the computation does not count it. That is why the computed figure falls short.</p><p>What gets compared here is <strong>which chunks came down</strong>, not how many bytes either side reported: the set of chunks does not depend on the unit, so a gzip report and a browser reporting transfer bytes still compare cleanly. The difference is then priced with Loadline's own figures.</p>",
+    measureState: 'not measured yet · every figure in the report is derived',
+    measureTitle: 'Measure what the browser actually downloads',
     measureStep1:
         'Serve the build you loaded and open the app the way people do: through the root, not straight into the route. Disable the cache in the network tab.',
-    measureStep2: 'With the screen loaded, paste this into the browser console:',
-    measureStep3: 'Paste what it gives you back here.',
-    measureCopy: 'Copy',
+    measureStep2: 'With the screen loaded, run the snippet in the browser console.',
+    measureStep3: 'Paste what it gives you back below.',
+    measureCopy: 'Copy console snippet',
+    measureShowCode: 'Show the code',
+    measureHideCode: 'Hide the code',
+    measureGain: 'What you get',
+    measureGainCompare:
+        'The only measured figure in the report, set beside the computed one, with every chunk where the two disagree.',
+    measureGainServed:
+        'What is served rather than what was built: protocol, round trip, compression and what the cache did — from one machine, once.',
     measureCopied: 'Copied',
     measurePlaceholder: 'Paste the result here. A list of file names copied from the network tab works too.',
     measureRun: 'Contrast',
@@ -789,6 +827,7 @@ export const EN: UiStrings = {
     },
     sitRawUnit: { screensPerSession: 'screens', deploysPerWeek: 'per week', returningPct: '%' },
     sitRawEmpty: '—',
+    sitRawOr: 'or exactly',
     sitOpen: 'unanswered',
     sitLatency: ms =>
         `The report turns bytes into seconds with a ${ms} ms round trip. That is the figure that really answers this question, and it is edited in Criteria.`,
@@ -801,10 +840,12 @@ export const EN: UiStrings = {
     sitWho: 'Answered by',
     sitWhoPlaceholder: 'a name or a handle',
     sitWhen: 'Date',
+    sitWhenPlaceholder: 'yyyy-mm-dd',
+    sitWhenInvalid: 'That is not a day of the calendar: write it as yyyy-mm-dd. The date kept is the previous one.',
     sitStale: days =>
         `These answers are more than ${days} days old. Deploy cadence is exactly what changes when a team moves to continuous delivery: go through them again before trusting the figure.`,
     sitNoDate: 'Without a date there is no way to know when they stopped being true.',
-    sitAnswered: (answered, total) => (answered === 0 ? 'Unanswered' : `${answered} of ${total} questions answered`),
+    sitAnswered: (answered, total) => `${answered} of ${total} answered`,
     sitReset: 'Clear the answers',
     sitExport: 'Download loadline.json',
     sitExportHelp:
@@ -880,10 +921,10 @@ export const EN: UiStrings = {
     worthTriage: n =>
         `Of the ${n.namedN + n.spreadN + n.smallN} shared chunks: ${n.namedN} with a named source (${n.namedCost} of a typical visit) · ${n.spreadN} with no dominant source (${n.spreadCost}) · ${n.smallN} below ${n.min}.`,
 
-    sharedSum: (size, chunks, ratio) =>
-        `${chunks === 1 ? 'The near-global chunk adds up to' : `The ${chunks} near-global chunks add up to`} <strong>${size}</strong>: whoever opens almost any screen downloads it along with the bootstrap. Minimum coverage to count: ${pct(ratio)}.`,
-    sharedSumNone: ratio =>
-        `No shared chunk reaches ${pct(ratio)} coverage: what is lazy only downloads when it is needed.`,
+    sharedSum: (size, chunks, ratio, wide) =>
+        `${chunks === 1 ? 'The near-global chunk adds up to' : `The ${chunks} near-global chunks add up to`} <strong>${size}</strong>: whoever opens almost any screen downloads it along with the bootstrap. It counts as bootstrap from <strong>${pct(ratio)}</strong> coverage; widely shared from <strong>${pct(wide)}</strong>.`,
+    sharedSumNone: (ratio, wide) =>
+        `No shared chunk reaches <strong>${pct(ratio)}</strong> coverage: what is lazy only downloads when it is needed. Widely shared from <strong>${pct(wide)}</strong>.`,
 
     bootPackages: 'npm packages',
     bootOwnCode: 'Your code',
@@ -931,9 +972,7 @@ export const EN: UiStrings = {
     treeShareHelp:
         'How much of its zone this one chunk holds. Marked from 25 %: that is where the weight is, and therefore what to look at before the rows below it.',
     shapeSplit: eager => `${eager} % of it downloads on every load; the rest only when something asks for it.`,
-    shapeBoot: 'Everybody pays for it',
-    shapeShared: 'Several screens pay for it',
-    shapeOwn: 'One screen pays for it',
+    shapeZone: { boot: 'Eager · everybody pays', shared: 'Lazy, several screens', own: 'Lazy, one screen' },
     shapeNote: n => {
         const of = { boot: 'of the bootstrap', shared: 'of what is shared', own: 'of what one screen loads' }[n.zone];
         // The second half does not repeat the zone when the first one has already named it.
@@ -961,7 +1000,7 @@ export const EN: UiStrings = {
     searchFound: (shown, total) => (shown === total ? `${total} matches` : `${shown} of ${total} matches`),
     searchKindPackage: 'package',
     searchKindFile: 'project file',
-    searchInBoot: 'in the bootstrap · every load of the app pays for it',
+    searchInBoot: 'every load of the app pays for it',
     searchPartlyBoot: size => `${size} of it is in the bootstrap, and that every load pays for`,
     searchScreensCount: n => (n === 1 ? 'loaded by 1 screen' : `loaded by ${n} screens`),
     searchMatchedIn: n => (n === 1 ? 'matches in 1 file' : `matches in ${n} files`),
@@ -988,9 +1027,6 @@ export const EN: UiStrings = {
 
     noScreens: 'No lazy screens found. The whole app is in the bootstrap.',
     noShared: 'No lazy chunk is shared by two screens.',
-    noExclusive: 'Nothing exclusive.',
-    noSharedRow: 'Nothing shared.',
-    footerSummary: 'Where do these figures come from?',
     footer: 'Everything is computed in your browser from the metafile: nothing is uploaded anywhere. Raw figures are bytes on disk; compressed ones are gzipped from the real files, which is what your users actually pay. The browser cannot compress in brotli, so that figure only appears when the folder brings the pre-compressed .js.br files; without them, count on brotli being 15 % to 20 % below the gzip you see. Press ? for the keyboard shortcuts.',
 
     errNoEntries: 'This does not look like an esbuild metafile: no entry points found.',

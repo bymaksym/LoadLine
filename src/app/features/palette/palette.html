@@ -59,9 +59,8 @@ keyboard and it is the keyboard that puts it away.
             not a view: the tab that names every match is one of the rows above.
             -->
             <p class="palette__foot">
-                {{ t.paletteCount(hits.length, total()) }}
-                <span aria-hidden="true">·</span>
-                {{ t.paletteKeysHint }}
+                <span>{{ t.paletteCount(hits.length, total()) }}</span>
+                <span>{{ t.paletteKeysHint }}</span>
             </p>
         }
     </div>

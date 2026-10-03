@@ -17,16 +17,22 @@
 
     padding: var(--space-5) var(--space-6);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
+    border-radius: var(--radius-card);
 
     background: var(--surface);
 
     &__label {
-        font-size: var(--fs-note);
-        font-weight: 600;
+        font-size: var(--fs-label);
         color: var(--muted);
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
+
+        /* The provenance tag beside a label keeps its own case: it is a word, not a heading. */
+        .tag {
+            margin-left: var(--space-2);
+            text-transform: none;
+            letter-spacing: normal;
+        }
     }
 
     &__value {
@@ -78,70 +84,4 @@
     &[data-tone='error'] {
         color: var(--crit);
     }
-}
-
-/* Intake: three steps, the snippet and the paste box. */
-.steps {
-    max-width: 84ch;
-    margin: 0 0 var(--space-6);
-    padding-left: var(--space-10);
-
-    font-size: var(--fs-body);
-    color: var(--ink);
-
-    li + li {
-        margin-top: var(--space-5);
-    }
-}
-
-/*
-   The line to paste into the console. It used to be cut off on the right with no wrap and no visible
-   scrollbar — the one thing on the panel that has to be read whole was the one thing that could not
-   be — and the Copy button floated outside the box, to its right and at half its height.
-*/
-.snippet {
-    position: relative;
-    margin-top: var(--space-3);
-
-    pre {
-        margin: 0;
-        /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- room on the right for the Copy button laid over the box, so the line never runs under it: the width of a button, not a step of air */
-        padding: var(--space-5) 6.5rem var(--space-5) var(--space-6);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-
-        font-family: var(--font-data);
-        font-size: var(--fs-body);
-        line-height: 1.5;
-        color: var(--ink);
-        overflow-wrap: anywhere;
-        white-space: pre-wrap;
-
-        background: var(--surface-sunk);
-    }
-
-    .ctl {
-        position: absolute;
-        top: 0.4rem;
-        right: 0.4rem;
-    }
-}
-
-/* What gets pasted here is a long JSON. `.field` caps at 22 rem, which left it in the left half. */
-.paste {
-    resize: vertical;
-
-    width: 100%;
-    max-width: none;
-    min-height: 11rem;
-
-    font-family: var(--font-data);
-    font-size: var(--fs-body);
-}
-
-.measure-run {
-    display: flex;
-    gap: var(--space-6);
-    align-items: center;
-    margin: var(--space-5) 0;
 }

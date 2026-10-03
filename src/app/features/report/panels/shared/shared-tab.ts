@@ -144,17 +144,27 @@ export class SharedTabComponent {
         );
     });
 
-    protected readonly sumText = computed(() => {
+    /**
+     * The line that opens the tab, as runs of text and figures. The dictionary marks its figures
+     * with `<strong>`; splitting on the tag rather than binding `innerHTML` is what lets this
+     * component style them, since markup injected that way never carries the component's scope.
+     */
+    protected readonly sumParts = computed(() => {
         const t = this.i18n.ui();
-        const ratio = this.store.criteria().sharedRatio;
+        const { sharedRatio, wideRatio } = this.store.criteria();
         const globals = this.allRows().filter(row => row.coverage === 'global');
-        if (globals.length === 0) {
-            return t.sharedSumNone(ratio);
-        }
-
         const bytes = globals.reduce((sum, row) => sum + row.bytes, 0);
-        return t.sharedSum(formatBytes(bytes), globals.length, ratio);
+        const text =
+            globals.length === 0
+                ? t.sharedSumNone(sharedRatio, wideRatio)
+                : t.sharedSum(formatBytes(bytes), globals.length, sharedRatio, wideRatio);
+
+        // The odd runs are the ones that sat between an opening and a closing tag.
+        return text.split(/<\/?strong>/u).map((run, i) => ({ text: run, figure: i % 2 === 1 }));
     });
+
+    /** Where the effective-bootstrap line falls on every coverage bar, in percent of the screens. */
+    protected readonly bootTick = computed(() => this.store.criteria().sharedRatio * 100);
 
     protected readonly coverageRule = computed(() => {
         const c = this.store.criteria();
@@ -252,14 +262,9 @@ export class SharedTabComponent {
         const labels: Record<Coverage, string> = { global: t.covGlobal, wide: t.covWide, narrow: t.covNarrow };
         return labels[coverage];
     }
-
-    protected tagClass(coverage: Coverage): string {
-        return TAG_BY_COVERAGE[coverage];
-    }
 }
 
 const VERDICT_BY_COVERAGE: Record<Coverage, Verdict> = { global: 'bad', wide: 'ok', narrow: 'good' };
-const TAG_BY_COVERAGE: Record<Coverage, string> = { global: 'tag--crit', wide: 'tag--warn', narrow: 'tag--ok' };
 
 const coverageOf = (ratio: number, sharedRatio: number, wideRatio: number): Coverage => {
     if (ratio >= sharedRatio) {

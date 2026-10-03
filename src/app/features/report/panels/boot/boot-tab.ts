@@ -162,9 +162,6 @@ export class BootTabComponent {
         return { pkgBytes: sum(pkg), pkgCount: pkg.length, ownBytes: sum(own), ownCount: own.length };
     });
 
-    /** Whether any row is rated red, so the legend only explains that colour when it is on screen. */
-    protected readonly hasBadRow = computed(() => this.allRows().some(row => row.sizeVerdict === 'bad'));
-
     /** The split bar, in words: colour is never the only thing that says which side is which. */
     protected readonly splitTitle = computed(() => {
         const totals = this.split();
@@ -191,6 +188,13 @@ export class BootTabComponent {
             this.filter.set('');
             this.expanded.set(key);
         });
+    }
+
+    /** The rating of the declared bootstrap in words, after the shape that draws it. */
+    protected verdictLabel(verdict: Verdict): string {
+        const t = this.i18n.ui();
+        const labels: Record<Verdict, string> = { good: t.verdictGood, ok: t.verdictOk, bad: t.verdictBad };
+        return labels[verdict];
     }
 
     protected pick(key: SortKey): void {

@@ -19,13 +19,19 @@
         --line-strong: #aab2bd;
         --accent: #175656;
         --accent-soft: #eaf3f2;
+        --track: #e8ebee;
         --shadow: none;
+        --shadow-float: none;
 
         color-scheme: light;
     }
 
+    /* The bars are the data: the three segment colours have to reach the paper as they are. */
+    * {
+        print-color-adjust: exact;
+    }
+
     body {
-        padding: 0;
         /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- paper is measured in points, and the screen scale has no business on it */
         font-size: 10pt;
         /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- paper is white in both themes; a token would follow the dark one onto the page */
@@ -37,15 +43,33 @@
        something that cannot be done there.
     */
     .tabs,
-    .controls,
+    .masthead__actions,
     .toolbar,
-    .summary__tools,
+    .context-line .link-btn,
+    .context-line__label,
+    .summary-after__act,
+    .panel__help-btn,
+    .report-foot__tools,
     .finding__actions,
-    .tile__go,
     .sort-th__dir,
-    .twist,
-    app-intake-page {
+    app-palette {
         display: none !important;
+    }
+
+    /*
+       The expand marks are cells of a grid: taken out of the layout, every cell after them moved one
+       column left and the tree printed its names in the first column, a few pixels wide. Hidden,
+       they keep their place.
+    */
+    .twist,
+    .name__twist,
+    .chunk__twist,
+    .tree__tail-twist {
+        visibility: hidden;
+    }
+
+    .masthead {
+        border-bottom: 0;
     }
 
     /*
@@ -62,6 +86,11 @@
         display: revert;
     }
 
+    /* The "how to read this tab" note too, which is a toggle and not a `details`. */
+    .panel__help[hidden] {
+        display: block !important;
+    }
+
     summary {
         list-style: none;
     }
@@ -70,13 +99,22 @@
     tr,
     .screen,
     .finding,
-    .tile,
+    .kpi,
     .crit {
         break-inside: avoid;
     }
 
     .panel {
         min-height: 0;
+    }
+
+    /* Every view of the build is printed, each one starting a page of its own. */
+    .panel--print {
+        display: block !important;
+    }
+
+    .panel + .panel {
+        break-before: page;
     }
 
     .scroller--tall {

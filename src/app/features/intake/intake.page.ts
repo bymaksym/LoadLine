@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { type Mode } from '@core/criteria/criteria.types';
 import { copyText } from '@shared/clipboard.utils';
 import { ExportService } from '@state/export.service';
+import { HomeService } from '@state/home.service';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 
@@ -11,8 +12,9 @@ type Zone = 'stats' | 'dist' | 'baseline' | 'context';
  * The drop zones: the metafile (required), the build folder, the previous measurement and the
  * project context (all optional).
  *
- * As soon as there is a report they fold into a single status line with their buttons, so the
- * report starts at the top. The file `input`s are outside that fold: both modes share them.
+ * This is the front page. As soon as there is a report it gives the screen to it and folds into a
+ * single line above the summary — the caveat on the figures and the files that would add detail —
+ * and it comes back from the header. The file `input`s are outside that fold: both modes share them.
  */
 @Component({
     selector: 'app-intake-page',
@@ -24,41 +26,14 @@ export class IntakePageComponent {
     protected readonly i18n = inject(I18nService);
     protected readonly store = inject(ReportStore);
     private readonly exports = inject(ExportService);
+    protected readonly home = inject(HomeService);
 
     // * ATTRIBUTES
     /** Which zone a drag is hovering, so only that one highlights. */
     protected readonly dragging = signal<Zone | null>(null);
-    protected readonly expandedByUser = signal(false);
     /** "Copied" on the diagnostics button, back to its label after a moment. */
     protected readonly copiedDiagnostics = signal(false);
     private readonly distIssue = signal<'empty' | 'unsupported' | null>(null);
-
-    /** Folded as soon as there is a report, unless the person asks to see the zones. */
-    protected readonly compact = computed(() => !!this.store.analysis() && !this.expandedByUser());
-
-    protected readonly statsStatus = computed(() => {
-        const t = this.i18n.ui();
-        const error = this.store.error();
-        if (error) {
-            return t.statsError(error);
-        }
-
-        const info = this.store.statsInfo();
-        if (!info) {
-            return t.statsIdle;
-        }
-        // The example is real analysis of a build that does not exist. Saying which build a figure
-        // is about is the whole job of this line, and here the answer is "not yours".
-        if (this.store.isSample()) {
-            return t.sampleLoaded(info.outputs);
-        }
-
-        // Saying where the graph came from is not decoration: read from the folder it is the
-        // chunks talking, and what a chunk carries inside is only known if the maps were there.
-        return this.store.derived()
-            ? t.statsFromFolder(info.name, info.outputs)
-            : t.statsLoaded(info.name, info.outputs);
-    });
 
     protected readonly distStatus = computed(() => {
         const t = this.i18n.ui();
@@ -208,16 +183,24 @@ export class IntakePageComponent {
 
         if (zone === 'context') {
             void this.store.loadContext(files);
+        } else if (zone === 'baseline') {
+            void this.store.loadAny(files, true);
         } else {
-            void this.store.loadAny(files, zone === 'baseline');
+            void this.store.loadAny(files, false).then(() => this.home.hide());
         }
     }
 
     protected onStats(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (file) {
-            void this.store.loadStats(file);
+            void this.store.loadStats(file).then(() => this.home.hide());
         }
+    }
+
+    /** A new build is loaded to be read: the page goes to its report. */
+    protected loadSample(): void {
+        this.store.loadSample();
+        this.home.hide();
     }
 
     protected onBaseline(event: Event): void {
@@ -284,7 +267,7 @@ export class IntakePageComponent {
     protected removeStats(): void {
         this.store.clearStats();
         this.distIssue.set(null);
-        this.expandedByUser.set(false);
+        this.home.hide();
         this.reset('statsInput');
         this.reset('distInput');
     }

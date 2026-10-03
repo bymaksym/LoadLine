@@ -2,18 +2,12 @@ import { Component, inject, input, signal } from '@angular/core';
 import { I18nService } from '@state/i18n.service';
 
 /**
- * Whether the "how to read this" note is open — one answer for the whole report, not one per tab.
+ * The opening of every panel: what the tab is, the toggle for its "how to read this" note, and one
+ * line saying what it answers. Twelve panels rendered the same markup with three different strings.
  *
- * There are nine of these boxes and they used to be nine separate closed `details`: somebody who
- * wanted the reading notes had to open them again in every view, and somebody who did not want
- * them saw the same unopened box nine times. It is the same control answering the same question,
- * so it holds the same state. It lives for the session, which is as long as the report does.
- */
-const helpOpen = signal(false);
-
-/**
- * The opening of every panel: what the tab is, one line saying what it answers, and the collapsed
- * "how to read this" note. Nine panels rendered the same markup with three different strings.
+ * The note is closed on every tab that opens. It used to be one open-or-closed answer for the whole
+ * report, which left a paragraph about the previous tab's columns open over a tab that has none of
+ * them; the toggle sits next to the title, one click away, on every tab.
  *
  * The host disappears from the layout (`display: contents`) so the panel's own spacing rules keep
  * applying to the header and the note as if they were written in place.
@@ -22,14 +16,22 @@ const helpOpen = signal(false);
     selector: 'app-panel-header',
     template: `
         <div class="panel__head">
-            <h2>{{ title() }}</h2>
+            <div class="panel__title">
+                <h2>{{ title() }}</h2>
+                <button
+                    class="panel__help-btn"
+                    type="button"
+                    [attr.aria-controls]="noteId"
+                    [attr.aria-expanded]="open()"
+                    (click)="open.set(!open())"
+                >
+                    <span aria-hidden="true" class="panel__help-mark">?</span>{{ i18n.ui().howTo }}
+                </button>
+            </div>
             <p>{{ subtitle() }}</p>
         </div>
 
-        <details class="howto" [open]="open()" (toggle)="open.set($any($event.target).open)">
-            <summary>{{ i18n.ui().howTo }}</summary>
-            <div class="howto__body" [innerHTML]="howTo()"></div>
-        </details>
+        <div class="panel__help" [hidden]="!open()" [id]="noteId" [innerHTML]="howTo()"></div>
     `,
     styles: `
         :host {
@@ -42,7 +44,9 @@ export class PanelHeaderComponent {
     protected readonly i18n = inject(I18nService);
 
     // * ATTRIBUTES
-    protected readonly open = helpOpen;
+    protected readonly open = signal(false);
+    /** One panel is on screen at a time, so one id is enough for the toggle to point at its note. */
+    protected readonly noteId = 'panel-help';
 
     // * INPUTS
     readonly title = input.required<string>();

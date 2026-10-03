@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { type Zone } from '@core/analysis/analysis.types';
 import { deliveryOf } from '@core/analysis/delivery';
 import { formatDelta } from '@core/format/format.utils';
@@ -9,40 +9,7 @@ import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
 import { PanelHeaderComponent } from '../panel-header/panel-header';
-
-/**
- * What the console has to be given to report what it downloaded. Not translated: it is code.
- *
- * Every field earns its place by answering something the build folder cannot.
- * `encodedBodySize`/`decodedBodySize` say what compression was **served**, not what was built.
- * `transferSize` of zero is a cache hit and a small non-zero one is a revalidation, so the caching
- * half of this report stops being an assumption. `connectStart`/`connectEnd` show the HTTP/1.1
- * pool running out instead of inferring it from the protocol. `responseStart - requestStart` is a
- * measured round trip, which beats asking anybody what their latency is. The navigation entry's
- * `responseStart` is wave zero — the document — which the round-trip count starts after and which
- * on plenty of applications is the dominant term. And `serviceWorker.controller` says a worker is
- * **controlling this load**, which finding `ngsw-worker.js` in a folder never did.
- *
- * The `await` is why the instructions say console: top-level await works there and not in a
- * bookmarklet. `caches.keys()` is the one thing worth that constraint — it says the worker has a
- * precache rather than merely being installed.
- */
-const SNIPPET = `const nav = performance.getEntriesByType('navigation')[0];
-const m = JSON.stringify({
-  url: location.href, origin: location.origin, takenAt: new Date().toISOString(),
-  ttfb: nav && Math.round(nav.responseStart), documentProtocol: nav && nav.nextHopProtocol,
-  serviceWorker: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
-  caches: window.caches ? await caches.keys().catch(() => null) : null,
-  modulepreloads: document.querySelectorAll('link[rel=modulepreload]').length,
-  entries: performance.getEntriesByType('resource').map(r => ({
-    name: r.name, protocol: r.nextHopProtocol,
-    transferSize: r.transferSize, encodedBodySize: r.encodedBodySize, decodedBodySize: r.decodedBodySize,
-    startTime: Math.round(r.startTime), requestStart: Math.round(r.requestStart),
-    responseStart: Math.round(r.responseStart), responseEnd: Math.round(r.responseEnd),
-    connectStart: Math.round(r.connectStart), connectEnd: Math.round(r.connectEnd),
-  })),
-});
-typeof copy === 'function' ? copy(m) : m;`;
+import { MeasuredIntakeComponent } from './measured-intake';
 
 /** Today, as `YYYY-MM-DD`: what a measurement's age is compared against. */
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -55,7 +22,7 @@ const today = (): string => new Date().toISOString().slice(0, 10);
     selector: 'app-measured-tab',
     templateUrl: './measured-tab.html',
     styleUrl: './measured-tab.scss',
-    imports: [PanelHeaderComponent, BytesPipe, ExplainComponent],
+    imports: [PanelHeaderComponent, BytesPipe, ExplainComponent, MeasuredIntakeComponent],
 })
 export class MeasuredTabComponent {
     // * SERVICES
@@ -64,13 +31,9 @@ export class MeasuredTabComponent {
     protected readonly nav = inject(ReportNav);
 
     // * CONSTANTS
-    protected readonly snippet = SNIPPET;
     protected readonly freshDays = OBSERVED_FRESH_DAYS;
 
     // * ATTRIBUTES
-    protected readonly text = signal('');
-    protected readonly copied = signal(false);
-
     protected readonly screens = computed(() => this.store.analysis()?.screens ?? []);
     protected readonly url = computed(() => this.store.measurementUrl());
 
@@ -134,12 +97,6 @@ export class MeasuredTabComponent {
         this.store.setMeasurementPick(value || null);
     }
 
-    protected run(): void {
-        if (this.store.loadMeasurement(this.text()) === 'ok') {
-            this.text.set('');
-        }
-    }
-
     /**
      * When the computation says a chunk comes down. Next to a measurement it earns its place: an
      * "extra" chunk tagged lazy is one the browser asked for that nothing statically imports, which
@@ -153,15 +110,5 @@ export class MeasuredTabComponent {
     protected deliveryHelp(zone: Zone): string {
         const t = this.i18n.ui();
         return t.helpDelivery[deliveryOf(zone)];
-    }
-
-    protected async copySnippet(): Promise<void> {
-        try {
-            await navigator.clipboard.writeText(SNIPPET);
-            this.copied.set(true);
-            setTimeout(() => this.copied.set(false), 1800);
-        } catch {
-            // Clipboard blocked (no permission, insecure context): the snippet is on screen anyway.
-        }
     }
 }

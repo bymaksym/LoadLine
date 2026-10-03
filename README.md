@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bymaksym/LoadLine/main/.github/banner.png" alt="Loadline — weight per screen" width="100%">
+  <img src="https://raw.githubusercontent.com/bymaksym/LoadLine/main/.github/banner.png?v=2" alt="Loadline — weight per screen" width="100%">
 </p>
 
 > Weight per screen: what someone opening a screen of your app actually downloads, how much of that
@@ -131,11 +131,19 @@ the next run edits its comment instead of adding another. `--lang en|es` — Eng
 asked for in Spanish, never read from the machine's locale, which is the same rule the page
 follows with its language button. `loadline --help` for the full list.
 
+The comment is worth most when it says what the pull request **adds**, and that needs the figures
+of `main` to compare against. A pipeline keeps nothing between runs — the cache in
+`node_modules/.cache` is gone with the runner — so `main` leaves its snapshot as an artifact on every
+push, and each pull request downloads the latest one and passes it as `--baseline`. Until `main` has
+run once there is nothing to download, and the comment shows plain figures instead of differences.
+
 ```yaml
 # .github/workflows/loadline.yml
 name: Loadline
-on: pull_request
-permissions: { contents: read, pull-requests: write, security-events: write }
+on:
+    push: { branches: [main] }
+    pull_request:
+permissions: { contents: read, actions: read, pull-requests: write, security-events: write }
 jobs:
     weight:
         runs-on: ubuntu-latest
@@ -144,13 +152,36 @@ jobs:
             - uses: actions/setup-node@v4
               with: { node-version: 22 }
             - run: npm ci && npm run build
-            - run: npx @bymaksym/loadline dist/app/browser --format pr-comment > comment.md
-            - run: gh pr comment "$NUMBER" --body-file comment.md --edit-last --create-if-none
+
+            # The snapshot main left on its last green run: what this pull request is compared to.
+            - if: github.event_name == 'pull_request'
+              run: |
+                  run=$(gh run list --branch main --workflow loadline.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+                  if [ -n "$run" ]; then gh run download "$run" --name loadline-baseline --dir base; fi
+              env: { GH_TOKEN: '${{ github.token }}' }
+
+            - run: |
+                  baseline=$([ -f base/loadline-baseline.json ] && echo "--baseline base/loadline-baseline.json")
+                  npx @bymaksym/loadline dist/app/browser $baseline --export loadline-baseline.json --format pr-comment > comment.md
+
+            - if: github.event_name == 'pull_request'
+              run: gh pr comment "$NUMBER" --body-file comment.md --edit-last --create-if-none
               env: { GH_TOKEN: '${{ github.token }}', NUMBER: '${{ github.event.number }}' }
+
+            # On main, the snapshot becomes the baseline of every pull request opened after it.
+            - if: github.event_name == 'push'
+              uses: actions/upload-artifact@v4
+              with: { name: loadline-baseline, path: loadline-baseline.json }
+
             - run: npx @bymaksym/loadline dist/app/browser --format sarif > loadline.sarif
             - uses: github/codeql-action/upload-sarif@v3
               with: { sarif_file: loadline.sarif }
 ```
+
+To make the pull request fail on growth rather than only report it, add one more step after the
+comment, so the comment is posted whatever the verdict:
+`npx @bymaksym/loadline dist/app/browser $baseline --max-growth 20kB` (or `--max-growth-pct 5`).
+With a baseline it judges what this pull request added, not the size of the whole application.
 
 ## Configuration
 

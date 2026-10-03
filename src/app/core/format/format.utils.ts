@@ -16,7 +16,7 @@ const formatter = (lang: Lang): Intl.NumberFormat =>
 /** The same thing for figures that are not sizes, where two decimals would be false precision. */
 const counter = (lang: Lang): Intl.NumberFormat => new Intl.NumberFormat(lang, { maximumFractionDigits: 1 });
 
-const numbers = { lang: 'en' as Lang, decimals: formatter('en'), counts: counter('en') };
+const numbers = { lang: 'en' as Lang, decimals: formatter('en'), counts: counter('en'), unitSpace: ' ' };
 
 export const setNumberLang = (lang: Lang): void => {
     if (lang === numbers.lang) {
@@ -29,6 +29,15 @@ export const setNumberLang = (lang: Lang): void => {
 };
 
 /**
+ * What goes between a size and its unit. A plain space for the command, whose output is a terminal
+ * and plain text. The page sets a narrow no-break space (U+202F): "736 kB" must never break across
+ * two lines, and in the monospace face a full space reads as a double gap between figure and unit.
+ */
+export const setUnitSpace = (space: string): void => {
+    numbers.unitSpace = space;
+};
+
+/**
  * Human-readable size. Stays in kB up to the megabyte so columns compare at a glance.
  *
  * The step is 1024, and the label is `kB` rather than `KiB` on purpose: Angular CLI prints its
@@ -37,9 +46,10 @@ export const setNumberLang = (lang: Lang): void => {
  */
 export const formatBytes = (bytes: number): string => {
     if (bytes >= KB * KB) {
-        return `${numbers.decimals.format(bytes / KB / KB)} MB`;
+        return `${numbers.decimals.format(bytes / KB / KB)}${numbers.unitSpace}MB`;
     }
-    return bytes >= KB ? `${Math.round(bytes / KB)} kB` : `${bytes} B`;
+    const space = numbers.unitSpace;
+    return bytes >= KB ? `${Math.round(bytes / KB)}${space}kB` : `${bytes}${space}B`;
 };
 
 /**

@@ -1,0 +1,54 @@
+@let t = i18n.ui();
+
+<div class="intake">
+    <div class="empty-card">
+        <span class="empty-card__state">{{ t.measureState }}</span>
+        <h3 class="empty-card__title">{{ t.measureTitle }}</h3>
+
+        <ol class="steps">
+            <li>{{ t.measureStep1 }}</li>
+            <li>{{ t.measureStep2 }}</li>
+            <li>{{ t.measureStep3 }}</li>
+        </ol>
+
+        <div class="empty-card__actions">
+            <button class="ctl ctl--primary" type="button" (click)="copySnippet()">
+                {{ copied() ? t.measureCopied : t.measureCopy }}
+            </button>
+            <button
+                aria-controls="measuredSnippet"
+                class="ctl"
+                type="button"
+                [attr.aria-expanded]="showCode()"
+                (click)="showCode.set(!showCode())"
+            >
+                {{ showCode() ? t.measureHideCode : t.measureShowCode }}
+            </button>
+        </div>
+
+        <!-- Folded by default: it is copied far more often than read, and it is twenty lines. -->
+        <pre class="snippet" id="measuredSnippet" [hidden]="!showCode()">{{ snippet }}</pre>
+
+        <label class="sr-only" for="measuredPaste">{{ t.measurePlaceholder }}</label>
+        <textarea
+            class="paste"
+            id="measuredPaste"
+            rows="4"
+            [placeholder]="t.measurePlaceholder"
+            [value]="text()"
+            (input)="text.set($any($event.target).value)"
+        ></textarea>
+
+        <div class="measure-run">
+            <button class="ctl ctl--active" type="button" (click)="run()">{{ t.measureRun }}</button>
+            <span aria-live="polite" class="run-error">{{ store.measurementError() }}</span>
+        </div>
+    </div>
+
+    <div class="gain">
+        <h3 class="gain__title">{{ t.measureGain }}</h3>
+        <p>{{ t.measureGainCompare }}</p>
+        <p>{{ t.measureGainServed }}</p>
+        <p>{{ t.measureNotes }}</p>
+    </div>
+</div>

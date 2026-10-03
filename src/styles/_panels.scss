@@ -1,111 +1,109 @@
 /* ---------- panel header and help ---------- */
 
+/* The title and its "how to read this" toggle on the left, what the tab answers on the right. */
 .panel__head {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3) var(--space-8);
+    gap: var(--space-3) var(--space-10);
     align-items: baseline;
     justify-content: space-between;
 
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-7);
 
     h2 {
         margin: 0;
-        font-size: var(--fs-4);
+        font-size: var(--fs-title);
         font-weight: 600;
         letter-spacing: -0.01em;
     }
 
     p {
-        max-width: 62ch;
+        max-width: 520px;
         margin: 0;
-        font-size: var(--fs-body);
+        font-size: var(--fs-small);
         color: var(--muted);
     }
 }
 
-.howto {
-    margin-bottom: var(--space-7);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
+.panel__title {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    align-items: baseline;
+}
 
-    font-size: var(--fs-body);
+.panel__help-btn {
+    cursor: pointer;
+
+    display: inline-flex;
+    gap: var(--space-3);
+    align-items: center;
+
+    padding: 0;
+    border: 0;
+
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--accent);
+
+    background: none;
+
+    &:hover {
+        color: var(--ink);
+    }
+
+    &:focus-visible {
+        border-radius: 2px;
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}
+
+.panel__help-mark {
+    display: grid;
+    place-items: center;
+
+    width: 16px;
+    height: 16px;
+    border: 1px solid currentcolor;
+    border-radius: 50%;
+
+    font-size: var(--fs-label);
+    font-weight: 600;
+}
+
+/* The note itself: a paragraph hung off an accent rule, the width of reading and no wider. */
+.panel__help {
+    max-width: 820px;
+    margin-bottom: var(--space-7);
+    padding: var(--space-6) var(--space-7);
+    border-left: 2px solid var(--accent);
+
+    font-size: var(--fs-small);
+    color: var(--muted);
 
     background: var(--surface);
 
-    summary {
-        cursor: pointer;
+    p {
+        margin: 0 0 var(--space-4);
 
-        padding: var(--space-4) var(--space-7);
-
-        font-size: var(--fs-body);
-        font-weight: 500;
-        color: var(--accent);
-        list-style: none;
-
-        &::-webkit-details-marker {
-            display: none;
-        }
-
-        &::before {
-            content: '?';
-
-            display: inline-block;
-
-            width: 1.15rem;
-            height: 1.15rem;
-            margin-right: var(--space-4);
-            border-radius: 50%;
-
-            font-family: var(--font-data);
-            font-weight: 700;
-            line-height: 1.15rem;
-            text-align: center;
-
-            background: var(--accent-soft);
-        }
-
-        &:focus-visible {
-            border-radius: var(--radius);
-            outline: 2px solid var(--accent);
-            outline-offset: -2px;
+        &:last-child {
+            margin-bottom: 0;
         }
     }
 
-    &[open] summary {
-        border-bottom: 1px solid var(--line);
+    strong {
+        font-weight: 600;
+        color: var(--ink);
     }
 
-    /* The "what to do" note answers a different question from the reading notes, and the two can
-       end up one under the other: a different marker is what tells them apart at a glance. */
-    &--act summary::before {
-        content: '→';
+    ol,
+    ul {
+        margin: 0 0 var(--space-4);
+        padding-left: var(--space-10);
     }
 
-    &__body {
-        padding: var(--space-6) var(--space-8) var(--space-2);
-        color: var(--muted);
-
-        p {
-            max-width: 84ch;
-            margin: 0 0 var(--space-5);
-        }
-
-        strong {
-            font-weight: 600;
-            color: var(--ink);
-        }
-
-        /* Only the "what can be done" note uses lists: four options read as four, not as prose. */
-        ol,
-        ul {
-            max-width: 84ch;
-            margin: 0 0 var(--space-5);
-            padding-left: var(--space-10);
-        }
-
-        li {
-            margin-bottom: var(--space-2);
-        }
+    li {
+        margin-bottom: var(--space-2);
     }
 }

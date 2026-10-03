@@ -62,7 +62,7 @@
     overflow: hidden;
 
     font-family: var(--font-data);
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -84,7 +84,7 @@
     display: block;
     height: 5px;
     border-radius: 2px;
-    background: var(--surface-sunk);
+    background: var(--track);
 
     i {
         display: block;
@@ -100,7 +100,7 @@
 
 .row__size {
     font-family: var(--font-data);
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     font-variant-numeric: tabular-nums;
     text-align: right;
 }

@@ -45,77 +45,96 @@
     </div>
 </div>
 
-@for (group of groups; track group) {
-    <section class="crit-group">
-        <h3>{{ groupTitle(group) }}</h3>
+<!--
+    One table rather than a card per group: the two value columns line up down the whole list, so a
+    threshold is read against its neighbours and not against the edge of its own box. The groups stay
+    as rows of their own, because which signal a number fires is half of what it means.
+-->
+<div class="card card--scroll">
+    <div class="crit-table">
+        <!-- Every field carries its own name, so the header is for the eye only. -->
+        <div aria-hidden="true" class="crit-table__head">
+            <span>{{ t.critColThreshold }}</span>
+            <span class="crit-table__head-ok"><span class="dot-v" data-v="good"></span>{{ t.critOkUpTo }}</span>
+            <span class="crit-table__head-bad"><span class="dot-v" data-v="bad"></span>{{ t.critBadAbove }}</span>
+        </div>
 
-        @for (field of fieldsOf(group); track field.key) {
-            @let isCustom =
-                criteria.isCustom(mode, field.key) ||
-                (field.pairWith ? criteria.isCustom(mode, field.pairWith) : false);
+        @for (group of groups; track group) {
+            <section class="crit-table__group">
+                <h3 class="crit-table__group-title">{{ groupTitle(group) }}</h3>
 
-            <div class="crit" [class.crit--custom]="isCustom">
-                <div class="crit__text">
-                    <span class="crit__label">
-                        {{ t.critLabel[field.key] }}
-                        @if (scaleNote(field); as note) {
-                            <span class="tag">{{ note }}</span>
+                @for (field of fieldsOf(group); track field.key) {
+                    @let isCustom =
+                        criteria.isCustom(mode, field.key) ||
+                        (field.pairWith ? criteria.isCustom(mode, field.pairWith) : false);
+                    @let name = t.critLabel[field.key];
+                    @let unit = unitLabel(field.unit);
+
+                    <div class="crit" [class.crit--custom]="isCustom">
+                        <div class="crit__text">
+                            <span class="crit__label">
+                                <span class="crit__name">{{ name }}</span>
+                                <!--
+                                On every field, conventions included. Hiding it on those would defeat
+                                the point: what the label is for is letting somebody see how much of
+                                this list is a line drawn by hand rather than a figure with a source
+                                behind it.
+                                -->
+                                <span class="tag crit__from" [attr.data-from]="field.from"
+                                    >{{ fromLabel(field) }}<app-explain [text]="fromHelp(field)"
+                                /></span>
+                                @if (scaleNote(field); as note) {
+                                    <span class="tag">{{ note }}</span>
+                                }
+                            </span>
+                            <span class="crit__help">{{ t.critHelp[field.key] }}</span>
+                            <!-- Only where the value was changed: under all of them it was the same note. -->
+                            @if (isCustom) {
+                                <span class="crit__rec">{{ t.criteriaRecommended(recommendedText(field)) }}</span>
+                            }
+                        </div>
+
+                        @if (field.pairWith; as pair) {
+                            <span class="crit__value">
+                                <input
+                                    class="field field--num crit__input"
+                                    min="0"
+                                    type="number"
+                                    [attr.aria-label]="name + ' — ' + t.critOkUpTo"
+                                    [value]="toField(c[field.key], field.unit)"
+                                    (change)="set(field.key, field.unit, $event)"
+                                />
+                                <span class="crit__unit">{{ unit }}</span>
+                            </span>
+                            <span class="crit__value">
+                                <input
+                                    class="field field--num crit__input"
+                                    min="0"
+                                    type="number"
+                                    [attr.aria-label]="name + ' — ' + t.critBadAbove"
+                                    [value]="toField(c[pair], field.unit)"
+                                    (change)="set(pair, field.unit, $event)"
+                                />
+                                <span class="crit__unit">{{ unit }}</span>
+                            </span>
+                        } @else {
+                            <!-- A single threshold: the second column stays empty and the grid aligned. -->
+                            <span class="crit__value">
+                                <input
+                                    class="field field--num crit__input"
+                                    min="0"
+                                    type="number"
+                                    [attr.aria-label]="name"
+                                    [max]="field.unit === 'pct' ? 100 : null"
+                                    [value]="toField(c[field.key], field.unit)"
+                                    (change)="set(field.key, field.unit, $event)"
+                                />
+                                <span class="crit__unit">{{ unit }}</span>
+                            </span>
                         }
-                        <!--
-                        On every field, conventions included. Hiding it on those would defeat the
-                        point: what the label is for is letting somebody see how much of this list
-                        is a line drawn by hand rather than a figure with a source behind it.
-                        -->
-                        <span class="tag" [attr.data-from]="field.from"
-                            >{{ fromLabel(field) }}<app-explain [text]="fromHelp(field)"
-                        /></span>
-                    </span>
-                    <span class="crit__help">{{ t.critHelp[field.key] }}</span>
-                </div>
-
-                <div class="crit__inputs">
-                    @if (field.pairWith; as pair) {
-                        <label>
-                            <span>{{ t.critOkUpTo }}</span>
-                            <input
-                                class="field field--num"
-                                min="0"
-                                type="number"
-                                [value]="toField(c[field.key], field.unit)"
-                                (change)="set(field.key, field.unit, $event)"
-                            />
-                            <span class="crit__unit">{{ unitLabel(field.unit) }}</span>
-                        </label>
-                        <label>
-                            <span>{{ t.critBadAbove }}</span>
-                            <input
-                                class="field field--num"
-                                min="0"
-                                type="number"
-                                [value]="toField(c[pair], field.unit)"
-                                (change)="set(pair, field.unit, $event)"
-                            />
-                            <span class="crit__unit">{{ unitLabel(field.unit) }}</span>
-                        </label>
-                    } @else {
-                        <label>
-                            <input
-                                class="field field--num"
-                                min="0"
-                                type="number"
-                                [max]="field.unit === 'pct' ? 100 : null"
-                                [value]="toField(c[field.key], field.unit)"
-                                (change)="set(field.key, field.unit, $event)"
-                            />
-                            <span class="crit__unit">{{ unitLabel(field.unit) }}</span>
-                        </label>
-                    }
-                    <!-- Only where the value was changed: under all fourteen it was the same note. -->
-                    @if (isCustom) {
-                        <span class="crit__rec">{{ t.criteriaRecommended(recommendedText(field)) }}</span>
-                    }
-                </div>
-            </div>
+                    </div>
+                }
+            </section>
         }
-    </section>
-}
+    </div>
+</div>

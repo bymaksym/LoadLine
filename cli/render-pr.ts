@@ -13,7 +13,7 @@
  */
 
 import { markdownTable } from '../src/app/core/export/markdown-table.utils';
-import { rankActions, totalSaving } from '../src/app/core/findings/actions';
+import { formatSaving, rankActions, savingWords, totalSaving, unitScale } from '../src/app/core/findings/actions';
 import { plainText } from '../src/app/core/findings/finding-plain';
 import { formatBytes, formatDelta } from '../src/app/core/format/format.utils';
 import { UI } from '../src/app/core/i18n/ui';
@@ -63,9 +63,10 @@ export const renderPrComment = (report: CliReport, violations: Violation[], anyA
     const actions = rankActions(report.findings);
     if (actions.length > 0) {
         const total = totalSaving(analysis, report.findings);
+        const scale = unitScale(analysis);
         const rows = actions.map(
             (action, index) =>
-                `| ${index + 1} | ${plainText(action.finding.title)} | ${action.saving > 0 ? formatBytes(action.saving) : '—'} | ${text.effortLabel[action.effort]} |`,
+                `| ${index + 1} | ${plainText(action.finding.title)} | ${action.saving > 0 ? formatSaving(action.saving, scale) : '—'} | ${text.effortLabel[action.effort]} |`,
         );
         lines.push(
             '',
@@ -75,7 +76,8 @@ export const renderPrComment = (report: CliReport, violations: Violation[], anyA
             ...rows,
         );
         if (total.counted > 0) {
-            lines.push('', `_${text.totalSaving(formatBytes(total.bytes), formatBytes(total.after), total.counted)}_`);
+            const words = savingWords(analysis, total);
+            lines.push('', `_${text.totalSaving(words.saving, words.after, total.counted, words.estimated)}_`);
         }
     }
 

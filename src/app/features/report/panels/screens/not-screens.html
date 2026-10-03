@@ -1,13 +1,24 @@
 @let t = i18n.ui();
 
-@for (group of groups(); track group.key) {
-    <p class="caveat">{{ group.note }}<app-explain [text]="group.help" /></p>
-
-    <ul class="asides">
-        @for (item of group.items; track item.source) {
-            <li class="aside">
-                <span class="aside__name" [title]="item.source">{{ item.label }}</span>
+<!--
+One wrapping line: each entry with its size and what kind of entry it is, and the way to say the
+rules got it wrong. The kind carries its explanation on its first entry only — fifty language files
+would otherwise be fifty identical marks.
+-->
+@if (items().length > 0) {
+    <div class="asides">
+        <span>{{ t.notScreensLabel }}</span>
+        @for (item of items(); track item.source) {
+            <span class="aside">
+                <b class="aside__name" [title]="item.source">{{ item.label }}</b>
                 <span class="aside__size">{{ item.bytes | bytes }}</span>
+                <span
+                    >{{ item.kind }}
+                    @if (item.first) {
+                        <app-explain [text]="item.help" />
+                    }
+                </span>
+                <span aria-hidden="true">·</span>
                 <button
                     class="link-btn"
                     type="button"
@@ -16,13 +27,13 @@
                 >
                     {{ t.markScreen }}
                 </button>
-            </li>
+            </span>
         }
-    </ul>
+    </div>
 }
 
 @if (marked(); as marks) {
-    <p class="caveat">
+    <p class="marks">
         {{ t.marksNote(marks) }}
         <button class="link-btn" type="button" (click)="store.clearMarks()">{{ t.marksReset }}</button>
     </p>

@@ -3,6 +3,21 @@
 import { type Lang } from '../src/app/core/i18n/ui-strings';
 import { type CliStrings } from './text.types';
 
+/** "Fixing both", not "acting on all 2": the line under the ranked signals, as the page words it. */
+const fixingEn = (count: number): string => {
+    if (count === 1) {
+        return 'Fixing it';
+    }
+    return count === 2 ? 'Fixing both' : `Fixing all ${count}`;
+};
+
+const fixingEs = (count: number): string => {
+    if (count === 1) {
+        return 'Arreglándola';
+    }
+    return count === 2 ? 'Arreglando las dos' : `Arreglando las ${count}`;
+};
+
 const EN: CliStrings = {
     lead: (stats, unit) => `${stats} · figures ${unit}`,
     against: (baseline, date) => `compared against ${baseline} (${date})`,
@@ -48,11 +63,14 @@ const EN: CliStrings = {
         none: '',
     },
     savingCell: saving => saving || '—',
-    totalSaving: (bytes, after, count) =>
-        `${count === 1 ? 'Acting on it' : `Acting on all ${count}`} would take ${bytes} off the first load, leaving it at about ${after}. ` +
-        'The figures are raw minified bytes inside the chunk, and they are not added up: the graph is ' +
-        'walked once with every file named above taken out together, so bytes reachable two ways are ' +
-        'counted once.',
+    totalSaving: (bytes, after, count, estimated) =>
+        `${fixingEn(count)} would take ${bytes} off the first load, leaving it at about ${after}. ${
+            estimated
+                ? 'Compressed figures are an estimate: the raw bytes taken out, at the ratio the bootstrap ' +
+                  'compresses by, since a single module has no compressed size of its own. '
+                : 'The figures are raw minified bytes inside the chunk. '
+        }They are not added up: the graph is walked once with every file named above taken out ` +
+        'together, so bytes reachable two ways are counted once.',
 
     profileName: { slow4g: 'slow 4G', fast4g: '4G', cable: 'cable' },
     timeNote:
@@ -113,6 +131,11 @@ const EN: CliStrings = {
         'round trips and per-screen totals that look measured and are not. So those are unchanged ' +
         'above, and the last column says who would be paying for it instead.',
     whatIfNobody: 'nothing lazy uses it',
+    whatIfEstimated:
+        'In compressed figures those are the exact raw bytes at the ratio the bootstrap compresses by: ' +
+        'the right size, not the exact one, hence the ≈.',
+    whatIfNotHere: format =>
+        `--what-if is not part of the ${format} format: run it again with --format text, summary or json to see the answer.`,
     colWhatIf: 'Deferred',
     colSize: 'In the bootstrap',
     colAfter: 'Bootstrap after',
@@ -164,11 +187,14 @@ const ES: CliStrings = {
         none: '',
     },
     savingCell: saving => saving || '—',
-    totalSaving: (bytes, after, count) =>
-        `${count === 1 ? 'Aplicándola' : `Aplicando las ${count}`} se quitarían ${bytes} de la primera carga y quedaría en unos ${after}. ` +
-        'Las cifras son bytes minificados en crudo dentro del chunk, y no se suman: el grafo se recorre ' +
-        'una vez quitando de golpe todos los ficheros nombrados arriba, así que lo que se alcanza por dos ' +
-        'caminos se cuenta una vez.',
+    totalSaving: (bytes, after, count, estimated) =>
+        `${fixingEs(count)} se quitarían ${bytes} de la primera carga y quedaría en unos ${after}. ${
+            estimated
+                ? 'Las cifras comprimidas son una estimación: los bytes en crudo que se quitan, a la proporción ' +
+                  'en que se comprime el bootstrap, porque un módulo suelto no tiene tamaño comprimido propio. '
+                : 'Las cifras son bytes minificados en crudo dentro del chunk. '
+        }No se suman: el grafo se recorre una vez quitando de golpe todos los ficheros nombrados arriba, ` +
+        'así que lo que se alcanza por dos caminos se cuenta una vez.',
 
     profileName: { slow4g: '4G lento', fast4g: '4G', cable: 'cable' },
     timeNote:
@@ -237,6 +263,11 @@ const ES: CliStrings = {
         'parecen medidos y no lo son—. Así que esos siguen igual arriba, y la última columna dice ' +
         'quién lo pagaría en su lugar.',
     whatIfNobody: 'no lo usa nada diferido',
+    whatIfEstimated:
+        'En cifras comprimidas son los bytes en crudo exactos a la proporción en que se comprime el ' +
+        'bootstrap: el tamaño correcto, no el exacto, y por eso el ≈.',
+    whatIfNotHere: format =>
+        `--what-if no forma parte del formato ${format}: vuelve a lanzarlo con --format text, summary o json para ver la respuesta.`,
     colWhatIf: 'Diferido',
     colSize: 'En el bootstrap',
     colAfter: 'Bootstrap después',

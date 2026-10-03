@@ -3,37 +3,42 @@
 
 <app-panel-header [howTo]="t.howToBoot" [subtitle]="t.secBootSub" [title]="t.secBoot" />
 
-<div class="split">
-    <div class="split__item">
-        <span class="split__label">{{ t.bootPackages }}<app-explain [text]="t.helpBootPackages" /></span>
-        <span class="split__figure">{{ totals.pkgBytes | bytes }}</span>
-        <span class="split__sub">{{ pct(totals.pkgBytes) }} · {{ t.entriesCount(totals.pkgCount) }}</span>
-    </div>
-    <div class="split__item">
-        <span class="split__label">{{ t.bootOwnCode }}<app-explain [text]="t.helpBootOwnCode" /></span>
-        <span class="split__figure">{{ totals.ownBytes | bytes }}</span>
-        <span class="split__sub">{{ pct(totals.ownBytes) }} · {{ t.entriesCount(totals.ownCount) }}</span>
-    </div>
-    <span class="track split__track">
-        <i class="split__pkg" [style.width.%]="percent(totals.pkgBytes)"></i>
-    </span>
-    <span class="split__barnote">{{ splitTitle() }}</span>
-    <p class="split__total">
-        {{ t.tileBoot }}:
-        <strong [attr.data-v]="bootVerdict()">{{ store.analysis()?.bootBytes ?? 0 | bytes }}</strong>
-        <span class="split__rule">{{ bootRule() }}</span>
-    </p>
-</div>
-
-<!-- What the colours of the bars below mean. The red one only when there is a red bar to explain. -->
-<div class="legend">
-    <span> <i aria-hidden="true" style="background: var(--seg-boot)"></i> {{ t.legBootPkg }} </span>
-    <span> <i aria-hidden="true" style="background: var(--seg-own)"></i> {{ t.legBootOwn }} </span>
-    @if (hasBadRow()) {
-        <span>
-            <i aria-hidden="true" style="background: var(--crit)"></i> {{ t.legBootBad
-            }}<app-explain [text]="lazyImportersHelp()" />
+<!--
+How much of the bootstrap is npm and how much is your own code: two figures on one bar, and under
+it the declared bootstrap with its rating and the rule it is rated by.
+-->
+<div class="card card--pad split">
+    <div class="split__row">
+        <span class="split__side">
+            <span aria-hidden="true" class="split__sq" data-zone="boot"></span>
+            {{ t.bootPackages }}<app-explain [text]="t.helpBootPackages" />
+            <b class="split__figure">{{ totals.pkgBytes | bytes }}</b>
+            <span class="split__sub">{{ pct(totals.pkgBytes) }} · {{ t.entriesCount(totals.pkgCount) }}</span>
         </span>
+        <span class="split__side">
+            <span aria-hidden="true" class="split__sq" data-zone="own"></span>
+            {{ t.bootOwnCode }}<app-explain [text]="t.helpBootOwnCode" />
+            <b class="split__figure">{{ totals.ownBytes | bytes }}</b>
+            <span class="split__sub">{{ pct(totals.ownBytes) }} · {{ t.entriesCount(totals.ownCount) }}</span>
+        </span>
+    </div>
+    <!-- The bar, in words for whoever cannot see the two colours: it is the figures above, drawn. -->
+    <span class="split__bar" role="img" [attr.aria-label]="splitTitle()" [title]="splitTitle()">
+        <i class="split__seg" data-zone="boot" [style.width.%]="percent(totals.pkgBytes)"></i>
+        <i class="split__seg" data-zone="own" [style.width.%]="percent(totals.ownBytes)"></i>
+    </span>
+    <p class="split__total">
+        {{ t.tileBoot }}
+        <b class="split__boot">{{ store.analysis()?.bootBytes ?? 0 | bytes }}</b>
+        <i aria-hidden="true" class="dot-v dot-v--after" [attr.data-v]="bootVerdict()"></i>
+        {{ verdictLabel(bootVerdict()) }} · {{ bootRule() }}
+    </p>
+    <!--
+    The bar is raw bytes even when the report is compressed, and the figure above it is not: said
+    here, or the two sides of the bar add up to three times the bootstrap printed under them.
+    -->
+    @if (store.compressed()) {
+        <p class="split__raw">{{ t.bootSplitRaw(totals.pkgBytes + totals.ownBytes | bytes) }}</p>
     }
 </div>
 
@@ -52,7 +57,8 @@
     </div>
 </div>
 
-<div class="scroller--tall">
+<!-- Narrow, the table keeps its columns and scrolls sideways inside its card. -->
+<div class="scroller--tall boot-table">
     <table>
         <thead>
             <!--
@@ -128,15 +134,18 @@
                 >
                     <td class="path">
                         <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
-                        {{ row.name }}
+                        <span class="boot-name">{{ row.name }}</span>
+                        <!-- What the entry is, which is also what the colour of its bar says. -->
                         @if (row.isProjectCode) {
-                            <span class="tag" [title]="t.helpBootOwnCode">{{ t.ownCodeRow }}</span>
+                            <span class="boot-type" [title]="t.helpBootOwnCode">{{ t.ownCodeRow }}</span>
+                        } @else {
+                            <span class="boot-type" [title]="t.helpBootPackages">{{ t.legBootPkg }}</span>
                         }
                         @if (row.isCommonJs) {
                             <span class="tag tag--warn" [title]="t.helpCommonJs">{{ t.tagCommonJs }}</span>
                         }
                     </td>
-                    <td>
+                    <td class="bar-cell">
                         <span
                             class="track"
                             [class.track--bad]="row.sizeVerdict === 'bad'"
@@ -152,7 +161,7 @@
                             <span class="sr-only">, {{ t.verdictBad }}.</span>
                         }
                     </td>
-                    <td class="num" [attr.data-v]="row.sizeVerdict">{{ row.percent.toFixed(1) }} %</td>
+                    <td class="num muted">{{ row.percent.toFixed(1) }} %</td>
                     <!--
                     The figure that says whether the row above is worth acting on. When the two
                     agree the cell is quiet; when they do not, that gap IS the finding, so it is
@@ -160,7 +169,7 @@
                     -->
                     <td class="num">
                         @if (row.exclusive < row.bytes) {
-                            <strong>{{ row.exclusive | bytes }}</strong>
+                            <strong class="boot-excl">{{ row.exclusive | bytes }}</strong>
                         } @else {
                             <span class="muted">{{ row.exclusive | bytes }}</span>
                         }
@@ -172,11 +181,13 @@
                             <span class="muted" [title]="t.helpImportersNone">{{ t.importersNone }}</span>
                         } @else {
                             {{ t.importersCount(row.importers) }}
+                            <!-- The finding, under the figure it is about: few importers, one of them lazy. -->
                             @if (row.fewImporters) {
-                                <span class="tag tag--crit" [title]="lazyImportersHelp()"
-                                    >{{ t.importersLazyOnly(row.lazyScreens.length, row.importers) }}:
-                                    {{ row.lazyScreens.join(', ') }}</span
-                                >
+                                <span class="who__flag">
+                                    <span aria-hidden="true">▲</span>
+                                    {{ t.importersLazyOnly(row.lazyScreens.length, row.importers) }}:
+                                    {{ row.lazyScreens.join(', ') }}<app-explain [text]="lazyImportersHelp()" />
+                                </span>
                             }
                         }
                     </td>
@@ -184,7 +195,7 @@
 
                 @if (isOpen) {
                     <tr class="detail">
-                        <td colspan="5">
+                        <td colspan="6">
                             <!--
                             Where the figures of the row above come from. It used to be three
                             `title` attributes on three cells, which is three explanations nobody
@@ -239,7 +250,7 @@
                 }
             } @empty {
                 <tr>
-                    <td class="empty" colspan="5">{{ t.noMatch }}</td>
+                    <td class="empty" colspan="6">{{ t.noMatch }}</td>
                 </tr>
             }
         </tbody>

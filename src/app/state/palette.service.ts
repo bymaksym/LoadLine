@@ -9,11 +9,9 @@ const TYPING = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 /**
  * The keyboard: `Ctrl`/`Cmd` + `K` to jump anywhere, `/` to search, `?` for the list of shortcuts.
  *
- * It adds **no visible control**, and that is the point rather than an oversight. The rule this
- * interface is held to is that the net balance of new controls stays near zero, and a palette with
- * a button in the header would be one more thing on every screen for a gesture the audience — people
- * who already have `Ctrl+K` in their fingers from five other tools — do not need to be shown. What
- * documents it is `?`, which is the same gesture in those five tools.
+ * Since the redesign of 02/10/2026 it also has one button, in the header, labelled with the keys:
+ * the people who already have `Ctrl+K` in their fingers from five other tools do not need it, and
+ * everybody else had no way of knowing the palette was there. `?` still lists the shortcuts.
  *
  * A keystroke inside a field is text: the four filter boxes and the paste area of Measured would
  * otherwise stop accepting a `/` or a `?`.

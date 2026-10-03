@@ -80,7 +80,8 @@ export interface CliStrings {
     effortLabel: Record<Effort, string>;
     /** A saving cell: the figure, or a dash when the signal has none that can be measured. */
     savingCell: (saving: string) => string;
-    totalSaving: (bytes: string, after: string, count: number) => string;
+    /** `estimated`: the figures were carried from raw bytes into a compressed unit, and say so. */
+    totalSaving: (bytes: string, after: string, count: number, estimated: boolean) => string;
 
     profileName: Record<ProfileId, string>;
     /** The estimate label. It is not optional anywhere this appears. */
@@ -95,6 +96,10 @@ export interface CliStrings {
     headWhatIf: string;
     whatIfNote: string;
     whatIfNobody: string;
+    /** Under the what-if table when the report is compressed: why its figures carry `≈`. */
+    whatIfEstimated: string;
+    /** On stderr, when `--what-if` was asked of a format that does not print it. */
+    whatIfNotHere: (format: string) => string;
     colWhatIf: string;
     colSize: string;
     colAfter: string;

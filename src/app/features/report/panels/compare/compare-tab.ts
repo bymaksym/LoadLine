@@ -60,6 +60,18 @@ export class CompareTabComponent {
         return entry.versions.length === 0 ? t.compareVersionUnknown : entry.versions.join(' · ');
     }
 
+    /**
+     * Enter or Space on the label that opens the picker. A `<label>` with a tabindex takes the focus
+     * but does nothing with the keyboard, so what a click does has to be wired here.
+     */
+    protected openPicker(event: KeyboardEvent): void {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+        event.preventDefault();
+        document.querySelector<HTMLInputElement>('#compareInput')?.click();
+    }
+
     protected onFiles(event: Event): void {
         const input = event.target as HTMLInputElement;
         if (input.files?.length) {

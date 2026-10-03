@@ -3,47 +3,33 @@
     margin-top: var(--space-8);
 }
 
-/* Same line as the panel's other footnotes: this is one more thing the table does not say. */
-.caveat {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-    align-items: baseline;
-
-    max-width: 84ch;
-    margin: 0 0 var(--space-3);
-
-    font-size: var(--fs-body);
-    color: var(--muted);
-}
-
+/*
+   The entries the table has no row for, as one wrapping line under it. Capped: an application that
+   lazy-loads fifty language files would otherwise push the rest of the page a screen down.
+*/
 .asides {
     overflow-y: auto;
-
-    max-height: 11rem;
-    margin: 0 0 var(--space-6);
-    padding: 0;
-
-    list-style: none;
-}
-
-.aside {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1) var(--space-5);
+    gap: var(--space-3) var(--space-12);
     align-items: baseline;
 
-    padding: var(--space-2) var(--space-3);
+    max-height: 11rem;
 
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     color: var(--muted);
+}
 
-    &:hover {
-        background: var(--surface-sunk);
-    }
+/* One entry: name, size and kind travel together, so a line never ends between them. */
+.aside {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    align-items: baseline;
 
     &__name {
         font-family: var(--font-data);
+        font-weight: 600;
         color: var(--ink);
     }
 
@@ -51,4 +37,10 @@
         font-family: var(--font-data);
         font-variant-numeric: tabular-nums;
     }
+}
+
+.marks {
+    margin: var(--space-4) 0 0;
+    font-size: var(--fs-small);
+    color: var(--muted);
 }

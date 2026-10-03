@@ -1,41 +1,46 @@
 :host {
     display: block;
-    margin-bottom: var(--space-12);
 }
 
-.intake {
-    position: relative;
+/* ---------- the front page ---------- */
+
+.home {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-8);
+    gap: var(--space-16);
 
-    &__hide {
-        justify-self: end;
+    &__title {
+        max-width: 760px;
+        margin: 0;
+
+        font-size: var(--fs-lede);
+        font-weight: 400;
+        line-height: 1.25;
+        letter-spacing: -0.015em;
+    }
+
+    &__back {
+        display: flex;
+    }
+
+    &__note {
+        max-width: 720px;
+        margin: 0;
+        font-size: var(--fs-small);
+        color: var(--muted);
     }
 }
 
-@media (width >= 800px) {
-    .intake {
-        grid-template-columns: 1fr 1fr;
-
-        &__hide {
-            grid-column: 1 / -1;
-        }
-    }
-}
-
-/* The offer to bring back the last measurement kept in this browser. Spans the whole grid. */
+/* The offer to bring back the last measurement kept in this browser. */
 .restore {
     display: flex;
-    grid-column: 1 / -1;
     flex-wrap: wrap;
     gap: var(--space-4) var(--space-8);
     align-items: center;
     justify-content: space-between;
 
-    padding: var(--space-5) var(--space-7);
-    border: 1px dashed var(--line-strong);
-    border-radius: var(--radius);
+    padding: var(--space-6) var(--space-8);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
 
     font-size: var(--fs-body);
 
@@ -44,136 +49,188 @@
     &__actions {
         display: flex;
         gap: var(--space-4);
-    }
-}
-
-.drop__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-    align-items: center;
-
-    .file-btn {
-        margin-top: 0;
-    }
-}
-
-.drop {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    align-items: flex-start;
-
-    padding: var(--space-12);
-    border: 1.5px dashed var(--line-strong);
-    border-radius: var(--radius);
-
-    background: var(--surface);
-
-    transition:
-        border-color 0.15s,
-        background 0.15s;
-
-    &--over {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-    }
-
-    /* The required one reads as the first step: a solid border where the optional ones are dashed. */
-    &--main {
-        border-style: solid;
-    }
-
-    h2 {
-        margin: 0;
-        font-size: var(--fs-3);
-        font-weight: 600;
-    }
-
-    p {
-        max-width: 52ch;
-        margin: 0;
-        font-size: var(--fs-body);
-        color: var(--muted);
-    }
-}
-
-/* One line: what is loaded, with which figures, and the buttons to change it. Accepts drops. */
-.loadbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-5) var(--space-10);
-    align-items: center;
-    justify-content: space-between;
-
-    padding: var(--space-5) var(--space-7);
-    border: 1px dashed var(--line-strong);
-    border-radius: var(--radius);
-
-    font-size: var(--fs-body);
-
-    background: var(--surface);
-
-    transition:
-        border-color 0.15s,
-        background 0.15s;
-
-    &--over {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-    }
-
-    &__status {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-4);
-        align-items: center;
-
-        color: var(--muted);
-
-        [data-tone='error'] {
-            color: var(--crit);
-        }
-
-        [data-tone='warn'] {
-            font-weight: 600;
-            color: var(--warn);
-        }
-    }
-
-    &__ok {
-        font-weight: 700;
-        color: var(--ok);
-    }
-
-    &__sep {
-        color: var(--line-strong);
-    }
-
-    &__actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3);
-        align-items: center;
-
-        .file-btn {
-            margin: 0;
-        }
     }
 }
 
 /*
-   The look lives in `styles/_controls.scss`; what is this page's is the space above it. Every
-   button here sits under a line of text that explains it, and without the gap it reads as part of
-   the paragraph.
+   The one required file. A dashed border in the accent says "drop here" before the text does, and
+   the button beside it is the only filled button on the page.
 */
-.file-btn {
-    margin-top: var(--space-3);
+.drop {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-10) var(--space-16);
+    align-items: center;
+
+    padding: var(--space-14);
+    border: 1.5px dashed var(--accent);
+    border-radius: var(--radius-lg);
+
+    background: var(--surface);
+
+    transition: background 0.15s;
+
+    &--over {
+        background: var(--accent-soft);
+    }
+
+    &__text {
+        display: grid;
+        flex: 1 1 360px;
+        gap: var(--space-4);
+    }
+
+    &__required {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--accent);
+    }
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-lead);
+        font-weight: 600;
+    }
+
+    &__body {
+        max-width: 560px;
+        margin: 0;
+        color: var(--muted);
+    }
+
+    &__side {
+        display: grid;
+        gap: var(--space-5);
+        justify-items: start;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+    }
+
+    &__second {
+        min-height: 40px;
+        padding-inline: var(--space-8);
+        font-size: var(--fs-body);
+    }
 }
 
-.loadbar .file-btn {
-    padding: var(--space-3) var(--space-6);
-    font-size: var(--fs-body);
+/* The three optional files: one bordered list, a row each, the action on the right. */
+.optional {
+    display: grid;
+    gap: var(--space-5);
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-small);
+        font-weight: 600;
+        color: var(--muted);
+    }
+
+    &__list {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-card);
+        background: var(--surface);
+    }
+
+    &__row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: var(--space-6) var(--space-12);
+        align-items: center;
+
+        padding: var(--space-9) var(--space-10);
+
+        transition: background 0.15s;
+
+        & + & {
+            border-top: 1px solid var(--line);
+        }
+
+        &--over {
+            background: var(--accent-soft);
+        }
+    }
+
+    &__text {
+        display: grid;
+        gap: var(--space-2);
+    }
+
+    &__head {
+        display: flex;
+        gap: var(--space-5);
+        align-items: baseline;
+
+        strong {
+            font-weight: 600;
+        }
+    }
+
+    &__n {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
+
+    &__body {
+        margin: 0;
+        font-size: var(--fs-small);
+        color: var(--muted);
+    }
+
+    &__side {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4) var(--space-6);
+        align-items: center;
+        justify-content: flex-end;
+    }
+}
+
+/* ---------- over a report: one line ---------- */
+
+.context-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-9);
+    align-items: center;
+
+    margin-bottom: var(--space-7);
+    padding: var(--space-1) 0;
+    border-radius: var(--radius);
+
+    font-size: var(--fs-small);
+
+    transition: background 0.15s;
+
+    &--over {
+        background: var(--accent-soft);
+        outline: 1.5px dashed var(--accent);
+    }
+
+    &__raw {
+        display: inline-flex;
+        align-items: center;
+        color: var(--warn);
+    }
+
+    &__status {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--muted);
+
+        &[data-tone='error'] {
+            color: var(--crit);
+        }
+    }
+
+    &__label {
+        color: var(--muted);
+    }
 }
 
 input[type='file'] {
@@ -188,9 +245,8 @@ input[type='file'] {
 }
 
 .status {
-    margin-top: var(--space-4);
     font-family: var(--font-data);
-    font-size: var(--fs-body);
+    font-size: var(--fs-note);
     color: var(--muted);
 
     &[data-tone='error'] {

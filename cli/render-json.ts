@@ -1,7 +1,7 @@
 /** The report as data. Shape and its rules: `render-json.types.ts`. */
 
 import { rate } from '../src/app/core/criteria/criteria';
-import { rankActions, totalSaving } from '../src/app/core/findings/actions';
+import { rankActions, savingInUnit, totalSaving } from '../src/app/core/findings/actions';
 import { plainText } from '../src/app/core/findings/finding-plain';
 import { budgetAdvice } from '../src/app/core/project/budget-advice';
 import { timingsOf } from '../src/app/core/timing/timing';
@@ -116,6 +116,8 @@ export const renderJson = (report: CliReport, violations: Violation[], anyAsked:
             effort: action.effort,
         })),
         saving: totalSaving(analysis, report.findings),
+        savingInUnit: savingInUnit(analysis, totalSaving(analysis, report.findings)),
+        whatIf: report.whatIf,
         timing: timingsOf(
             analysis.bootBytes + (report.pageCssBytes ?? 0),
             analysis.bootRawBytes,

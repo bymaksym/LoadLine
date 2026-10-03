@@ -10,9 +10,9 @@ import { pct, type UiStrings } from './ui-strings';
  */
 export const ES: UiStrings = {
     verdictGood: 'Bien',
-    verdictOk: 'Normal',
+    verdictOk: 'Regular',
     verdictBad: 'Mal',
-    verdictRule: (ok, bad) => `Bien hasta ${ok} · Normal hasta ${bad} · Mal por encima`,
+    verdictRule: (ok, bad) => `Bien hasta ${ok} · Regular hasta ${bad} · Mal por encima`,
     verdictRuleCoverage: (wide, global) =>
         `Poco compartido por debajo del ${wide} % de las pantallas · Muy compartido hasta el ${global} % · En la práctica bootstrap a partir del ${global} %`,
     tabCriteria: 'Criterios',
@@ -26,6 +26,9 @@ export const ES: UiStrings = {
     compareAddCurrent: 'Añadir la compilación en pantalla',
     compareClear: 'Vaciar',
     compareRemove: 'Quitar',
+    compareState: builds =>
+        builds === 0 ? 'ninguna aplicación todavía · hacen falta dos' : `${builds} de 2 aplicaciones · falta una`,
+    compareEmptyTitle: 'Mira qué envían dos veces varias aplicaciones',
     compareEmpty: 'Todavía no hay nada que comparar. Añade el stats.json de dos o más aplicaciones.',
     compareNeedsTwo: 'Una aplicación no es una comparación. Añade al menos otra.',
     compareBuild: 'Aplicación',
@@ -87,6 +90,7 @@ export const ES: UiStrings = {
     critGroupContext: 'Línea base y contexto del proyecto',
     critOkUpTo: 'bien hasta',
     critBadAbove: 'mal por encima de',
+    critColThreshold: 'Umbral · origen',
     blastTitle: 'Si tocas este fichero',
     blastBody: (chunks, screens, everyone) =>
         `Se ${chunks === 1 ? 'invalida 1 chunk' : `invalidan ${chunks} chunks`}, y ${
@@ -109,7 +113,7 @@ export const ES: UiStrings = {
     historyTitle: 'Mediciones guardadas en este navegador',
     historyNote:
         'Una cifra contra una línea base compara dos puntos y no dice nada de la forma que hay entre ellos. 950 → 1.017 es información; 820, 790, 910, 1.200, 970 es una historia, y enseña en qué semana entró el problema. Se guarda solo en ESTE navegador —sin cuenta y sin servidor—, así que la forma de compartirla es exportar el fichero.',
-    historyEmpty: 'Todavía no hay nada guardado. «Guardar esta» añade la medición que hay en pantalla.',
+    historyEmpty: 'nada guardado todavía',
     historyKeep: 'Guardar esta',
     historyExport: 'Exportar la historia',
     historyForget: 'Olvidarlo todo',
@@ -117,13 +121,18 @@ export const ES: UiStrings = {
     historyScreenPick: 'Y una pantalla:',
     historyScreenNone: 'ninguna — solo el arranque',
     historyScreenAbsent: 'esta pantalla no estaba en esa compilación',
-    actionsTitle: 'Qué arreglo primero',
-    actionsNote: 'Es un orden sobre las señales de abajo, no una selección: todas siguen estando.',
     effortLabel: { config: 'configuración', import: 'un import', refactor: 'refactor', none: '' },
-    actionsTotal: count => `Aplicando las ${count} se quitarían`,
+    actionsTotal: count => {
+        if (count === 1) {
+            return 'Arreglándola se quitarían';
+        }
+        return count === 2 ? 'Arreglando las dos se quitarían' : `Arreglando las ${count} se quitarían`;
+    },
     actionsTotalAfter: 'de la primera carga y quedaría en unos',
     actionsTotalNote:
         'Bytes minificados en crudo dentro del chunk, y no se suman: el grafo se recorre una vez quitando de golpe todos los ficheros nombrados arriba, así que lo que se alcanza por dos caminos se cuenta una vez.',
+    actionsTotalNoteEstimated:
+        'Una estimación en bytes comprimidos: los bytes en crudo que se quitan, a la proporción en que se comprime el bootstrap, porque un módulo suelto no tiene tamaño comprimido propio. No se suman: el grafo se recorre una vez quitando de golpe todos los ficheros nombrados arriba, así que lo que se alcanza por dos caminos se cuenta una vez.',
     thExclusive: 'Exclusivo',
     helpExclusive:
         'Lo que perdería la primera carga sin esta fila: la parte de su peso que no entra por ninguna otra vía. Es la cifra que dice si quitarla compensa una tarde —chart.js pesando 310 kB son 70 cuando 240 de ellos son d3, que además meten otras tres cosas—. Bytes minificados en crudo, dentro del chunk.',
@@ -274,6 +283,32 @@ export const ES: UiStrings = {
     tagline: 'peso por pantalla',
     lede: 'Qué descarga quien abre cada pantalla de tu aplicación, cuánto de eso lo paga también todo el mundo, y qué conviene mover de sitio.',
     themeBtn: 'Cambiar tema',
+    themeToDark: 'Oscuro',
+    themeToLight: 'Claro',
+    searchBtn: 'Buscar',
+    searchKeys: 'Ctrl K',
+    homeAria: 'Loadline: cambiar lo cargado',
+    buildChipHelp: 'Cambiar lo que está cargado',
+    intakeRequired: 'obligatorio',
+    intakeOptional: 'Opcional · cada uno añade detalle, ahora o más tarde',
+    intakeBack: 'Volver al informe',
+    contextRawNote: 'Cifras en crudo: bytes en disco, no lo que viaja',
+    contextAddDetail: 'Añadir detalle:',
+    contextAddDist: 'carpeta browser/ → cifras comprimidas',
+    contextAddBaseline: 'línea base → comparar',
+    contextAddContext: 'angular.json + pipeline → presupuestos',
+    heroCaptionBoot: boot => `${boot} que el bundler marca como inicial`,
+    heroCaptionExtra: (extra, chunks, ratio) =>
+        `${extra} en ${chunks === 1 ? 'un chunk marcado' : `${chunks} chunks marcados`} como lazy que cargan igualmente al menos el ${pct(ratio)} de las pantallas.`,
+    heroCaptionSame: 'Ningún chunk lazy lo cargan suficientes pantallas como para sumarse.',
+    kpiWorst: 'el peor',
+    provenanceTitle: 'De dónde salen estas cifras',
+    dataSourceShort: {
+        measured: 'lo informó un navegador',
+        derived: 'recorrido en el grafo de importaciones',
+        declared: 'una respuesta tuya',
+        unknown: 'gris a propósito',
+    },
     densityCompact: 'Compacto',
     densityComfortable: 'Cómodo',
     densityHelp:
@@ -289,7 +324,7 @@ export const ES: UiStrings = {
     paletteAction: 'acción',
     paletteCount: (shown, total) =>
         total > shown ? `${shown} de ${total} — la pestaña Buscar las nombra todas` : String(total),
-    paletteKeysHint: '? para los atajos',
+    paletteKeysHint: '↵ abrir · esc cerrar · ? atajos',
     keysTitle: 'Teclado',
     keyJump: 'Ir a una pestaña, una pantalla o un paquete',
     keySearch: 'Lo mismo, desde cualquier sitio que no sea un campo',
@@ -298,7 +333,7 @@ export const ES: UiStrings = {
     keyHelp: 'Esta lista',
     keyTabs: 'Entre pestañas, con una pestaña enfocada',
 
-    drop1Title: '1 · Suelta aquí tu stats.json',
+    drop1Title: 'Suelta aquí tu stats.json',
     drop1Body:
         'Lo genera tu bundler con <code>ng build --stats-json</code> (Angular) o como <code>metafile</code> de esbuild. Se procesa en tu navegador: no sale de tu equipo.',
     drop1Btn: 'Elegir stats.json',
@@ -309,7 +344,7 @@ export const ES: UiStrings = {
     diagnosticsCopied: 'Copiado',
     diagnosticsHint:
         'Unas treinta líneas con la forma de esta compilación y lo que Loadline decidió sobre ella. Los nombres de paquete van tal cual; cada ruta de tu propio código se sustituye por un hash estable. Pégalo en un issue.',
-    drop2Title: '2 · Opcional: la carpeta de build',
+    drop2Title: 'La carpeta de build',
     drop2Body:
         'Añade la carpeta <code>browser/</code> y las cifras pasan a ser <strong>comprimidas</strong>, que es lo que se descarga. Sin ella se muestran bytes en crudo. Si la carpeta trae los <code>.js.map</code>, además se lee de ellos lo que pesa cada fichero dentro de cada chunk, como <strong>segunda medición</strong> de lo que ya dice el metafile.',
     drop2Btn: 'Elegir carpeta',
@@ -335,16 +370,12 @@ export const ES: UiStrings = {
     serverIgnored: n => `${n === 1 ? '1 salida de servidor' : `${n} salidas de servidor`} fuera del análisis`,
     serverIgnoredHelp:
         'El build trae también el bundle de servidor (renderizado en servidor). Nadie lo descarga y suele ser el más grande de los dos, así que se analiza solo la parte de navegador.',
-    blocksNote: n =>
-        `${n === 1 ? '1 bloque lazy' : `${n} bloques lazy`} dentro de pantallas, que no cuentan como pantalla:`,
+    notScreensLabel: 'No cuentan como pantallas:',
+    notScreenKind: { block: 'bloque lazy dentro de una pantalla', grouper: 'agrupa rutas', data: 'datos' },
     blocksHelp:
         'Un @defer de Angular, o un lazy() dentro de un componente, produce un chunk lazy igual que una ruta. No es una pantalla: nadie entra en él, se carga cuando se dispara dentro de la pantalla que lo contiene. Contarlo como pantalla subiría el número de pantallas y bajaría la mediana con algo que nadie abre. Lo que el grafo no puede decir es CUÁNDO se dispara: un bloque detrás de un botón son bytes que nadie paga hasta pulsarlo, mientras que uno que se importa al montar la pantalla baja con la primera pintura, y entonces la pantalla pesa más de lo que dice su fila. Aquí los dos son idénticos. La pestaña Medido es la que lo resuelve.',
-    groupersNote: n =>
-        `${n === 1 ? '1 entrada lazy que solo agrupa rutas' : `${n} entradas lazy que solo agrupan rutas`}, que tampoco cuentan como pantalla:`,
     groupersHelp:
         'Un fichero que no aporta prácticamente nada propio a su chunk y solo tiene importaciones dinámicas está agrupando rutas, se llame como se llame. Lo que carga son las pantallas; él no es una. Eso se mide, no se lee del nombre del fichero, así que vale también en un proyecto que no nombre sus ficheros como Angular.',
-    dataNote: n =>
-        `${n === 1 ? '1 entrada lazy que es datos' : `${n} entradas lazy que son datos`}, no código al que se navegue:`,
     dataHelp:
         'Un fichero de idioma, una tabla de países, un diccionario: un import() de un .json produce un chunk lazy igual que una ruta. Nadie navega a uno, y una aplicación que carga cincuenta idiomas bajo demanda saldría con cincuenta pantallas. Lo que hay que decidir con estos no es si son pantalla, sino si esos datos tienen que viajar dentro del bundle.',
     markScreen: 'Contar como pantalla',
@@ -359,23 +390,18 @@ export const ES: UiStrings = {
         'Cuánto pesa cada fichero dentro de un chunk. Normalmente sale del metafile, y con esbuild esa cifra ya está minificada: comparada con los source maps de un build real, las dos coinciden dentro del 1 %. Si la carpeta trae los .js.map se usa la de los mapas, que es la misma cosa medida sobre el fichero generado.',
     intakeCompressed: unit => `cifras ${unit}`,
     intakeRaw: 'cifras en crudo (bytes en disco)',
-    intakeAddDist: 'Añadir carpeta browser/ para ver cifras comprimidas',
     rereadBtn: 'Releer la carpeta',
     rereadHelp:
         'Vuelve a leer la misma carpeta de compilación, para después de recompilar. Solo sale donde el navegador puede quedarse con una carpeta, que no es desde una página file:// ni en todos los navegadores; en el resto, se vuelve a soltar la carpeta.',
-    intakeShow: 'Ver zonas de carga',
-    intakeHide: 'Ocultar zonas de carga',
-    intakeAddBaseline: 'Añadir línea base para comparar',
-    intakeAddContext: 'Añadir angular.json y pipeline',
 
-    drop3Title: '3 · Opcional: la medición anterior',
+    drop3Title: 'La medición anterior',
     drop3Body:
         'El <code>stats.json</code> del build anterior, un análisis exportado desde Loadline, o la carpeta <code>browser/</code> anterior entera (con su <code>stats.json</code>) para comparar cifras comprimidas. Cada pantalla enseña cuánto ha cambiado y salta una señal si algo ha crecido o ha entrado en el bootstrap.',
     drop3Btn: 'Elegir línea base',
     drop3BtnDist: 'Elegir carpeta anterior',
     baselineNoStats: 'La carpeta no contiene ningún stats.json.',
     baselineWorking: 'Comprimiendo la carpeta anterior…',
-    drop4Title: '4 · Opcional: el contexto del proyecto',
+    drop4Title: 'El contexto del proyecto',
     drop4Body:
         '<code>angular.json</code>, <code>package.json</code> y el fichero del pipeline (<code>.gitlab-ci.yml</code> o el workflow de GitHub). Con ellos se comprueba dónde está el budget de tamaño y si la configuración que compila el pipeline lo aplica.',
     drop4Btn: 'Elegir ficheros',
@@ -415,8 +441,10 @@ export const ES: UiStrings = {
     secProjectSub: 'Dónde están los budgets de tamaño, qué compila el pipeline y si el budget se aplica.',
     howToProject:
         '<p>Angular solo comprueba los budgets de tamaño (<code>budgets</code>) de la configuración con la que se compila. Si el budget está en <code>production</code> y el pipeline compila <code>preproduction</code>, el budget no se aplica nunca. Esta pestaña cruza las dos cosas: los budgets de cada configuración de <code>angular.json</code> y los comandos de build del pipeline, siguiendo los scripts de <code>package.json</code> (<code>pnpm run build:pre</code> → <code>ng build --configuration=preproduction</code>).</p><p>La comparación con el bootstrap se hace en crudo y solo con JavaScript, que es lo que mide Angular. Un budget de error a más del doble del bootstrap actual no salta nunca.</p>',
+    projectState: 'desconocido · ningún fichero del proyecto cargado',
+    projectEmptyTitle: 'Dónde están tus budgets de tamaño, y si se aplican',
     projectEmpty:
-        'Suelta angular.json, package.json y el fichero del pipeline en la zona de carga para ver dónde están los budgets y si se aplican.',
+        'Añade angular.json, package.json y el fichero del pipeline. Loadline comprueba qué configuración compila el pipeline y si su budget la cubre.',
     projectEmptyBtn: 'Elegir ficheros del proyecto',
     projectBudgets: project => `Budgets del bootstrap por configuración · proyecto ${project}`,
     projectPick: 'Aplicación',
@@ -489,11 +517,9 @@ export const ES: UiStrings = {
     tileBoot: 'Bootstrap declarado',
     tileBootCss: (size, files, total) =>
         `+ ${size} de CSS que la página pide${files > 1 ? ` en ${files} hojas` : ''} · ${total} antes de pintar`,
-    tileBootSub: files => `lo que el bundler marca como inicial · ${files} ficheros`,
-    tileEffective: 'Bootstrap efectivo',
-    tileEffectiveSub: (extra, chunks, ratio) =>
-        `+${extra} en ${chunks === 1 ? 'un chunk marcado como lazy' : `${chunks} chunks marcados como lazy`} que cargan al menos el ${pct(ratio)} de las pantallas`,
-    tileEffectiveSame: 'igual al declarado: ningún chunk lazy es casi global',
+    bootSplitRaw: total =>
+        `Paquetes y código tuyo se reparten en bytes en crudo, ${total} en total: un fichero comprimido no se puede dividir por lo que lleva dentro.`,
+    tileBootSub: files => `lo que el bundler marca como inicial · ${files === 1 ? '1 fichero' : `${files} ficheros`}`,
     tileScreens: 'Pantallas lazy',
     tileScreensTypical: 'la típica cuesta',
     tileScreensTop: (label, size) => `· la más cara es ${label} · ${size}`,
@@ -503,7 +529,8 @@ export const ES: UiStrings = {
         `${global} casi ${global === 1 ? 'global' : 'globales'} · ${partial} ${partial === 1 ? 'parcial' : 'parciales'}`,
     tileSharedNone: 'ningún chunk lazy lo comparten dos pantallas',
     tileFindings: 'Señales',
-    tileFindingsSub: (high, mid) => `${high} ${high === 1 ? 'importante' : 'importantes'} · ${mid} a revisar`,
+    tileFindingsSub: (high, mid, context) =>
+        `${high} ${high === 1 ? 'importante' : 'importantes'} · ${mid} a revisar · ${context} de contexto`,
     tileFindingsNone: 'no hay ninguna señal en el reparto',
 
     tabFindings: 'Señales',
@@ -579,18 +606,20 @@ export const ES: UiStrings = {
     seeInMeasured: 'Ver la medición',
     seeInSituation: 'Ver las respuestas',
     findingsRest: 'Contexto',
-    findingsSee: 'Vista',
+    findingsSee: 'Marcar como vista',
     findingsUnsee: 'Vista ✓',
     findingsSeenHelp: 'Marcar como vista: baja al final de la lista y deja de pedir atención.',
     findingsSeenCount: n => (n === 1 ? '1 vista' : `${n} vistas`),
     findingsSeenReset: 'Ninguna vista',
     findingsNoneHere: 'Ninguna señal de este tipo.',
+    findingsColSignal: 'Señal · en el orden en que conviene arreglarla',
+    findingsColOff: 'Quita',
+    findingsColFix: 'Arreglo',
     fixLabel: 'Qué hacer',
 
     legBoot: 'Bootstrap · se descarga siempre',
-    legShared: 'Compartido · lo pagan varias pantallas',
     legOwn: 'Propio de esta pantalla',
-    screensCaveat: 'Estas cifras se <strong>calculan</strong> recorriendo el grafo de importaciones, no se miden.',
+    screensCaveat: 'Calculado recorriendo el grafo de importaciones, no medido.',
     filterBoot: 'Filtrar paquetes',
     filterShared: 'Filtrar trozos',
     filterScreens: 'Filtrar pantallas por nombre…',
@@ -647,11 +676,20 @@ export const ES: UiStrings = {
         'La única cifra de la herramienta que se mide en vez de calcularse. Pega aquí lo que descargó tu navegador y Loadline dice en qué se diferencia.',
     howToMeasured:
         '<p>El resto del informe <strong>calcula</strong>: recorre el grafo de importaciones estáticas y suma. Esta pestaña <strong>mide</strong>, y las dos cifras no dan lo mismo.</p><p>Al entrar por la raíz, el router carga el chunk de una zona para poder emparejar la ruta y solo después el guard comprueba la sesión y redirige. Ese chunk ya se descargó, y el cálculo no lo cuenta. Por eso lo calculado se queda corto.</p><p>Lo que se compara aquí es <strong>qué chunks se descargaron</strong>, no cuántos bytes dijo cada lado: el conjunto de chunks no depende de la unidad, así que un informe en gzip y un navegador que informa en bytes de red siguen comparándose bien. La diferencia se valora luego con las cifras de Loadline.</p>',
+    measureState: 'sin medir todavía · cada cifra del informe sale del build',
+    measureTitle: 'Mide lo que el navegador descarga de verdad',
     measureStep1:
         'Sirve el build que cargaste y abre la aplicación por donde entra la gente: la raíz, no la ruta directa. Desactiva la caché en la pestaña de red.',
-    measureStep2: 'Con la pantalla ya cargada, pega esto en la consola del navegador:',
-    measureStep3: 'Pega aquí lo que te devuelva.',
-    measureCopy: 'Copiar',
+    measureStep2: 'Con la pantalla ya cargada, ejecuta el fragmento en la consola del navegador.',
+    measureStep3: 'Pega abajo lo que te devuelva.',
+    measureCopy: 'Copiar el fragmento para la consola',
+    measureShowCode: 'Ver el código',
+    measureHideCode: 'Ocultar el código',
+    measureGain: 'Qué obtienes',
+    measureGainCompare:
+        'La única cifra medida del informe, al lado de la calculada, con cada chunk en el que las dos no coinciden.',
+    measureGainServed:
+        'Lo que se sirve en vez de lo que se compiló: protocolo, ida y vuelta, compresión y qué hizo la caché — desde una máquina, una vez.',
     measureCopied: 'Copiado',
     measurePlaceholder:
         'Pega aquí el resultado. También vale una lista de nombres de fichero copiada de la pestaña de red.',
@@ -801,6 +839,7 @@ export const ES: UiStrings = {
     },
     sitRawUnit: { screensPerSession: 'pantallas', deploysPerWeek: 'por semana', returningPct: '%' },
     sitRawEmpty: '—',
+    sitRawOr: 'o exactamente',
     sitOpen: 'sin contestar',
     sitLatency: ms =>
         `El informe convierte bytes en segundos con ${ms} ms de ida y vuelta. Esa es la cifra que contesta esta pregunta de verdad, y se edita en Criterios.`,
@@ -814,11 +853,12 @@ export const ES: UiStrings = {
     sitWho: 'Quién contesta',
     sitWhoPlaceholder: 'un nombre o un handle',
     sitWhen: 'Fecha',
+    sitWhenPlaceholder: 'dd/mm/aaaa',
+    sitWhenInvalid: 'Eso no es un día del calendario: tiene que ir como dd/mm/aaaa. Se queda la fecha anterior.',
     sitStale: days =>
         `Estas respuestas tienen más de ${days} días. La cadencia de despliegue es justo lo que cambia cuando un equipo se pasa a entrega continua: repásalas antes de fiarte de la cifra.`,
     sitNoDate: 'Sin fecha no hay forma de saber cuándo dejaron de ser verdad.',
-    sitAnswered: (answered, total) =>
-        answered === 0 ? 'Sin contestar' : `${answered} de ${total} preguntas contestadas`,
+    sitAnswered: (answered, total) => `${answered} de ${total} contestadas`,
     sitReset: 'Borrar las respuestas',
     sitExport: 'Descargar loadline.json',
     sitExportHelp:
@@ -896,10 +936,10 @@ export const ES: UiStrings = {
     worthTriage: n =>
         `De los ${n.namedN + n.spreadN + n.smallN} chunks compartidos: ${n.namedN} con un origen concreto (${n.namedCost} de la carga típica) · ${n.spreadN} sin origen dominante (${n.spreadCost}) · ${n.smallN} por debajo de ${n.min}.`,
 
-    sharedSum: (size, chunks, ratio) =>
-        `${chunks === 1 ? 'El chunk casi global suma' : `Los ${chunks} chunks casi globales suman`} <strong>${size}</strong>: quien entra a casi cualquier pantalla lo descarga junto al bootstrap. Cobertura mínima para contar: ${pct(ratio)}.`,
-    sharedSumNone: ratio =>
-        `Ningún chunk compartido llega al ${pct(ratio)} de cobertura: lo lazy se descarga solo cuando hace falta.`,
+    sharedSum: (size, chunks, ratio, wide) =>
+        `${chunks === 1 ? 'El chunk casi global suma' : `Los ${chunks} chunks casi globales suman`} <strong>${size}</strong>: quien entra a casi cualquier pantalla lo descarga junto al bootstrap. Cuenta como bootstrap a partir del <strong>${pct(ratio)}</strong> de cobertura; como muy compartido, a partir del <strong>${pct(wide)}</strong>.`,
+    sharedSumNone: (ratio, wide) =>
+        `Ningún chunk compartido llega al <strong>${pct(ratio)}</strong> de cobertura: lo lazy se descarga solo cuando hace falta. Muy compartido a partir del <strong>${pct(wide)}</strong>.`,
 
     bootPackages: 'Paquetes de npm',
     bootOwnCode: 'Código tuyo',
@@ -948,9 +988,11 @@ export const ES: UiStrings = {
     treeShareHelp:
         'Cuánto pesa este chunk dentro de su zona. Se marca a partir del 25 %: es donde está el peso, y por tanto lo que hay que mirar antes que las filas de abajo.',
     shapeSplit: eager => `El ${eager} % se descarga en cada carga; el resto solo cuando algo lo pide.`,
-    shapeBoot: 'Lo paga todo el mundo',
-    shapeShared: 'Lo pagan varias pantallas',
-    shapeOwn: 'Lo paga una sola pantalla',
+    shapeZone: {
+        boot: 'Eager · lo paga todo el mundo',
+        shared: 'Lazy, varias pantallas',
+        own: 'Lazy, una sola pantalla',
+    },
     shapeNote: n => {
         const of = { boot: 'del bootstrap', shared: 'de lo compartido', own: 'de una sola pantalla' }[n.zone];
         // The second half does not repeat the zone when the first one has already named it.
@@ -978,7 +1020,7 @@ export const ES: UiStrings = {
     searchFound: (shown, total) => (shown === total ? `${total} coincidencias` : `${shown} de ${total} coincidencias`),
     searchKindPackage: 'paquete',
     searchKindFile: 'fichero del proyecto',
-    searchInBoot: 'en el bootstrap · lo paga toda carga de la aplicación',
+    searchInBoot: 'lo paga toda carga de la aplicación',
     searchPartlyBoot: size => `${size} de esto está en el bootstrap, y eso lo paga toda carga`,
     searchScreensCount: n => (n === 1 ? 'lo carga 1 pantalla' : `lo cargan ${n} pantallas`),
     searchMatchedIn: n => (n === 1 ? 'coincide en 1 fichero' : `coincide en ${n} ficheros`),
@@ -1005,9 +1047,6 @@ export const ES: UiStrings = {
 
     noScreens: 'No se han detectado pantallas lazy. Toda la aplicación entra en el bootstrap.',
     noShared: 'Ningún chunk lazy lo comparten dos pantallas.',
-    noExclusive: 'Nada exclusivo.',
-    noSharedRow: 'Nada compartido.',
-    footerSummary: '¿De dónde salen estas cifras?',
     footer: 'Todo se calcula en tu navegador a partir del metafile: nada se sube a ningún sitio. Las cifras en crudo son bytes en disco; las comprimidas se calculan con gzip sobre los ficheros reales, que es lo que paga quien usa la aplicación. El navegador no sabe comprimir en brotli, así que esa cifra solo sale si la carpeta trae los .js.br ya comprimidos; si no los trae, cuenta con que en brotli sea entre un 15 % y un 20 % menos que el gzip que ves. Pulsa ? para ver los atajos de teclado.',
 
     errNoEntries: 'El fichero no parece un metafile de esbuild: no hay puntos de entrada.',

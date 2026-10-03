@@ -3,19 +3,58 @@
 .ctl {
     cursor: pointer;
 
-    padding: var(--space-3) var(--space-6);
-    border: 1px solid var(--line-strong);
+    display: inline-flex;
+    gap: var(--space-4);
+    align-items: center;
+
+    min-height: 30px;
+    padding: var(--space-1) var(--space-5);
+    border: 1px solid var(--line);
     border-radius: var(--radius);
 
     font-family: var(--font-ui);
-    font-size: var(--fs-body);
-    color: var(--muted);
+    font-size: var(--fs-small);
+    line-height: 1.3;
+    color: var(--ink);
 
     background: var(--surface);
 
     &:hover {
+        border-color: var(--muted);
+    }
+
+    /* The controls of the header: a label that wraps would make one button taller than the rest. */
+    &--bar {
+        white-space: nowrap;
+    }
+
+    /* The quieter look the header search wears: it is a way in, not a setting. */
+    &--quiet {
+        color: var(--muted);
+    }
+
+    /* The one primary action of a block: filled with the accent. */
+    &--primary {
         border-color: var(--accent);
-        color: var(--ink);
+        font-weight: 600;
+        color: var(--surface);
+        background: var(--accent);
+
+        &:hover {
+            border-color: var(--ink);
+        }
+    }
+
+    /* A secondary action that still leads somewhere: outlined in the accent. */
+    &--outline {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: transparent;
+
+        &:hover {
+            border-color: var(--ink);
+            color: var(--ink);
+        }
     }
 
     &:focus-visible {
@@ -23,23 +62,25 @@
         outline-offset: 2px;
     }
 
+    /* A filter that is on: the accent's border on its pale ground, the text stays ink. */
     &--active {
         border-color: var(--accent);
-        color: var(--accent);
+        color: var(--ink);
         background: var(--accent-soft);
     }
 
     &:disabled {
         cursor: default;
-        opacity: 0.5;
+        border-color: var(--line);
+        opacity: 0.6;
     }
 
     /* Counter inside a filter button: "Bad 3". */
     &__n {
-        margin-left: var(--space-2);
         font-family: var(--font-data);
+        font-size: var(--fs-label);
         font-variant-numeric: tabular-nums;
-        opacity: 0.8;
+        color: var(--muted);
     }
 }
 
@@ -52,13 +93,13 @@
 
     font: inherit;
     color: var(--accent);
-    text-decoration: underline dotted;
-    text-underline-offset: 0.18em;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 
     background: none;
 
     &:hover {
-        text-decoration-style: solid;
+        color: var(--ink);
     }
 
     &:focus-visible {
@@ -68,27 +109,28 @@
     }
 }
 
-/* Text field. Sunk (darker than the surface) so it reads as "type here". */
+/* Text field: the height of the buttons beside it, on the surface, outlined in the accent when it has the caret. */
 .field {
     width: 100%;
     max-width: 22rem;
-    padding: var(--space-3) var(--space-6);
+    min-height: 30px;
+    padding: var(--space-1) var(--space-5);
     border: 1px solid var(--line);
     border-radius: var(--radius);
 
     font-family: var(--font-ui);
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     color: var(--ink);
 
-    background: var(--surface-sunk);
+    background: var(--surface);
 
     &::placeholder {
         color: var(--muted);
     }
 
     &:focus {
-        background: var(--surface);
-        outline: 2px solid var(--accent);
+        border-color: var(--accent);
+        outline: 1px solid var(--accent);
         outline-offset: -1px;
     }
 }
@@ -134,7 +176,7 @@
 
     &__count {
         font-family: var(--font-data);
-        font-size: var(--fs-body);
+        font-size: var(--fs-note);
         font-variant-numeric: tabular-nums;
         color: var(--muted);
     }
@@ -152,23 +194,38 @@
 .file-btn {
     cursor: pointer;
 
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
 
-    padding: var(--space-4) var(--space-7);
+    min-height: 32px;
+    padding: var(--space-1) var(--space-6);
     border: 1px solid var(--accent);
     border-radius: var(--radius);
 
     font: inherit;
-    font-size: var(--fs-body);
-    font-weight: 500;
+    font-size: var(--fs-small);
+    font-weight: 600;
 
-    /* The page background colour: white in light, near black in dark. Contrasts in both. */
-    color: var(--ground);
+    /* The surface colour: white in light, near black in dark. Contrasts with the accent in both. */
+    color: var(--surface);
+    white-space: nowrap;
 
     background: var(--accent);
 
+    &:hover {
+        border-color: var(--ink);
+    }
+
+    /* The one action of the front page: the size of the drop zone it sits in. */
+    &--big {
+        min-height: 40px;
+        padding-inline: var(--space-10);
+        font-size: var(--fs-body);
+    }
+
     /* The outline version, which is every one of these but the primary action of the intake page. */
     &--ghost {
+        font-weight: 400;
         color: var(--accent);
         background: transparent;
     }

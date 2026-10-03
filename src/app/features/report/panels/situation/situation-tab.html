@@ -4,9 +4,26 @@
 
 <app-panel-header [howTo]="t.howToSituation" [subtitle]="t.secSituationSub" [title]="t.secSituation" />
 
-<div class="toolbar">
-    <span class="toolbar__count">{{ t.sitAnswered(answered, total) }}</span>
-    <div class="toolbar__group">
+<!--
+The state of the form and the line the two middle questions exist to produce, in one bar. The line
+is the multiplication and not its result: somebody who disagrees with four a week needs to see
+whether they disagree about the releases or about the returning share.
+-->
+<div class="status-bar" [attr.data-level]="situation.exposure()">
+    <div class="status-bar__text">
+        <p class="status-bar__line">
+            <span class="tag" [attr.data-source]="answered === 0 ? 'unknown' : 'declared'">{{
+                t.sitAnswered(answered, total)
+            }}</span>
+            @if (cost(); as c) {
+                <strong class="status-bar__cost">{{ t.sitCost(c.deploys, c.returning, c.perWeek) }}</strong>
+            } @else {
+                {{ t.sitCostNone }}
+            }
+        </p>
+        <p class="status-bar__note">{{ t.sitExposure[situation.exposure()] }} · {{ t.sitBreadth[breadth()] }}</p>
+    </div>
+    <div class="status-bar__actions">
         <button class="ctl" type="button" [title]="t.sitExportHelp" (click)="export()">{{ t.sitExport }}</button>
         <button class="ctl" type="button" [disabled]="!situation.anything()" (click)="situation.reset()">
             {{ t.sitReset }}
@@ -15,31 +32,18 @@
 </div>
 
 <!--
-The line the two middle questions exist to produce, and the reason the tab is worth opening. It is
-the multiplication and not its result: somebody who disagrees with four a week needs to see whether
-they disagree about the releases or about the returning share.
+Said once, above the form, rather than next to each question: what an answer can do, and that the
+raw figures are not a second questionnaire but the same answers with less rounding.
 -->
-<div class="cost" [attr.data-level]="situation.exposure()">
-    @if (cost(); as c) {
-        <p class="cost__line">{{ t.sitCost(c.deploys, c.returning, c.perWeek) }}</p>
-    } @else {
-        <p class="cost__line cost__line--none">{{ t.sitCostNone }}</p>
-    }
-    <p class="cost__note">{{ t.sitExposure[situation.exposure()] }} · {{ t.sitBreadth[breadth()] }}</p>
+<div class="notes">
+    <p>
+        <span class="tag" data-source="declared">{{ t.sitDeclared }}</span>
+        {{ t.sitAsymmetry }}
+    </p>
+    <p>
+        <strong>{{ t.sitPanel }}</strong> — {{ t.sitPanelHelp }}
+    </p>
 </div>
-
-<p class="asymmetry">
-    <span class="tag" data-source="declared">{{ t.sitDeclared }}</span>
-    {{ t.sitAsymmetry }}
-</p>
-
-<!--
-Said once, above the form, rather than next to each of the three fields that have one: the raw
-controls are not a second questionnaire, they are the same answers with less rounding.
--->
-<p class="muted panel__note">
-    <strong>{{ t.sitPanel }}</strong> — {{ t.sitPanelHelp }}
-</p>
 
 @if (stale()) {
     <p class="warn">{{ t.sitStale(freshDays) }}</p>
@@ -48,7 +52,7 @@ controls are not a second questionnaire, they are the same answers with less rou
 @for (question of questions; track trackQuestion($index, question)) {
     @let key = question.key;
 
-    <section class="q" [class.q--open]="open(key)">
+    <section class="q">
         <div>
             <h3 class="q__title">
                 {{ t.sitQuestion[key] }}
@@ -57,7 +61,7 @@ controls are not a second questionnaire, they are the same answers with less rou
                 visible the moment "I don't know" stopped being drawn as a chosen answer.
                 -->
                 @if (open(key)) {
-                    <span class="tag">{{ t.sitOpen }}</span>
+                    <span class="tag" data-source="unknown">{{ t.sitOpen }}</span>
                 }
             </h3>
 
@@ -67,8 +71,8 @@ controls are not a second questionnaire, they are the same answers with less rou
             the path of least resistance.
             -->
             <p class="q__technical">
-                <span class="q__metric">{{ t.sitTechnical[key] }}</span>
-                <span class="q__howto">{{ t.sitHowTo[key] }}</span>
+                {{ t.sitTechnical[key] }}
+                <i>{{ t.sitHowTo[key] }}</i>
             </p>
         </div>
 
@@ -80,11 +84,11 @@ controls are not a second questionnaire, they are the same answers with less rou
                 <div class="opts">
                     @for (option of question.options; track option) {
                         <button
-                            class="opt"
+                            class="ctl opt"
                             type="button"
                             [attr.aria-pressed]="picked(key, option)"
+                            [class.ctl--active]="picked(key, option)"
                             [class.opt--dunno]="option === 'unknown'"
-                            [class.opt--on]="picked(key, option)"
                             (click)="situation.answer(key, option)"
                         >
                             {{ label(key, option) }}
@@ -96,18 +100,21 @@ controls are not a second questionnaire, they are the same answers with less rou
             <!-- The raw control: the same answer with less rounding, and it wins when it is there. -->
             <div class="raw">
                 @if (question.raw; as raw) {
+                    <!-- "or exactly" is the visible label; what the figure is goes to the input's name. -->
                     <label class="raw__field">
-                        <span class="raw__label">{{ t.sitRawLabel[raw] }}</span>
+                        {{ t.sitRawOr }}
                         <input
-                            class="field field--num"
+                            class="raw__input"
                             min="0"
                             type="number"
+                            [attr.aria-label]="t.sitRawLabel[raw] + ' (' + t.sitRawUnit[raw] + ')'"
                             [max]="raw === 'returningPct' ? 100 : null"
                             [placeholder]="t.sitRawEmpty"
+                            [title]="t.sitRawLabel[raw]"
                             [value]="rawValue(raw)"
                             (change)="setRaw(raw, $event)"
                         />
-                        <span class="raw__unit">{{ t.sitRawUnit[raw] }}</span>
+                        {{ t.sitRawUnit[raw] }}
                     </label>
                 } @else if (key === 'connection') {
                     <!--
@@ -155,9 +162,21 @@ no date is one that cannot be told to have expired.
         </label>
         <label>
             <span>{{ t.sitWhen }}</span>
-            <input class="field" type="date" [value]="s.answeredAt ?? ''" (change)="onWhen($event)" />
+            <input
+                class="field who__date"
+                inputmode="numeric"
+                type="text"
+                [attr.aria-invalid]="whenInvalid()"
+                [placeholder]="t.sitWhenPlaceholder"
+                [value]="whenText()"
+                (change)="onWhen($event)"
+            />
         </label>
     </div>
+
+    @if (whenInvalid()) {
+        <p class="warn" role="alert">{{ t.sitWhenInvalid }}</p>
+    }
 
     @if (!s.answeredAt && situation.anything()) {
         <p class="warn">{{ t.sitNoDate }}</p>

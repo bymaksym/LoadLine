@@ -42,6 +42,9 @@ import { selfCheck } from './self-check';
 import { sinceLastLine } from './since-last';
 import { CLI_TEXT } from './text';
 
+/** The formats that print the `--what-if` answers. */
+const WHAT_IF_FORMATS: ReadonlySet<Options['format']> = new Set(['text', 'summary', 'json']);
+
 /** 0 ran clean · 1 a gate broke · 2 the arguments or the files could not be used. */
 export const OK = 0;
 export const FAILED = 1;
@@ -271,8 +274,16 @@ export const run = async (argv: string[], version: string): Promise<number> => {
                     firstTrip: report.assets?.firstTrip.total ?? null,
                     lang: report.lang,
                     since: sinceLastLine(report),
+                    whatIf: report.whatIf,
                 }),
         };
+
+        // `--what-if` is answered in text, summary and json. The other three are a document for
+        // somebody else — a merge request, a code-scanning upload — and had nowhere to put it, so
+        // the question used to go unanswered without a word. Now it says where to look.
+        if (options.whatIf.length > 0 && !WHAT_IF_FORMATS.has(options.format)) {
+            write(process.stderr, CLI_TEXT[options.lang].whatIfNotHere(options.format));
+        }
 
         // What is wrong with `loadline.json` goes to stderr, never into the report: something is
         // parsing stdout, and a warning in the middle of a SARIF document breaks it.

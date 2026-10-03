@@ -28,6 +28,9 @@ export interface UiStrings {
     compareAddCurrent: string;
     compareClear: string;
     compareRemove: string;
+    /** The mono line of the empty card: how many applications there are, and how many are missing. */
+    compareState: (builds: number) => string;
+    compareEmptyTitle: string;
     compareEmpty: string;
     compareNeedsTwo: string;
     compareBuild: string;
@@ -74,16 +77,14 @@ export interface UiStrings {
     critGroupContext: string;
     critOkUpTo: string;
     critBadAbove: string;
-    /**
-     * The ranked list above the signals: an order over them, never a shortlist.
-     */
-    actionsTitle: string;
-    actionsNote: string;
+    critColThreshold: string;
     /** How much work each kind of signal is, as words. Written once in `effort.ts`, not computed. */
     effortLabel: Record<Effort, string>;
     actionsTotal: (count: number) => string;
     actionsTotalAfter: string;
     actionsTotalNote: string;
+    /** The same note in a compressed report, where the savings were carried over from raw bytes. */
+    actionsTotalNoteEstimated: string;
     /**
      * The measurements this browser has kept. Every string here has to keep saying *this browser*:
      * a chart looks like a dashboard, and one machine's memory is not the team's history.
@@ -150,6 +151,35 @@ export interface UiStrings {
     tagline: string;
     lede: string;
     themeBtn: string;
+    /** The theme button names the theme it switches to, not the one on screen. */
+    themeToDark: string;
+    themeToLight: string;
+    /** The header button that opens the palette, and the keys that do the same. */
+    searchBtn: string;
+    searchKeys: string;
+    /** The mark in the header is a way back to the front page. */
+    homeAria: string;
+    /** The chip in the header that says which build is loaded, and goes back to change it. */
+    buildChipHelp: string;
+    /** The front page: what is required, what is optional, and the way back to a report. */
+    intakeRequired: string;
+    intakeOptional: string;
+    intakeBack: string;
+    /** The line above the summary: the caveat on every figure, and what would add detail. */
+    contextRawNote: string;
+    contextAddDetail: string;
+    contextAddDist: string;
+    contextAddBaseline: string;
+    contextAddContext: string;
+    /** Under the lead figure: what it is made of, one part per colour of its bar. */
+    heroCaptionBoot: (boot: string) => string;
+    heroCaptionExtra: (extra: string, chunks: number, ratio: number) => string;
+    heroCaptionSame: string;
+    /** The one badge in the summary, on the worst of the rated figures. */
+    kpiWorst: string;
+    /** The legend at the foot of the report: where each kind of figure comes from. */
+    provenanceTitle: string;
+    dataSourceShort: Record<DataSource, string>;
     /** How much air the rows get. One control for the whole page: it changes spacing and nothing else. */
     densityCompact: string;
     densityComfortable: string;
@@ -226,16 +256,17 @@ export interface UiStrings {
     /** An SSR build carries both sides in one metafile; only the browser one is analysed. */
     serverIgnored: (n: number) => string;
     serverIgnoredHelp: string;
+    /** The line under the screens table: the lazy entries it has no row for. */
+    notScreensLabel: string;
+    /** What kind each of those entries is, written after its size. */
+    notScreenKind: { block: string; grouper: string; data: string };
     /** Lazy entries that are a piece of a screen, not a screen: @defer and friends. */
-    blocksNote: (n: number) => string;
     blocksHelp: string;
     /** Lazy entries that are a list of routes and no code: what they load is the screen. */
-    groupersNote: (n: number) => string;
     groupersHelp: string;
-    /** Reclassifying an entry by hand, for when the rules get it wrong in a project. */
-    /** The third list under the screens table: lazy entries that are data rather than screens. */
-    dataNote: (count: number) => string;
+    /** Lazy entries that are data rather than screens. */
     dataHelp: string;
+    /** Reclassifying an entry by hand, for when the rules get it wrong in a project. */
     markScreen: string;
     markScreenHelp: string;
     markBlock: string;
@@ -247,17 +278,12 @@ export interface UiStrings {
     */
     intakeCompressed: (unit: string) => string;
     intakeRaw: string;
-    intakeAddDist: string;
     /**
      * Reading the build folder again after a rebuild. Only ever drawn where the browser can hold on
      * to the folder: not in Firefox, not in Safari, and not from a `file://` page.
      */
     rereadBtn: string;
     rereadHelp: string;
-    intakeShow: string;
-    intakeHide: string;
-    intakeAddBaseline: string;
-    intakeAddContext: string;
 
     // --- baseline and project context zones ---
     drop3Title: string;
@@ -308,6 +334,9 @@ export interface UiStrings {
     secProject: string;
     secProjectSub: string;
     howToProject: string;
+    /** The mono line of the empty card, in the vocabulary of the provenance tags. */
+    projectState: string;
+    projectEmptyTitle: string;
     projectEmpty: string;
     projectEmptyBtn: string;
     projectBudgets: (project: string) => string;
@@ -365,11 +394,10 @@ export interface UiStrings {
 
     tileBoot: string;
     tileBootSub: (files: number) => string;
+    /** Under the bootstrap split when the report is compressed: the split itself is raw bytes. */
+    bootSplitRaw: (total: string) => string;
     /** The stylesheets the page also asks for, which the figure above does not include. */
     tileBootCss: (size: string, files: number, total: string) => string;
-    tileEffective: string;
-    tileEffectiveSub: (extra: string, chunks: number, ratio: number) => string;
-    tileEffectiveSame: string;
     tileScreens: string;
     tileScreensTypical: string;
     tileScreensTop: (label: string, size: string) => string;
@@ -378,7 +406,7 @@ export interface UiStrings {
     tileSharedSub: (global: number, partial: number) => string;
     tileSharedNone: string;
     tileFindings: string;
-    tileFindingsSub: (high: number, mid: number) => string;
+    tileFindingsSub: (high: number, mid: number, context: number) => string;
     tileFindingsNone: string;
 
     // --- tabs ---
@@ -456,10 +484,13 @@ export interface UiStrings {
     findingsSeenCount: (n: number) => string;
     findingsSeenReset: string;
     findingsNoneHere: string;
+    /** The columns of the ranked table: the signal, the bytes it takes off the first load, the work it is. */
+    findingsColSignal: string;
+    findingsColOff: string;
+    findingsColFix: string;
 
     // --- screens ---
     legBoot: string;
-    legShared: string;
     legOwn: string;
     screensCaveat: string;
     filterScreens: string;
@@ -515,10 +546,20 @@ export interface UiStrings {
     secMeasured: string;
     secMeasuredSub: string;
     howToMeasured: string;
+    /** The mono line of the empty card: nothing measured, so everything on screen is derived. */
+    measureState: string;
+    measureTitle: string;
     measureStep1: string;
     measureStep2: string;
     measureStep3: string;
     measureCopy: string;
+    /** The snippet is folded away behind a button: it is copied far more often than it is read. */
+    measureShowCode: string;
+    measureHideCode: string;
+    /** The column beside the empty card: what pasting a measurement adds to the report. */
+    measureGain: string;
+    measureGainCompare: string;
+    measureGainServed: string;
     measureCopied: string;
     measurePlaceholder: string;
     measureRun: string;
@@ -626,6 +667,8 @@ export interface UiStrings {
     sitRawUnit: Record<RawKey, string>;
     /** Placeholder of the three raw controls. A dash: prose does not fit in a number box. */
     sitRawEmpty: string;
+    /** The words before a raw control: the band is the answer, the figure the sharper version of it. */
+    sitRawOr: string;
     /** The mark on a question nobody has answered, now that no option carries that meaning. */
     sitOpen: string;
     /** The fourth question's raw control is the report's own latency, so it says so and links there. */
@@ -641,6 +684,9 @@ export interface UiStrings {
     sitWho: string;
     sitWhoPlaceholder: string;
     sitWhen: string;
+    /** The shape the date is typed in, which is the page's language and not the browser's. */
+    sitWhenPlaceholder: string;
+    sitWhenInvalid: string;
     sitStale: (days: number) => string;
     sitNoDate: string;
     sitAnswered: (answered: number, total: number) => string;
@@ -721,8 +767,12 @@ export interface UiStrings {
         min: string;
     }) => string;
 
-    sharedSum: (size: string, chunks: number, ratio: number) => string;
-    sharedSumNone: (ratio: number) => string;
+    /**
+     * The line that opens the shared tab. Its figures — the total and the two coverage thresholds —
+     * go in `<strong>`, which the tab draws in monospace: it splits on the tag, never `innerHTML`.
+     */
+    sharedSum: (size: string, chunks: number, ratio: number, wide: number) => string;
+    sharedSumNone: (ratio: number, wide: number) => string;
 
     // --- bootstrap ---
     bootPackages: string;
@@ -777,9 +827,8 @@ export interface UiStrings {
     treeShareHelp: string;
     /** Under the bar: how much of the build comes down on every load, said as a proportion. */
     shapeSplit: (eagerPercent: number) => string;
-    shapeBoot: string;
-    shapeShared: string;
-    shapeOwn: string;
+    /** The legend under that bar: when each zone comes down and who pays for it, in a few words. */
+    shapeZone: Record<'boot' | 'shared' | 'own', string>;
     shapeNote: (n: {
         zone: 'boot' | 'shared' | 'own';
         share: number;
@@ -840,11 +889,8 @@ export interface UiStrings {
 
     noScreens: string;
     noShared: string;
-    noExclusive: string;
-    noSharedRow: string;
     footer: string;
     /** With a report open the footer folds into the question it answers. */
-    footerSummary: string;
 
     errNoEntries: string;
     errNoMain: string;

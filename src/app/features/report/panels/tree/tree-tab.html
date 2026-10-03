@@ -7,48 +7,35 @@ Before the list of chunks: how the build divides. Every other figure judges one 
 one is the only reading that does not depend on which row happens to be open.
 -->
 @if (shape(); as shape) {
-    <div class="shape">
-        <h3 class="shape__title">{{ t.shapeTitle }}</h3>
-
+    <section class="card card--pad shape" [attr.aria-label]="t.shapeTitle">
         <!--
-        The gap in the bar is where eager ends. It carries no figures of its own — the rows under it
-        do — so it is hidden from the reader who is being read to rather than said twice.
+        The bar carries no figures of its own — the legend under it does — so it is hidden from the
+        reader who is being read to rather than said twice.
         -->
         <span aria-hidden="true" class="shape__bar">
             @for (part of shape.bar; track part.zone) {
-                <i
-                    class="shape__seg"
-                    [attr.data-zone]="part.zone"
-                    [class.shape__seg--break]="part.break"
-                    [style.width.%]="part.percent"
-                ></i>
+                <i class="shape__seg" [attr.data-zone]="part.zone" [style.flex-grow]="part.grow"></i>
             }
         </span>
-        <p class="shape__split">{{ shape.split }}</p>
 
-        <div class="shape__rows">
-            @for (row of shape.rows; track row.key) {
-                <span class="shape__label" [class.shape__label--sub]="row.sub">
-                    <i aria-hidden="true" class="dot" [attr.data-zone]="row.dot"></i>
-                    @if (row.name) {
-                        <b class="shape__name">{{ row.name }}</b>
-                    }
-                    @if (row.name && row.who) {
-                        <span aria-hidden="true" class="shape__sep">·</span>
-                    }
-                    @if (row.who) {
-                        <span>{{ row.who }}</span>
-                    }
+        <div class="shape__legend">
+            @for (item of shape.items; track item.zone) {
+                <span class="shape__item">
+                    <i aria-hidden="true" class="shape__key" [attr.data-zone]="item.zone"></i>
+                    {{ item.label }}
+                    <b class="shape__size">{{ item.size }}</b>
+                    <span class="shape__files">{{ t.filesCount(item.files) }}</span>
                 </span>
-                <span class="shape__size">{{ row.size }}</span>
-                <span class="shape__files">{{ t.filesCount(row.files) }}</span>
             }
         </div>
 
-        @if (shapeNote(); as note) {
-            <p class="shape__note">{{ note }}</p>
-        }
-    </div>
+        <p class="shape__note">
+            {{ shape.split }}
+            @if (shapeNote(); as note) {
+                {{ note }}
+            }
+        </p>
+    </section>
 }
 
 <div class="toolbar">
@@ -81,7 +68,11 @@ one is the only reading that does not depend on which row happens to be open.
     </div>
 </div>
 
-<div class="scroller--tall tree">
+<!--
+The list, as a card. It clips rather than scrolls, so the header still pins under the tabs: a box
+that scrolls on its own is the box a sticky header sticks to.
+-->
+<div class="tree">
     <div class="tree__head">
         <span></span>
         <span
@@ -92,8 +83,8 @@ one is the only reading that does not depend on which row happens to be open.
             (pick)="pick('name')"
             >{{ t.thChunk }}</span
         >
-        <span class="tree__head-zone"></span>
-        <span></span>
+        <span class="tree__head-wide"></span>
+        <span class="tree__head-wide"></span>
         <span
             app-sort
             class="tree__head-size"
@@ -138,7 +129,7 @@ one is the only reading that does not depend on which row happens to be open.
         />
     } @empty {
         @if (tail().length === 0 && pinnedRows().length === 0) {
-            <p class="empty empty--pad">{{ t.treeNoMatch }}</p>
+            <p class="empty tree__empty">{{ t.treeNoMatch }}</p>
         }
     }
 
@@ -155,7 +146,7 @@ one is the only reading that does not depend on which row happens to be open.
                 [attr.aria-expanded]="tailOpen()"
                 (click)="tailOpen.set(!tailOpen())"
             >
-                <span aria-hidden="true" class="twist">{{ tailOpen() ? '−' : '+' }}</span>
+                <span aria-hidden="true" class="tree__tail-twist">{{ tailOpen() ? '−' : '+' }}</span>
                 {{ t.treeCrumbs(crumbs.length, crumbBytes(), crumbLine()) }}
             </button>
 

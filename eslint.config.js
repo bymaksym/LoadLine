@@ -411,11 +411,7 @@ module.exports = defineConfig([
         // `catch` is the ordinary answer (a refused clipboard says nothing and changes nothing).
         // `main.ts` is the bootstrap the Angular CLI writes: a module script, so top-level await is
         // there by construction, and esbuild lowers it for the browsers the build targets.
-        files: [
-            'src/app/shared/clipboard.utils.ts',
-            'src/app/features/report/panels/measured/measured-tab.ts',
-            'src/main.ts',
-        ],
+        files: ['src/app/shared/clipboard.utils.ts', 'src/main.ts'],
         plugins: { 'baseline-js': baselineJs },
         rules: {
             'baseline-js/use-baseline': [
@@ -577,7 +573,21 @@ module.exports = defineConfig([
             // options, the metric it stands for and where to look for it — rather than prose.
             // Raised to 650 on 02/10/2026: the Map tab. Twenty-five strings of one panel, most of them
             // one line each — what a rectangle is, what its area means at each level.
-            'max-lines': ['error', { max: 650, skipBlankLines: true, skipComments: true }],
+            // Raised to 670 on 02/10/2026: the redesign. The header (search, theme, build chip),
+            // the front page's required/optional split and the line that replaced the load bar, the
+            // lead figure's caption, the provenance legend at the foot, and the column headers and
+            // empty states of the tabs that became tables. Nine strings of the old layout went.
+            'max-lines': ['error', { max: 670, skipBlankLines: true, skipComments: true }],
+        },
+    },
+    {
+        // The terminal report: one block per section of the page, each with its own table, and
+        // the small table and wrap helpers they share. Raised to 420 on 03/10/2026: savings and
+        // the --what-if table are now in the report's unit, with the note that says when they are
+        // an estimate — a figure that changed meaning, not a rewording.
+        files: ['cli/render-text.ts'],
+        rules: {
+            'max-lines': ['error', { max: 420, skipBlankLines: true, skipComments: true }],
         },
     },
     {

@@ -5,17 +5,22 @@
    ========================================================================== */
 
 :root {
-    --ground: #f7f8fa;
+    /*
+    The palette of the redesign of 02/10/2026 (design handoff "Loadline redesign"): the same roles
+    as before, with the page a step cooler and the ratings darker, so that good, fair and bad pass
+    4.5:1 on white as text and not only as a swatch.
+    */
+    --ground: #f5f6f8;
     --surface: #fff;
-    --surface-sunk: #eef0f4;
+    --surface-sunk: #eef0f3;
     --ink: #171b21;
 
     /*
     4.58:1 on the page background was scraping the floor, and whole paragraphs are painted with it.
     This is 5.63:1 there and 5.24:1 on the sunk surface, which is the worst ground it lands on.
     */
-    --muted: #5b6472;
-    --line: #dfe4ea;
+    --muted: #59616c;
+    --line: #e0e3e8;
     --line-strong: #c3cad4;
 
     /* These three ARE the data, not decoration: bootstrap / shared / own. */
@@ -23,16 +28,41 @@
     --seg-shared: #c2622c;
     --seg-own: #2c8080;
     --accent: #226a6a;
-    --accent-soft: #e2f0ef;
+    --accent-soft: #e2efee;
 
-    /* Rating: vivid text on a pastel background. Good / fair / bad. */
-    --ok: #15964f;
+    /* The empty part of a bar: what the scale has room for and the figure does not fill. */
+    --track: #e8ebee;
+
+    /*
+    Your own code inside the bootstrap: bootstrap grey, hatched. Teal means "this screen only" and
+    nothing else, so the part of the bootstrap that is yours cannot borrow it; the map draws your
+    code hatched too. Built from the two tokens above, so it follows the theme with them.
+    */
+    --hatch-own: repeating-linear-gradient(135deg, var(--seg-boot) 0 2px, var(--track) 2px 4px);
+
+    /*
+    Rating: vivid text on a pastel background. Good / fair / bad. Fair is an ochre since 03/10/2026:
+    the orange it was sat next to the shared segment's orange, and a fair figure read as a shared one.
+    */
+    --ok: #15803d;
     --ok-soft: #d9f5e3;
-    --warn: #e07d12;
-    --warn-soft: #fff0d6;
-    --crit: #e0443a;
-    --crit-soft: #ffe2de;
+    --warn: #8a6d00;
+    --warn-soft: #f6efd6;
+    --crit: #c8342b;
+    --crit-soft: #fbe7e5;
+
+    /*
+    Four radii, by what the box is: a chip (4), a control (6), a card or a table (10), and the two
+    surfaces that are a place of their own — the drop zone of the front page and the palette (12).
+    */
+    --radius-chip: 4px;
     --radius: 6px;
+    --radius-card: 10px;
+    --radius-lg: 12px;
+
+    /* The one shadow on the page: the palette, the only thing that floats over the report. */
+    --shadow-float: 0 20px 50px rgb(0 0 0 / 0.25);
+    --scrim: rgb(10 12 15 / 0.45);
     --shadow: 0 1px 2px rgb(23 27 33 / 0.06), 0 8px 24px -12px rgb(23 27 33 / 0.14);
     --font-ui: 'Archivo', ui-sans-serif, system-ui, sans-serif;
     --font-data: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', menlo, monospace;
@@ -48,6 +78,31 @@
     */
     --fs-body: 0.875rem;
     --fs-note: 0.75rem;
+
+    /*
+    The redesign adds the steps a dense report needs between and around those two:
+
+    --fs-label   column headers, figure labels, counters and provenance tags (11 px), always next
+                 to the thing they name;
+    --fs-small   secondary lines in a table or under a figure (13 px), where 14 px wrapped a
+                 column of figures onto two lines;
+    --fs-figure  the value of a summary figure (24 px), in monospace;
+    --fs-hero    the one figure the report leads with (40 px), alone in monospace.
+    */
+    --fs-label: 0.6875rem;
+    --fs-small: 0.8125rem;
+    --fs-figure: 1.5rem;
+    --fs-hero: 2.5rem;
+
+    /* The product name in the header, between the body and a heading. */
+    --fs-brand: 1.0625rem;
+
+    /* The tab title, one step under the lead figure. */
+    --fs-title: 1.1875rem;
+
+    /* The heading of the drop zone, and the sentence that opens the front page. */
+    --fs-lead: 1.25rem;
+    --fs-lede: clamp(1.375rem, 3vw, 1.875rem);
 
     /*
     The same two sizes under the names the newer blocks were already written against, plus the one
@@ -77,7 +132,7 @@
     --fs-3: 1rem;
     --fs-4: 1.125rem;
     --fs-5: 1.45rem;
-    --fs-page: 15px;
+    --fs-page: 14px;
 
     /*
     Margins, paddings and gaps. `--space-N` is N eighths of a rem — 2 px each at the browser's default
@@ -98,8 +153,11 @@
     --space-6: 0.75rem;
     --space-7: 0.875rem;
     --space-8: 1rem;
+    --space-9: 1.125rem;
     --space-10: 1.25rem;
+    --space-11: 1.375rem;
     --space-12: 1.5rem;
+    --space-14: 1.75rem;
     --space-16: 2rem;
     --space-20: 2.5rem;
     --space-24: 3rem;
@@ -119,35 +177,50 @@
     nine stylesheets because the compact mode is exactly this figure and there is no other way to
     change it in one place.
     */
-    --row-y: 0.4rem;
-    --row-y-head: 0.45rem;
+    --row-y: 0.625rem;
+    --row-y-head: 0.5rem;
 
     /*
     Height of the sticky tab strip. Long lists no longer scroll inside a box of their own, so their
     column headers pin to the page — and they have to stop under the tabs, not behind them.
     */
     --tabs-h: 2.85rem;
+
+    /*
+    The column the page is held to — the report is a table of figures and gets the width, the front
+    page is a form and gets less — and the gutter on each side, which narrows on a phone.
+    */
+    --page-w: 1280px;
+    --home-w: 1080px;
+    --page-x: var(--space-12);
+}
+
+@media (width < 620px) {
+    :root {
+        --page-x: var(--space-8);
+    }
 }
 
 @mixin dark-tokens {
-    --ground: #12151a;
-    --surface: #1a1f26;
-    --surface-sunk: #141920;
-    --ink: #e5e9ef;
-    --muted: #949dab;
-    --line: #272d36;
+    --ground: #0f1215;
+    --surface: #161a1f;
+    --surface-sunk: #1d2228;
+    --ink: #e7e9ec;
+    --muted: #9aa3ad;
+    --line: #2a3038;
     --line-strong: #39424e;
-    --seg-boot: #6f7a8b;
-    --seg-shared: #d97b40;
-    --seg-own: #3fa0a0;
-    --accent: #4fb0ae;
+    --seg-boot: #8a94a3;
+    --seg-shared: #e58450;
+    --seg-own: #45a9a9;
+    --accent: #5bbcbc;
     --accent-soft: #16302f;
-    --ok: #46d47f;
+    --track: #232930;
+    --ok: #3fbf75;
     --ok-soft: #143b27;
-    --warn: #f6a53a;
-    --warn-soft: #3f2d12;
-    --crit: #ff6f63;
-    --crit-soft: #4a1f1c;
+    --warn: #d9b44a;
+    --warn-soft: #36301a;
+    --crit: #f06a5f;
+    --crit-soft: #3a1d1b;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -14px rgb(0 0 0 / 0.6);
 }
 
@@ -172,7 +245,7 @@
    hidden by pressing it. That is what makes it a density switch rather than a second layout.
 */
 :root[data-density='compact'] {
-    --row-y: 0.15rem;
+    --row-y: 0.3125rem;
     --row-y-head: 0.25rem;
     --sp-1: 0.15rem;
     --sp-2: 0.3rem;

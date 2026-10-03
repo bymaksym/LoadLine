@@ -9,7 +9,14 @@
 
 import { rate } from '../src/app/core/criteria/criteria';
 import { type Verdict } from '../src/app/core/criteria/criteria.types';
-import { rankActions, totalSaving } from '../src/app/core/findings/actions';
+import {
+    formatRemaining,
+    formatSaving,
+    rankActions,
+    savingWords,
+    totalSaving,
+    unitScale,
+} from '../src/app/core/findings/actions';
 import { type Finding, type Severity } from '../src/app/core/findings/finding.types';
 import { plainText } from '../src/app/core/findings/finding-plain';
 import { formatBytes, formatDelta } from '../src/app/core/format/format.utils';
@@ -234,19 +241,21 @@ const actionsBlock = (report: CliReport, palette: Palette): string[] => {
     // equal jobs, and the eye has to go down to Signals to learn that the fourth is an `info`
     // and the first is not. The saving cell stays plain on purpose: one colour per row, or the
     // colour stops meaning anything.
+    const scale = unitScale(report.analysis);
     const rows = actions.map((action, index) => [
         `${index + 1}.`,
         severityPaint(palette, action.finding.severity)(plainText(action.finding.title)),
-        text.savingCell(action.saving > 0 ? formatBytes(action.saving) : ''),
+        text.savingCell(action.saving > 0 ? formatSaving(action.saving, scale) : ''),
         text.effortLabel[action.effort],
     ]);
 
     const total = totalSaving(report.analysis, report.findings);
     // Said only when there is a figure. "No signal here names a saving that can be measured" under
     // a table whose saving column is all dashes repeated what the column had already said.
+    const words = savingWords(report.analysis, total);
     const summary =
         total.counted > 0 && total.bytes > 0
-            ? text.totalSaving(formatBytes(total.bytes), formatBytes(total.after), total.counted)
+            ? text.totalSaving(words.saving, words.after, total.counted, words.estimated)
             : null;
 
     return [
@@ -400,18 +409,22 @@ const whatIfBlock = (report: CliReport, palette: Palette): string[] => {
 
     const text = CLI_TEXT[report.lang];
 
+    // In the report's unit, like the headline above it: see `unitScale`.
+    const scale = unitScale(report.analysis);
     const rows = report.whatIf.map(result => [
         result.target,
-        formatBytes(result.weight),
-        palette.bold(formatBytes(result.saved)),
-        formatBytes(result.after),
+        formatSaving(result.weight, scale),
+        palette.bold(formatSaving(result.saved, scale)),
+        formatRemaining(report.analysis, result.saved, result.after),
         result.screens.length > 0 ? result.screens.join(', ') : text.whatIfNobody,
     ]);
 
     return [
         '',
         palette.bold(text.headWhatIf),
-        ...wrap(text.whatIfNote, WIDTH).map(line => palette.dim(line)),
+        ...wrap(scale.estimated ? `${text.whatIfNote} ${text.whatIfEstimated}` : text.whatIfNote, WIDTH).map(line =>
+            palette.dim(line),
+        ),
         ...table(
             [
                 { head: text.colWhatIf, right: false },

@@ -21,6 +21,7 @@ import { type Effort } from '../src/app/core/findings/effort';
 import { type FindingKind, type Severity } from '../src/app/core/findings/finding.types';
 import { type ScanReport } from '../src/app/core/scan/scan.types';
 import { type ProfileId } from '../src/app/core/timing/timing.types';
+import { type DeferResult } from '../src/app/core/whatif/defer';
 import { type GateName } from './gates.types';
 
 export interface JsonDelta {
@@ -187,6 +188,14 @@ export interface JsonReport {
      * removed at once, never a sum: two signals often name the same bytes arriving two ways.
      */
     saving: { bytes: number; before: number; after: number; counted: number };
+    /**
+     * The same saving in the report's unit, which is what the text and the page print. In a
+     * compressed report it is the raw saving at the ratio the bootstrap compresses by, and
+     * `estimated` says so; in a raw one it equals `saving`.
+     */
+    savingInUnit: { bytes: number; after: number; estimated: boolean };
+    /** The `--what-if` answers, raw like `saving`: one per name asked about. */
+    whatIf: DeferResult[];
     /**
      * The first load as an estimate of time. **A model, not a measurement** — nothing here was
      * observed — and anything presenting it has to say so, the way the report itself does.

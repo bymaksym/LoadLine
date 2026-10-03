@@ -1,42 +1,128 @@
 :host {
-    display: block;
+    display: grid;
+    gap: var(--space-6);
+    font-size: var(--fs-small);
 }
 
-.detail__origin {
-    margin: 0 0 var(--space-5);
-    font-size: var(--fs-body);
-    color: var(--muted);
-}
+/* The import chain: `a › b › c` in small monospace, the screen's own file last and in ink. */
+.detail__chain {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    align-items: baseline;
 
-/* The heading of the chain: it names the answer under it, so it goes in the small step. */
-.detail__why {
-    margin: 0 0 var(--space-1);
+    margin: 0;
+
+    font-family: var(--font-data);
     font-size: var(--fs-note);
-    font-weight: 600;
     color: var(--muted);
+    overflow-wrap: anywhere;
 }
 
-/* The total broken into its three parts, two of which are somewhere else in the report. */
+/* What a line answers, named like a column header so it does not read as part of the answer. */
+.detail__label {
+    margin-right: var(--space-2);
+
+    font-family: var(--font-ui);
+    font-size: var(--fs-label);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.detail__step--end {
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.detail__none {
+    font-family: var(--font-ui);
+}
+
+/* `bootstrap + shared + own = total`, each part in the colour of its segment on the bar. */
 .detail__parts {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-    align-items: baseline;
+    gap: var(--space-2) var(--space-5);
+    align-items: center;
 
-    margin: 0 0 var(--space-7);
+    margin: 0;
 
     font-family: var(--font-data);
-    font-size: var(--fs-body);
+    font-size: var(--fs-note);
     font-variant-numeric: tabular-nums;
-    color: var(--muted);
+}
 
-    &-op {
-        color: var(--line-strong);
+.detail__part {
+    display: inline-flex;
+    gap: var(--space-3);
+    align-items: center;
+
+    &[data-zone='boot'] {
+        color: var(--seg-boot);
+    }
+
+    &[data-zone='shared'] {
+        color: var(--seg-shared);
+    }
+
+    &[data-zone='own'] {
+        color: var(--seg-own);
     }
 }
 
-.scroller + .scroller {
-    margin-top: var(--space-7);
+/* A part that leads to its tab: the segment's colour, underlined so it reads as a way there. */
+.detail__link {
+    cursor: pointer;
+
+    padding: 0;
+    border: none;
+
+    font: inherit;
+    color: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+
+    background: none;
+
+    &:hover {
+        text-decoration-style: solid;
+    }
+
+    &:focus-visible {
+        border-radius: 2px;
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+}
+
+.detail__op,
+.detail__more {
+    color: var(--muted);
+}
+
+/* The chunk list: monospace figures under small-capital headers, the main contents trimmed to a line. */
+.chunks {
+    max-width: 62rem;
+
+    td {
+        font-size: var(--fs-note);
+    }
+
+    th:first-child,
+    td:first-child {
+        padding-left: 0;
+    }
+
+    &__main {
+        overflow: hidden;
+
+        max-width: 28rem;
+
+        color: var(--muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 .twist {
@@ -46,9 +132,16 @@
     color: var(--muted);
 }
 
+/* Where the screen comes from and what can be done with the row: the quiet line at the end. */
+.detail__origin {
+    margin: 0;
+    font-size: var(--fs-note);
+    color: var(--muted);
+}
+
 /*
- * The detail sits on the sunk background, so its own expandable rows take the surface colour when
- * open: the other way round they would disappear into the panel they are drawn on.
+ * The detail sits on the page's ground, so its own expandable rows take the surface colour when
+ * open: the other way round they would disappear into the block they are drawn on.
  */
 tr.row-btn[aria-expanded='true'] td,
 tr.detail td {

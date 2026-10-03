@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Analysis } from '../analysis/analysis.types';
 import { type GraphInsights } from '../analysis/insights.types';
-import { rankActions, totalSaving } from './actions';
+import { formatSaving, rankActions, remainingInUnit, savingInUnit, totalSaving, unitScale } from './actions';
 import { type Finding, type FindingKind } from './finding.types';
 
 const KB = 1024;
@@ -68,5 +68,34 @@ describe('totalSaving · what doing all of it is worth', () => {
 
         expect(total.bytes).toBe(0);
         expect(total.counted).toBe(0);
+    });
+});
+
+describe('savings in the report’s unit', () => {
+    /** A bootstrap of 300 kB raw that travels as 100 kB, and a walk that counts 300 kB too. */
+    const compressed = {
+        bootBytes: 100 * KB,
+        bootRawBytes: 300 * KB,
+        insights: () => ({ exclusiveOf: () => 90 * KB, bootTotal: 300 * KB }) as unknown as GraphInsights,
+    } as unknown as Analysis;
+
+    it('carries a raw saving into a compressed report at the bootstrap’s own ratio, as an estimate', () => {
+        // The bug this exists for: "takes 302 kB off" a bootstrap headed as 258 kB. The saving
+        // has to come out in the unit of the figure it comes off.
+        const total = totalSaving(compressed, [finding('ownInBoot', 90 * KB, ['a.ts'])]);
+        const inUnit = savingInUnit(compressed, total);
+
+        expect(total.bytes).toBe(90 * KB);
+        expect(inUnit).toEqual({ bytes: 30 * KB, after: 70 * KB, estimated: true });
+        expect(formatSaving(total.bytes, unitScale(compressed))).toMatch(/^≈30\s?kB$/);
+    });
+
+    it('leaves a raw report exactly as it was, with nothing marked as estimated', () => {
+        const raw = { ...compressed, bootBytes: 300 * KB };
+        const total = totalSaving(raw, [finding('ownInBoot', 90 * KB, ['a.ts'])]);
+
+        expect(unitScale(raw)).toEqual({ ratio: 1, estimated: false });
+        expect(savingInUnit(raw, total)).toEqual({ bytes: 90 * KB, after: 210 * KB, estimated: false });
+        expect(remainingInUnit(raw, 90 * KB, 210 * KB)).toBe(210 * KB);
     });
 });

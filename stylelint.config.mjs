@@ -92,13 +92,16 @@ export default {
         // floor eslint.config.js holds the page's JavaScript to. `:host-context` is rewritten by
         // Angular and never reaches the browser. The rest are refinements whose absence loses a
         // detail and breaks nothing: a hidden scrollbar on the tab strip, a paste box that can be
-        // resized, and the print sheet opening `details` (which has a `display` fallback below it).
+        // resized, the print sheet opening `details` (which has a `display` fallback below it), and
+        // the print sheet asking to keep the segment colours of the bars (without it a browser may
+        // print them pale, which loses a shade and not a figure).
         'plugin/use-baseline': [
             true,
             {
                 ignoreSelectors: ['host-context', 'details-content'],
                 ignoreProperties: {
                     'content-visibility': ['/^.+$/'],
+                    'print-color-adjust': ['/^.+$/'],
                     resize: ['/^.+$/'],
                     'scrollbar-width': ['/^.+$/'],
                 },

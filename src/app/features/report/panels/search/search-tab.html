@@ -4,19 +4,20 @@
 
 <app-panel-header [howTo]="t.howToSearch" [subtitle]="t.secSearchSub" [title]="t.secSearch" />
 
-<div class="toolbar">
-    <div class="toolbar__group">
-        <!-- The only control of the tab, and it used to be 175 px wide, cutting its own placeholder. -->
-        <input
-            #box
-            class="field field--wide"
-            type="search"
-            [attr.aria-label]="t.searchPlaceholder"
-            [placeholder]="t.searchPlaceholder"
-            [value]="query()"
-            (input)="search($any($event.target).value)"
-        />
-    </div>
+<!--
+The only control of the tab, so it is drawn as the way in: taller than a filter, in the accent and
+in the face the names it finds are written in. It used to be 175 px wide, cutting its own placeholder.
+-->
+<div class="lookup">
+    <input
+        #box
+        class="field lookup__box"
+        type="search"
+        [attr.aria-label]="t.searchPlaceholder"
+        [placeholder]="t.searchPlaceholder"
+        [value]="query()"
+        (input)="search($any($event.target).value)"
+    />
     <span aria-live="polite" class="toolbar__count">{{ status() }}</span>
 </div>
 
@@ -37,11 +38,11 @@ already computed, they are the ones anybody would look for first, and they cost 
         }
     </p>
 } @else {
-    <div class="scroller--tall">
-        <table>
+    <div class="scroller--tall scroller--swipe">
+        <table class="found">
             <thead>
                 <tr>
-                    <th scope="col">{{ t.thSource }}</th>
+                    <th class="found__name-col" scope="col">{{ t.thSource }}</th>
                     <th scope="col">{{ t.thZone }}<app-explain [text]="t.helpZone" /></th>
                     <th class="num" scope="col">{{ t.thSize }}<app-explain [text]="t.helpSize" /></th>
                     <th class="num" scope="col">{{ t.thChunk }}</th>
@@ -63,37 +64,48 @@ already computed, they are the ones anybody would look for first, and they cost 
                     >
                         <!-- The matching part is marked: three long paths and finding the word by eye. -->
                         @let hit = parts(row.key);
-                        <td class="path">
-                            <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
-                            <span>{{ hit.before }}</span
-                            ><mark [hidden]="!hit.hit">{{ hit.hit }}</mark
-                            ><span>{{ hit.after }}</span>
-                            <span class="tag">{{
+                        <!--
+                        The name, then what kind of name it is and anything to know about it, as
+                        small words after it rather than chips: three chips on a row competed with
+                        the name they were about. Copies are the one note in red, a real problem.
+                        -->
+                        <td class="name">
+                            <span aria-hidden="true" class="name__twist">{{ isOpen ? '−' : '+' }}</span>
+                            <span class="name__key"
+                                ><span>{{ hit.before }}</span
+                                ><mark [hidden]="!hit.hit">{{ hit.hit }}</mark
+                                ><span>{{ hit.after }}</span></span
+                            >
+                            <span class="name__note">{{
                                 row.kind === 'package' ? t.searchKindPackage : t.searchKindFile
                             }}</span>
                             @if (row.copies.length > 1) {
-                                <span class="tag tag--crit">{{ t.searchCopiesTag(row.copies.length) }}</span>
+                                <span class="name__note name__note--crit">{{
+                                    t.searchCopiesTag(row.copies.length)
+                                }}</span>
                             }
                             @if (row.matchedFiles.length > 0) {
-                                <span class="tag">{{ t.searchMatchedIn(row.matchedFiles.length) }}</span>
+                                <span class="name__note">{{ t.searchMatchedIn(row.matchedFiles.length) }}</span>
                             }
                         </td>
-                        <td>
-                            <i aria-hidden="true" class="dot" [attr.data-zone]="row.zone"></i>
-                            {{ zoneLabel(row.zone) }}
-                            <span class="who">
-                                @if (row.bootBytes === row.bytes) {
-                                    {{ t.searchInBoot }}
-                                } @else {
-                                    @if (row.bootBytes > 0) {
-                                        {{ t.searchPartlyBoot(row.bootBytes | bytes) }} ·
+                        <td class="zone">
+                            <span class="zone__line">
+                                <i aria-hidden="true" class="dot" [attr.data-zone]="row.zone"></i>
+                                <span
+                                    ><b class="zone__name">{{ zoneLabel(row.zone) }}</b> ·
+                                    @if (row.bootBytes === row.bytes) {
+                                        {{ t.searchInBoot }}
+                                    } @else {
+                                        @if (row.bootBytes > 0) {
+                                            {{ t.searchPartlyBoot(row.bootBytes | bytes) }} ·
+                                        }
+                                        {{ t.searchScreensCount(row.screens.length) }}
                                     }
-                                    {{ t.searchScreensCount(row.screens.length) }}
-                                }
+                                </span>
                             </span>
                         </td>
                         <td class="num">{{ row.bytes | bytes }}</td>
-                        <td class="num">{{ row.places.length }}</td>
+                        <td class="num found__count">{{ row.places.length }}</td>
                     </tr>
 
                     @if (isOpen) {

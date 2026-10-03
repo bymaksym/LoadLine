@@ -12,6 +12,7 @@
  */
 
 import { type Analysis } from '../analysis/analysis.types';
+import { formatBytes } from '../format/format.utils';
 import { EFFORT, type Effort, EFFORT_WEIGHT } from './effort';
 import { type Finding } from './finding.types';
 
@@ -52,6 +53,80 @@ export const totalSaving = (analysis: Analysis, findings: readonly Finding[]): T
 
     const bytes = files.size > 0 ? insights.exclusiveOf(files) : 0;
     return { bytes, before: insights.bootTotal, after: Math.max(0, insights.bootTotal - bytes), counted };
+};
+
+/**
+ * A saving in the unit the report is in.
+ *
+ * Every saving is computed in raw bytes, because that is the only scale a module has: gzip
+ * compresses a chunk as a whole. But a report in gzip that says "takes 302 kB off" a bootstrap of
+ * 258 kB has the reader comparing two units as if they were one, and the saving comes out three
+ * times what it is — on the one figure somebody decides an afternoon by.
+ *
+ * So in a compressed report the raw saving is carried over at the ratio the bootstrap itself
+ * compresses by, and marked as an estimate. Text compresses better than code and a vendor library
+ * worse, so it is a figure of the right size, not an exact one, and it says so with `≈`. In a raw
+ * report nothing is converted and nothing is estimated.
+ */
+export interface UnitScale {
+    /** Bytes in the report's unit per raw byte of the bootstrap. `1` in a raw report. */
+    ratio: number;
+    /** `true` when the figures are converted, and therefore approximate. */
+    estimated: boolean;
+}
+
+export const unitScale = (analysis: Analysis): UnitScale => {
+    const estimated = analysis.bootRawBytes > 0 && analysis.bootBytes !== analysis.bootRawBytes;
+    return { ratio: estimated ? analysis.bootBytes / analysis.bootRawBytes : 1, estimated };
+};
+
+/** Raw bytes in the report's unit. */
+export const inUnit = (bytes: number, scale: UnitScale): number => Math.round(bytes * scale.ratio);
+
+/** A saving as it is printed: `≈93 kB` when it is an estimate, `302 kB` when it is not. Zero is exact. */
+export const formatSaving = (bytes: number, scale: UnitScale): string =>
+    `${scale.estimated && bytes > 0 ? '≈' : ''}${formatBytes(inUnit(bytes, scale))}`;
+
+/**
+ * The first load a saving leaves, in the report's unit. Converted, it comes off the bootstrap the
+ * report heads with — not off the raw walk, which is a different figure in a different unit.
+ */
+export const remainingInUnit = (analysis: Analysis, saved: number, rawAfter: number): number => {
+    const scale = unitScale(analysis);
+    return scale.estimated ? Math.max(0, analysis.bootBytes - inUnit(saved, scale)) : rawAfter;
+};
+
+/** That first load as it is printed, with `≈` when it is an estimate. */
+export const formatRemaining = (analysis: Analysis, saved: number, rawAfter: number): string =>
+    `${unitScale(analysis).estimated ? '≈' : ''}${formatBytes(remainingInUnit(analysis, saved, rawAfter))}`;
+
+/**
+ * The figures of "fixing all of it would take X off, leaving it at about Y", as text. `after`
+ * carries no `≈`: the sentence it goes into already says "about".
+ */
+export const savingWords = (
+    analysis: Analysis,
+    total: TotalSaving,
+): { saving: string; after: string; estimated: boolean } => {
+    const scale = unitScale(analysis);
+    return {
+        saving: formatSaving(total.bytes, scale),
+        after: formatBytes(remainingInUnit(analysis, total.bytes, total.after)),
+        estimated: scale.estimated,
+    };
+};
+
+/** What all of it is worth, in the report's unit: the saving and the first load it leaves. */
+export const savingInUnit = (
+    analysis: Analysis,
+    total: TotalSaving,
+): { bytes: number; after: number; estimated: boolean } => {
+    const scale = unitScale(analysis);
+    return {
+        bytes: inUnit(total.bytes, scale),
+        after: remainingInUnit(analysis, total.bytes, total.after),
+        estimated: scale.estimated,
+    };
 };
 
 /** One line of the "what to do first" list. */

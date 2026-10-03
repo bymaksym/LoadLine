@@ -7,22 +7,28 @@
 
 .map-detail {
     min-height: 8rem;
-    padding: var(--space-6) var(--space-7);
+    padding: var(--space-8);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
+    border-radius: var(--radius-card);
 
     background: var(--surface);
 
+    /* What kind of thing it is: a label over the figure, like every figure's label in the report. */
     &__kind {
         margin: 0;
-        font-size: var(--fs-note);
+
+        font-size: var(--fs-label);
         color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
     }
 
     &__name {
-        margin: var(--space-2) 0 var(--space-3);
+        margin: var(--space-3) 0 var(--space-2);
+
         font-family: var(--font-data);
-        font-size: var(--fs-body);
+        font-size: var(--fs-small);
+        font-weight: 600;
         overflow-wrap: anywhere;
     }
 
@@ -35,8 +41,9 @@
         margin: 0 0 var(--space-2);
 
         font-family: var(--font-data);
-        font-size: var(--fs-1);
+        font-size: var(--fs-4);
         font-weight: 600;
+        font-variant-numeric: tabular-nums;
 
         small {
             font-size: var(--fs-note);
@@ -52,10 +59,10 @@
     }
 
     &__title {
-        margin: var(--space-6) 0 var(--space-3);
+        margin: var(--space-8) 0 var(--space-4);
 
-        font-size: var(--fs-note);
-        font-weight: 600;
+        font-size: var(--fs-label);
+        font-weight: 400;
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -63,7 +70,7 @@
 
     &__list {
         display: grid;
-        gap: var(--space-2);
+        gap: var(--space-4);
 
         margin: 0;
         padding: 0;
@@ -109,6 +116,7 @@
     &__pct {
         font-family: var(--font-data);
         font-size: var(--fs-note);
+        font-variant-numeric: tabular-nums;
         color: var(--muted);
     }
 
@@ -116,14 +124,15 @@
         overflow: hidden;
         grid-column: 1 / -1;
 
-        height: 5px;
-        border-radius: 999px;
+        height: 6px;
+        border-radius: 2px;
 
-        background: var(--surface-sunk);
+        background: var(--track);
 
         i {
             display: block;
             height: 100%;
+            border-radius: 2px;
             background: var(--line-strong);
 
             &[data-zone='boot'] {

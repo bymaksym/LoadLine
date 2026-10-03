@@ -1,5 +1,7 @@
+/* One row of the list, divided from the one above by a line: the list's card draws no rule of its own. */
 :host {
     display: block;
+    border-top: 1px solid var(--line);
 }
 
 /*
@@ -10,14 +12,19 @@
 .row {
     display: grid;
     grid-template-columns: var(--tree-cols);
-    gap: var(--space-4);
+    gap: var(--space-6);
     align-items: center;
 
-    padding: calc(var(--row-y) * 0.5) var(--space-4) calc(var(--row-y) * 0.5) 0;
-    border-radius: 3px;
+    padding: var(--row-y) var(--space-5) var(--row-y) var(--space-3);
 
     &:hover {
         background: var(--surface-sunk);
+    }
+
+    /* An open chunk and its files share the page's ground: one block, set in from the card. */
+    &--open,
+    &--open:hover {
+        background: var(--ground);
     }
 }
 
@@ -41,58 +48,34 @@
     }
 }
 
-.row__label-cell {
-    display: flex;
-    gap: var(--space-4);
-    align-items: center;
-    min-width: 0;
-}
-
 .row__label {
     overflow: hidden;
 
     font-family: var(--font-data);
-    font-size: var(--fs-body);
-    font-weight: 700;
+    font-size: var(--fs-small);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-/* Who pays for the chunk, in words, tinted like its zone. */
-.tag {
-    flex-shrink: 0;
+/* Who pays for the chunk, and under it how much of its zone it holds when that is a lot. */
+.row__zone {
+    display: grid;
+    gap: var(--space-1);
 
-    &[data-zone='shared'] {
-        color: var(--warn);
-        background: var(--warn-soft);
-    }
+    min-width: 0;
 
-    &[data-zone='own'] {
-        color: var(--accent);
-        background: var(--accent-soft);
-    }
+    font-size: var(--fs-note);
+    color: var(--muted);
 }
 
-.row__zone {
-    width: 9px;
-    height: 9px;
-    border-radius: 2px;
+.row__who {
+    display: flex;
+    align-items: center;
+}
 
-    &--boot {
-        background: var(--seg-boot);
-    }
-
-    &--shared {
-        background: var(--seg-shared);
-    }
-
-    &--own {
-        background: var(--seg-own);
-    }
-
-    &--none {
-        background: transparent;
-    }
+.row__heavy {
+    font-size: var(--fs-label);
+    color: var(--ink);
 }
 
 /*
@@ -105,19 +88,30 @@
     display: block;
     height: 6px;
     border-radius: 2px;
-    background: var(--surface-sunk);
+    background: var(--track);
 
     i {
         display: block;
+
         min-width: 3px;
         height: 100%;
         border-radius: 2px;
+
+        background: var(--seg-own);
+
+        &[data-zone='boot'] {
+            background: var(--seg-boot);
+        }
+
+        &[data-zone='shared'] {
+            background: var(--seg-shared);
+        }
     }
 }
 
 .row__size {
     font-family: var(--font-data);
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     font-variant-numeric: tabular-nums;
     text-align: right;
 }
@@ -126,7 +120,7 @@
 .row__size-raw {
     display: block;
 
-    font-size: var(--fs-note);
+    font-size: var(--fs-label);
     line-height: 1.2;
     color: var(--muted);
     white-space: nowrap;
@@ -165,17 +159,27 @@
     }
 }
 
-/* The chunk's file tree, indented under its row: past the expand button and the gap, under the name. */
+/*
+   The chunk's file tree, on the open row's ground and indented under its name: past the padding,
+   the expand button and the gap.
+*/
 .chunk-files {
-    margin: var(--space-2) 0 var(--space-5) calc(var(--tree-twist) + var(--space-4));
+    padding: 0 var(--space-5) var(--space-7) calc(var(--space-3) + var(--tree-twist) + var(--space-6));
+    background: var(--ground);
 }
 
+/* On a phone the bar goes, and the zone takes a line of its own under the name. */
 @media (width < 600px) {
     .row__share {
         display: none;
     }
 
+    .row__zone {
+        grid-column: 2 / -1;
+        grid-row: 2;
+    }
+
     .chunk-files {
-        margin-left: var(--space-5);
+        padding-left: var(--space-5);
     }
 }

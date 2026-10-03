@@ -4,6 +4,7 @@ import { IntakePageComponent } from './features/intake/intake.page';
 import { PaletteComponent } from './features/palette/palette';
 import { ReportPageComponent } from './features/report/report.page';
 import { DensityService } from './state/density.service';
+import { HomeService } from './state/home.service';
 import { I18nService } from './state/i18n.service';
 import { PaletteService } from './state/palette.service';
 import { ReportStore } from './state/report.store';
@@ -22,6 +23,7 @@ export class App {
     protected readonly density = inject(DensityService);
     protected readonly palette = inject(PaletteService);
     protected readonly store = inject(ReportStore);
+    protected readonly home = inject(HomeService);
 
     constructor() {
         // A page written by `loadline --html` carries its build inside it: it opens on the report,

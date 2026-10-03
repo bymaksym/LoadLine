@@ -2,23 +2,23 @@
     display: block;
 }
 
-.empty-state {
+/*
+   Empty: the card asking for the project files and the history card, side by side, each at least a
+   readable column. Filled: one column, the budgets and then the history.
+*/
+.layout {
     display: grid;
-    gap: var(--space-6);
-    justify-items: start;
+    gap: var(--space-8);
+    align-items: start;
 
-    padding: var(--space-12);
-    border: 1.5px dashed var(--line-strong);
-    border-radius: var(--radius);
-
-    background: var(--surface);
-
-    p {
-        max-width: 60ch;
-        margin: 0;
-        font-size: var(--fs-2);
-        color: var(--muted);
+    &--split {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
+}
+
+/* A grid item holding wide tables: without this it would grow to them instead of letting them scroll. */
+.filled {
+    min-width: 0;
 }
 
 /* One line of facts: Angular version, zone.js, current raw bootstrap. */
@@ -29,7 +29,7 @@
 
     margin-bottom: var(--space-8);
 
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     color: var(--muted);
 }
 
@@ -67,7 +67,7 @@
     font-weight: 600;
 }
 
-.scroller + .sub {
+.card + .sub {
     margin-top: var(--space-12);
 }
 
@@ -88,44 +88,59 @@
  * dashboard — which would invite somebody to take one machine's memory for the team's history.
  */
 .history {
-    margin-top: var(--sp-5);
-    padding-top: var(--sp-4);
-    border-top: 1px solid var(--line);
+    display: grid;
+    gap: var(--space-5);
+    align-content: start;
 
     &__title {
         margin: 0;
-        font-size: var(--fs-2);
+        font-size: var(--fs-body);
+        font-weight: 600;
     }
 
     &__note {
         max-width: 70ch;
-        margin: var(--sp-1) 0 0;
-        font-size: var(--fs-0);
+        margin: 0;
+        font-size: var(--fs-small);
         color: var(--muted);
     }
 
     /* Which screen the second line draws. One control, and it is the whole of the second chart. */
     &__pick {
         display: flex;
-        gap: var(--sp-2);
+        gap: var(--space-4);
         align-items: baseline;
 
-        margin: var(--sp-4) 0 0;
+        margin: 0;
 
-        font-size: var(--fs-0);
+        font-size: var(--fs-note);
         color: var(--muted);
     }
 
     &__list {
-        margin: var(--sp-3) 0 0;
+        margin: 0;
         padding: 0;
-        font-size: var(--fs-0);
+        font-size: var(--fs-note);
         list-style: none;
 
         li {
             display: flex;
-            gap: var(--sp-2);
+            flex-wrap: wrap;
+            gap: var(--space-4);
             align-items: baseline;
         }
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+        align-items: center;
+    }
+
+    &__none {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--muted);
     }
 }

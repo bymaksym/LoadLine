@@ -318,6 +318,12 @@
     "after": 490420,
     "counted": 2
   },
+  "savingInUnit": {
+    "bytes": 77000,
+    "after": 490420,
+    "estimated": false
+  },
+  "whatIf": [],
   "timing": [
     {
       "profile": "slow4g",

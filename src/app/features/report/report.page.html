@@ -6,109 +6,102 @@
     @let globals = globalShared().length;
     @let sev = severityCount();
     @let custom = customCriteria();
-
-    <!-- ---------- summary: five rated figures, each one leads to its tab ---------- -->
     @let loudest = loudestTile();
+    @let bar = heroBar();
 
-    <div class="summary">
-        <!--
-        The sentence that gives the big figure its meaning. It used to be the least readable text on
-        the page — 12.8 px, spaced capitals, grey — with three unrelated facts hanging off it.
-        Now it is a sentence, and the facts are the line below.
-        -->
-        <p class="summary__lead">{{ lead() }}</p>
+    <!--
+    ---------- summary: one figure leads, four lead to their tab ----------
 
-        <p class="summary__meta">
-            <span>
-                {{ custom ? t.criteriaStatusCustom(custom) : t.criteriaStatusRec }}
-                <!--
-                Which thresholds coloured the five figures below. It is here, in the line of
-                metadata, and not on each tile: a tile is a button, and a button inside a button is
-                reparented by the parser, so the mark cannot go where the figures are.
-                -->
-                <app-explain [text]="rulesInForce()" />
-                <button class="link-btn" type="button" (click)="nav.go('criteria')">{{ t.criteriaEdit }}</button>
-            </span>
-            <span aria-hidden="true" class="summary__dot">·</span>
-            <span class="summary__help">
-                {{ store.splitSource() === 'sourcemap' ? t.splitExact : t.splitApprox }}
-                <app-explain [text]="t.splitHelp" />
-            </span>
-            @if (analysis.serverOutputs > 0) {
-                <span aria-hidden="true" class="summary__dot">·</span>
-                <span class="summary__help">
-                    {{ t.serverIgnored(analysis.serverOutputs) }}
-                    <app-explain [text]="t.serverIgnoredHelp" />
+    It used to be five tiles of the same size, which took the whole first screen and ranked
+    nothing. What someone pays before anything appears is the figure the report exists for, so it
+    leads alone, with what it is made of drawn under it against the two thresholds that rate it.
+    -->
+    <section class="summary" [attr.aria-label]="t.lede">
+        <div class="hero">
+            <div class="hero__top">
+                <span>{{ lead() }}</span>
+                <span class="tag" data-source="derived">{{ t.dataSource.derived }}</span>
+            </div>
+
+            <div class="hero__row">
+                <span class="hero__figure" [title]="hint(bootRule(), t.adviceEffective, effectiveVerdict())">
+                    {{ heroFigure().value }}<span class="hero__unit"> {{ heroFigure().unit }}</span>
                 </span>
-            }
-        </p>
+                <span
+                    class="hero__verdict"
+                    [attr.data-v]="effectiveVerdict()"
+                    [title]="hint(bootRule(), t.adviceEffective, effectiveVerdict())"
+                >
+                    <span aria-hidden="true" class="dot-v" [attr.data-v]="effectiveVerdict()"></span>
+                    {{ verdictWord(effectiveVerdict()) }}
+                </span>
+            </div>
+
+            <!-- Drawn, so it is hidden from a screen reader: the caption under it says the same in words. -->
+            <div aria-hidden="true" class="hero__bar">
+                <span class="hero__track">
+                    <i class="hero__seg" data-zone="boot" [style.width.%]="bar.boot"></i>
+                    <i class="hero__seg" data-zone="shared" [style.width.%]="bar.extra"></i>
+                </span>
+                <span class="hero__tick" [style.left.%]="bar.okAt"></span>
+                <span class="hero__tick" [style.left.%]="bar.badAt"></span>
+                <span class="hero__tick-label" [style.left.%]="bar.okAt">{{ bar.okLabel }}</span>
+                <span class="hero__tick-label" [style.left.%]="bar.badAt">{{ bar.badLabel }}</span>
+            </div>
+
+            <p class="hero__caption">
+                <span aria-hidden="true" class="dot" data-zone="boot"></span
+                >{{ t.heroCaptionBoot(analysis.bootBytes | bytes) }}
+                @if (globals) {
+                    + <span aria-hidden="true" class="dot" data-zone="shared"></span
+                    >{{ t.heroCaptionExtra(extraBytes() | bytes, globals, store.criteria().sharedRatio) }}
+                } @else {
+                    · {{ t.heroCaptionSame }}
+                }
+            </p>
+        </div>
 
         <!--
-        Five figures on one scale, and one badge between them. Five identical "Bad" badges was five
-        alarms with no order: the colour of each figure already rates it, and the badge is worth
-        having only if it points at the worst one.
+        Four figures that each lead to their tab, and one badge between them. Five identical "Bad"
+        badges was five alarms with no order; the badge is worth having only if it points at the
+        worst one.
         -->
-        <div class="tiles">
-            <button class="tile tile--hero" type="button" (click)="nav.go('boot')">
-                <span class="tile__top">
-                    <span class="tile__label">{{ t.tileBoot }}</span>
-                    @if (loudest === 'boot') {
-                        <app-verdict [advice]="t.adviceBoot" [rule]="bootRule()" [verdict]="bootVerdict()" />
-                    }
-                    <span aria-hidden="true" class="tile__go">→</span>
-                </span>
-                <span class="tile__figure" [attr.data-v]="bootVerdict()" [title]="bootRule()">
-                    {{ analysis.bootBytes | bytes }}
+        <div class="kpis">
+            <button class="kpi" type="button" (click)="nav.go('boot')">
+                <span class="kpi__label">{{ t.tileBoot }}<span aria-hidden="true">→</span></span>
+                <span class="kpi__row">
+                    <span class="kpi__value" [title]="hint(bootRule(), t.adviceBoot, bootVerdict())">{{
+                        analysis.bootBytes | bytes
+                    }}</span>
+                    <span aria-hidden="true" class="dot-v" [attr.data-v]="bootVerdict()"></span>
                     <span class="sr-only">, {{ verdictWord(bootVerdict()) }}.</span>
+                    @if (loudest === 'boot') {
+                        <span class="kpi__worst">{{ t.kpiWorst }}</span>
+                    }
                 </span>
-                <span class="tile__sub">{{ t.tileBootSub(analysis.bootFiles) }}</span>
+                <span class="kpi__sub">{{ t.tileBootSub(analysis.bootFiles) }}</span>
                 <!--
                 A render-blocking stylesheet is the strictest "before anything appears" there is,
-                and the figure above has never counted one. Saying so where the claim is made,
-                rather than in a tab somebody may never open.
+                and the figure above has never counted one. Saying so where the claim is made.
                 -->
                 @if (pageCss(); as css) {
-                    <span class="tile__sub tile__delta" data-tone="warn">{{
-                        t.tileBootCss(css.size, css.files, css.total)
-                    }}</span>
+                    <span class="kpi__sub kpi__css">{{ t.tileBootCss(css.size, css.files, css.total) }}</span>
                 }
                 @if (bootDelta(); as delta) {
-                    <span class="tile__sub tile__delta" [attr.data-tone]="delta.tone">{{ delta.text }}</span>
+                    <span class="kpi__sub kpi__delta" [attr.data-tone]="delta.tone">{{ delta.text }}</span>
                 }
-            </button>
-
-            <button class="tile" type="button" (click)="nav.go('shared')">
-                <span class="tile__top">
-                    <span class="tile__label">{{ t.tileEffective }}</span>
-                    @if (loudest === 'effective') {
-                        <app-verdict [advice]="t.adviceEffective" [rule]="bootRule()" [verdict]="effectiveVerdict()" />
-                    }
-                    <span aria-hidden="true" class="tile__go">→</span>
-                </span>
-                <span class="tile__figure" [attr.data-v]="effectiveVerdict()" [title]="bootRule()">
-                    {{ effectiveBytes() | bytes }}
-                    <span class="sr-only">, {{ verdictWord(effectiveVerdict()) }}.</span>
-                </span>
-                <span class="tile__sub">
-                    {{
-                        globals
-                            ? t.tileEffectiveSub(extraBytes() | bytes, globals, store.criteria().sharedRatio)
-                            : t.tileEffectiveSame
-                    }}
-                </span>
             </button>
 
             <!--
-            The only figure of the five with no threshold behind it: how many screens there are is
-            not good or bad. What is rated is the typical one, and that is where the colour goes.
+            The only figure with no threshold behind it: how many screens there are is not good or
+            bad. What is rated is the typical one, and that is where the mark goes.
             -->
-            <button class="tile" type="button" (click)="nav.go('screens')">
-                <span class="tile__top">
-                    <span class="tile__label">{{ t.tileScreens }}</span>
-                    <span aria-hidden="true" class="tile__go">→</span>
+            <button class="kpi" type="button" (click)="nav.go('screens')">
+                <span class="kpi__label">{{ t.tileScreens }}<span aria-hidden="true">→</span></span>
+                <span class="kpi__row">
+                    <span class="kpi__value">{{ analysis.screens.length }}</span>
                 </span>
-                <span class="tile__figure">{{ analysis.screens.length }}</span>
-                <span class="tile__sub">
+                <span class="kpi__sub">
                     @if (top) {
                         {{ t.tileScreensTypical }}
                         <span [attr.data-v]="medianVerdict()" [title]="screenRule()">
@@ -122,21 +115,21 @@
                 </span>
             </button>
 
-            <button class="tile" type="button" (click)="nav.go('shared')">
-                <span class="tile__top">
-                    <span class="tile__label">{{ t.tileShared }}</span>
-                    @if (loudest === 'shared' && analysis.sharedChunks.length) {
-                        <app-verdict [advice]="t.adviceShared" [rule]="coverageRule()" [verdict]="sharedVerdict()" />
-                    }
-                    <span aria-hidden="true" class="tile__go">→</span>
-                </span>
-                <span class="tile__figure" [attr.data-v]="analysis.sharedChunks.length ? sharedVerdict() : null">
-                    {{ analysis.sharedChunks.length }}
+            <button class="kpi" type="button" (click)="nav.go('shared')">
+                <span class="kpi__label">{{ t.tileShared }}<span aria-hidden="true">→</span></span>
+                <span class="kpi__row">
+                    <span class="kpi__value" [title]="hint(coverageRule(), t.adviceShared, sharedVerdict())">{{
+                        analysis.sharedChunks.length
+                    }}</span>
                     @if (analysis.sharedChunks.length) {
+                        <span aria-hidden="true" class="dot-v" [attr.data-v]="sharedVerdict()"></span>
                         <span class="sr-only">, {{ verdictWord(sharedVerdict()) }}.</span>
+                        @if (loudest === 'shared') {
+                            <span class="kpi__worst">{{ t.kpiWorst }}</span>
+                        }
                     }
                 </span>
-                <span class="tile__sub">
+                <span class="kpi__sub">
                     {{
                         analysis.sharedChunks.length
                             ? t.tileSharedSub(globals, analysis.sharedChunks.length - globals)
@@ -145,109 +138,169 @@
                 </span>
             </button>
 
-            <button class="tile" type="button" (click)="nav.go('findings')">
-                <span class="tile__top">
-                    <span class="tile__label">{{ t.tileFindings }}</span>
-                    @if (loudest === 'findings') {
-                        <app-verdict [advice]="t.adviceFindings" [verdict]="findingsVerdict()" />
-                    }
-                    <span aria-hidden="true" class="tile__go">→</span>
+            <button class="kpi" type="button" (click)="nav.go('findings')">
+                <span class="kpi__label">{{ t.tileFindings }}<span aria-hidden="true">→</span></span>
+                <span class="kpi__row">
+                    <!--
+                    How many signals there are is a count, not a measurement: it carries no shape,
+                    so the one alarm in the summary is the figure that is actually the worst.
+                    -->
+                    <span class="kpi__value" [title]="hint('', t.adviceFindings, findingsVerdict())">{{
+                        sev.all
+                    }}</span>
                 </span>
-                <span class="tile__figure" [attr.data-v]="findingsVerdict()">
-                    {{ sev.high + sev.mid }}
-                    <span class="sr-only">, {{ verdictWord(findingsVerdict()) }}.</span>
-                </span>
-                <span class="tile__sub">{{
-                    sev.high + sev.mid ? t.tileFindingsSub(sev.high, sev.mid) : t.tileFindingsNone
+                <span class="kpi__sub">{{
+                    sev.all ? t.tileFindingsSub(sev.high, sev.mid, sev.rest) : t.tileFindingsNone
                 }}</span>
             </button>
         </div>
+    </section>
+
+    <div class="summary-after">
+        <!-- What to do about any of the figures above starts with the signals, in the order worth fixing. -->
+        <button class="summary-after__act" type="button" (click)="nav.go('findings')">{{ t.howToAct }} →</button>
+
+        <p class="summary-after__meta">
+            <span>
+                {{ custom ? t.criteriaStatusCustom(custom) : t.criteriaStatusRec }}
+                <!--
+                Which thresholds rated the figures above. It is here, outside them: each figure is a
+                button, and a button inside a button is reparented by the parser.
+                -->
+                <app-explain [text]="rulesInForce()" />
+                ·
+                <button class="link-btn" type="button" (click)="nav.go('criteria')">{{ t.criteriaEdit }}</button>
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>
+                {{ store.splitSource() === 'sourcemap' ? t.splitExact : t.splitApprox }}
+                <app-explain [text]="t.splitHelp" />
+            </span>
+            @if (analysis.serverOutputs > 0) {
+                <span aria-hidden="true">·</span>
+                <span>
+                    {{ t.serverIgnored(analysis.serverOutputs) }}
+                    <app-explain [text]="t.serverIgnoredHelp" />
+                </span>
+            }
+        </p>
     </div>
 
-    <!-- What to do about any of the figures above: the general model, not this project's to-do list. -->
-    <details class="howto howto--act">
-        <summary>{{ t.howToAct }}</summary>
-        <div class="howto__body" [innerHTML]="t.howToActBody"></div>
-    </details>
+    <!--
+    ---------- tabs ----------
 
-    <!-- ---------- tabs ---------- -->
+    Two groups and a rule between them: the views of the build, then what is put into the report
+    (a measurement, answers, project files, other applications, the criteria).
+    -->
     <nav class="tabs" role="tablist" [attr.aria-label]="t.tagline">
         @for (tab of tabs; track tab; let i = $index) {
             @let active = nav.tab() === tab;
+            @if (tab === firstInputTab) {
+                <span aria-hidden="true" class="tabs__rule"></span>
+            }
             <button
                 class="tab"
                 role="tab"
                 type="button"
                 [attr.aria-controls]="'panel-' + tab"
                 [attr.aria-selected]="active"
-                [class.tab--aside]="tab === 'compare'"
-                [class.tab--detail]="tab === 'boot'"
                 [id]="'tab-' + tab"
                 [tabindex]="active ? 0 : -1"
                 (click)="nav.go(tab)"
                 (keydown)="onTabKey($event, i)"
             >
                 {{ tabLabel(tab) }}
-                @if (showsCount(tab)) {
-                    <span class="tab__n">{{ counts()[tab] }}</span>
+                @if (countLabel(tab); as n) {
+                    <span class="tab__n">{{ n }}</span>
                 }
             </button>
         }
     </nav>
 
-    <section class="panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + nav.tab()" [id]="'panel-' + nav.tab()">
-        @switch (nav.tab()) {
-            @case ('findings') {
-                <app-findings-tab />
+    <!--
+    One panel on screen: the open tab. On paper, every view of the build one after the other — and
+    the open tab too when it is one of the inputs — because a printed report is read without a
+    strip of tabs to press. See `shownTabs`.
+    -->
+    @for (tab of shownTabs(); track tab) {
+        @let current = tab === nav.tab();
+        <section
+            class="panel"
+            [attr.aria-labelledby]="current ? 'tab-' + tab : null"
+            [attr.role]="current ? 'tabpanel' : null"
+            [class.panel--print]="!current"
+            [id]="'panel-' + tab"
+        >
+            @switch (tab) {
+                @case ('findings') {
+                    <app-findings-tab />
+                }
+                @case ('screens') {
+                    <app-screens-tab />
+                }
+                @case ('measured') {
+                    <app-measured-tab />
+                }
+                @case ('boot') {
+                    <app-boot-tab />
+                }
+                @case ('shared') {
+                    <app-shared-tab />
+                }
+                @case ('tree') {
+                    <app-tree-tab />
+                }
+                @case ('map') {
+                    <app-map-tab />
+                }
+                @case ('search') {
+                    <app-search-tab />
+                }
+                @case ('project') {
+                    <app-project-tab />
+                }
+                @case ('situation') {
+                    <app-situation-tab />
+                }
+                @case ('compare') {
+                    <app-compare-tab />
+                }
+                @case ('criteria') {
+                    <app-criteria-tab />
+                }
             }
-            @case ('screens') {
-                <app-screens-tab />
-            }
-            @case ('measured') {
-                <app-measured-tab />
-            }
-            @case ('boot') {
-                <app-boot-tab />
-            }
-            @case ('shared') {
-                <app-shared-tab />
-            }
-            @case ('tree') {
-                <app-tree-tab />
-            }
-            @case ('map') {
-                <app-map-tab />
-            }
-            @case ('search') {
-                <app-search-tab />
-            }
-            @case ('project') {
-                <app-project-tab />
-            }
-            @case ('situation') {
-                <app-situation-tab />
-            }
-            @case ('compare') {
-                <app-compare-tab />
-            }
-            @case ('criteria') {
-                <app-criteria-tab />
-            }
-        }
-    </section>
+        </section>
+    }
 
-    <!-- Exporting is the last thing anybody does with the report, so it is the last thing on it. -->
-    <div class="summary__tools" [title]="t.exportHint">
-        <button class="ctl" type="button" (click)="exports.snapshot()">{{ t.exportJson }}</button>
-        <button class="ctl" type="button" (click)="copyMarkdown()">
-            {{ copied() ? t.exportCopied : t.exportMarkdown }}
-        </button>
-        <!--
-        The support loop used to be impossible: somebody reports a wrong figure and cannot send the
-        file that explains it, because it maps their whole application. This is what they can send.
-        -->
-        <button class="ctl" type="button" [title]="t.diagnosticsHint" (click)="copyDiagnostics()">
-            {{ copiedDiagnostics() ? t.diagnosticsCopied : t.diagnosticsBtn }}
-        </button>
-    </div>
+    <!--
+    Where each kind of figure comes from, said once for the whole report, and exporting: the last
+    thing anybody does with the report, so the last thing on it.
+    -->
+    <footer class="report-foot">
+        <div class="report-foot__legend">
+            <strong class="report-foot__title">{{ t.provenanceTitle }}</strong>
+            <div class="report-foot__sources">
+                @for (source of sources; track source) {
+                    <span
+                        ><span class="tag" [attr.data-source]="source">{{ t.dataSource[source] }}</span>
+                        {{ t.dataSourceShort[source] }}</span
+                    >
+                }
+            </div>
+        </div>
+
+        <div class="report-foot__tools" [title]="t.exportHint">
+            <button class="ctl" type="button" (click)="exports.snapshot()">{{ t.exportJson }}</button>
+            <button class="ctl" type="button" (click)="copyMarkdown()">
+                {{ copied() ? t.exportCopied : t.exportMarkdown }}
+            </button>
+            <!--
+            The support loop used to be impossible: somebody reports a wrong figure and cannot send
+            the file that explains it, because it maps their whole application. This is what they can send.
+            -->
+            <button class="ctl" type="button" [title]="t.diagnosticsHint" (click)="copyDiagnostics()">
+                {{ copiedDiagnostics() ? t.diagnosticsCopied : t.diagnosticsBtn }}
+            </button>
+        </div>
+    </footer>
 }

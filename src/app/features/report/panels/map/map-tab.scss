@@ -29,7 +29,7 @@
         max-width: 28ch;
         padding: var(--space-2) var(--space-4);
         border: none;
-        border-radius: 4px;
+        border-radius: var(--radius-chip);
 
         font-family: var(--font-data);
         font-size: var(--fs-note);
@@ -44,10 +44,15 @@
             outline-offset: 1px;
         }
 
+        &:hover {
+            background: var(--surface-sunk);
+        }
+
         &[aria-current='location'] {
             cursor: default;
             font-weight: 600;
             color: var(--ink);
+            background: none;
         }
     }
 
@@ -69,7 +74,9 @@
     }
 
     &__hits {
+        font-family: var(--font-data);
         font-size: var(--fs-note);
+        font-variant-numeric: tabular-nums;
         color: var(--muted);
     }
 
@@ -84,20 +91,23 @@
 .map-note {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2) var(--space-4);
+    gap: var(--space-2) var(--space-10);
     align-items: center;
 
-    margin: 0 0 var(--space-5);
+    margin: 0 0 var(--space-6);
 
     font-size: var(--fs-note);
     color: var(--muted);
 
-    &__key {
-        display: inline-block;
+    &__entry {
+        display: inline-flex;
+        gap: var(--space-3);
+        align-items: center;
+    }
 
-        width: 12px;
-        height: 12px;
-        margin-left: var(--space-3);
+    &__key {
+        width: 10px;
+        height: 10px;
         border: 1px solid var(--line-strong);
         border-radius: 2px;
 
@@ -136,7 +146,7 @@
 
     min-height: 240px;
     border: 1px solid var(--line);
-    border-radius: var(--radius);
+    border-radius: var(--radius-card);
 
     background: var(--surface-sunk);
 

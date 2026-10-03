@@ -1,6 +1,7 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { writeConfig } from '@core/config/loadline-config';
 import { formatCount } from '@core/format/format.utils';
+import { type Lang } from '@core/i18n/ui-strings';
 import {
     deploysPerWeek,
     importsChannel,
@@ -19,6 +20,35 @@ import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
 import { SituationService } from '@state/situation.service';
 import { PanelHeaderComponent } from '../panel-header/panel-header';
+
+/**
+ * The date of the answers as the reader writes dates. A native date field draws itself in the
+ * browser's locale, not the page's, so an English page in a Spanish browser asked for "dd/mm/aaaa";
+ * this is a text field instead, in the page's language: day first in Spanish, ISO in English.
+ */
+const showDay = (iso: string | null, lang: Lang): string => {
+    if (!iso) {
+        return '';
+    }
+    const [year, month, day] = iso.split('-', 3);
+    return lang === 'es' ? `${day}/${month}/${year}` : iso;
+};
+
+/** A day typed in either shape, as ISO; `null` for anything that is not a day of the calendar. */
+const readDay = (text: string): string | null => {
+    const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
+    const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
+    const parts = iso ? [iso[1], iso[2], iso[3]] : dmy ? [dmy[3], dmy[2], dmy[1]] : null;
+    if (!parts) {
+        return null;
+    }
+
+    const [year, month, day] = parts.map(Number) as [number, number, number];
+    const date = new Date(Date.UTC(year, month - 1, day));
+    // 31/02 rolls over into March: a day that does not come back as itself is not a day.
+    const real = date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+    return real ? date.toISOString().slice(0, 10) : null;
+};
 
 /**
  * The five questions, and the raw controls next to them.
@@ -53,6 +83,12 @@ export class SituationTabComponent {
     protected readonly questions = QUESTIONS;
     protected readonly total = QUESTIONS.length;
     protected readonly freshDays = SITUATION_FRESH_DAYS;
+
+    // * ATTRIBUTES
+    /** The date as the field shows it, in the page's language. */
+    protected readonly whenText = computed(() => showDay(this.situation.situation().answeredAt, this.i18n.lang()));
+    /** Something was typed that is not a day: it is kept in the field and not stored. */
+    protected readonly whenInvalid = signal(false);
 
     /**
      * The multiplication the middle two questions exist to produce, as three strings.
@@ -128,7 +164,12 @@ export class SituationTabComponent {
     }
 
     protected onWhen(event: Event): void {
-        this.situation.setWhen((event.target as HTMLInputElement).value);
+        const text = (event.target as HTMLInputElement).value.trim();
+        const day = text ? readDay(text) : '';
+        this.whenInvalid.set(day === null);
+        if (day !== null) {
+            this.situation.setWhen(day);
+        }
     }
 
     protected onRum(event: Event): void {

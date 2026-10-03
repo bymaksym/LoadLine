@@ -57,6 +57,13 @@
     background: var(--crit-soft);
 }
 
-.empty--pad {
-    padding: var(--space-12) 0;
+/* Fewer than two applications: one card asking for the rest, at the width of a line of reading. */
+.ask {
+    max-width: 760px;
+}
+
+/* The applications already added, under the card that asks for one more, or under the toolbar. */
+
+.ask ~ .builds {
+    margin-top: var(--space-8);
 }

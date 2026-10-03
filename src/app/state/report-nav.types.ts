@@ -5,9 +5,9 @@
  * against it, and the counters are keyed by it.
  */
 export const REPORT_TABS = [
+    // The views of the build.
     'findings',
     'screens',
-    'measured',
     'boot',
     'shared',
     'tree',
@@ -15,14 +15,17 @@ export const REPORT_TABS = [
     // chunk, at a glance, which is the one thing a list of rows is slow at.
     'map',
     'search',
-    'project',
-    // Next to the project's own files, because it is the same kind of thing: context about the
-    // world this build ships into rather than a view of the build.
+    // What is put into the report: a measurement, answers, the project's own files, other
+    // applications and the criteria. The strip draws a rule before the first of them.
+    'measured',
     'situation',
-    // Not a view of this build but of several, so it sits at the end next to the settings.
+    'project',
     'compare',
     'criteria',
 ] as const;
+
+/** The first tab of the second group, the one the strip draws a rule before. */
+export const FIRST_INPUT_TAB: ReportTab = 'measured';
 
 export type ReportTab = (typeof REPORT_TABS)[number];
 

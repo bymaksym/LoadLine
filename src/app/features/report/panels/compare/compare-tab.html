@@ -4,28 +4,48 @@
 
 <app-panel-header [howTo]="t.howToCompare" [subtitle]="t.secCompareSub" [title]="t.secCompare" />
 
-<div class="toolbar">
-    <div class="toolbar__group">
-        <input class="hidden-input" id="compareInput" multiple type="file" (change)="onFiles($event)" />
-        <label class="file-btn file-btn--ghost" for="compareInput" tabindex="0">{{ t.compareAdd }}</label>
-        <button class="ctl" type="button" [disabled]="!store.analysis()" (click)="compare.addCurrent()">
-            {{ t.compareAddCurrent }}
-        </button>
-        @if (list.length > 0) {
-            <button class="ctl" type="button" (click)="compare.clear()">{{ t.compareClear }}</button>
-        }
+<!-- The file input the labels open. Outside every branch: a label needs something to point at. -->
+<input class="hidden-input" id="compareInput" multiple type="file" (change)="onFiles($event)" />
+
+@if (list.length < 2) {
+    <!--
+    Fewer than two is not a comparison yet, so the tab asks for what is missing instead of drawing
+    tables. The build on screen is one click away: it is usually one of the applications.
+    -->
+    <div class="empty-card ask">
+        <span class="empty-card__state">{{ t.compareState(list.length) }}</span>
+        <h3 class="empty-card__title">{{ t.compareEmptyTitle }}</h3>
+        <p class="empty-card__body">{{ list.length === 0 ? t.compareEmpty : t.compareNeedsTwo }}</p>
+        <div class="empty-card__actions">
+            <label class="ctl ctl--primary" for="compareInput" tabindex="0" (keydown)="openPicker($event)">{{
+                t.compareAdd
+            }}</label>
+            <button class="ctl" type="button" [disabled]="!store.analysis()" (click)="compare.addCurrent()">
+                {{ t.compareAddCurrent }}
+            </button>
+        </div>
     </div>
-</div>
+} @else {
+    <div class="toolbar">
+        <div class="toolbar__group">
+            <label class="ctl ctl--outline" for="compareInput" tabindex="0" (keydown)="openPicker($event)">{{
+                t.compareAdd
+            }}</label>
+            <button class="ctl" type="button" [disabled]="!store.analysis()" (click)="compare.addCurrent()">
+                {{ t.compareAddCurrent }}
+            </button>
+            <button class="ctl" type="button" (click)="compare.clear()">{{ t.compareClear }}</button>
+        </div>
+    </div>
+}
 
 @if (compare.error(); as error) {
     <p class="status" data-tone="error">{{ error }}</p>
 }
 
-@if (list.length === 0) {
-    <p class="empty empty--pad">{{ t.compareEmpty }}</p>
-} @else {
+@if (list.length > 0) {
     <!-- Every build with what it weighs, on one scale. Raw figures: a stats.json has no folder. -->
-    <div class="scroller--tall">
+    <div class="card card--scroll builds">
         <table>
             <thead>
                 <tr>
@@ -60,9 +80,7 @@
         </table>
     </div>
 
-    @if (list.length < 2) {
-        <p class="note">{{ t.compareNeedsTwo }}</p>
-    } @else {
+    @if (list.length >= 2) {
         <!--
         The headline of this view, and the answer to the question it exists for: what a shared
         package could take off the total. Everything past the largest copy of each thing, because
@@ -81,7 +99,7 @@
         @if (report.frameworks.length > 0) {
             <h3 class="sub">{{ t.compareFrameworks }}</h3>
             <p class="note">{{ t.compareFrameworksNote }}</p>
-            <div class="scroller">
+            <div class="card card--scroll">
                 <table>
                     <thead>
                         <tr>
@@ -110,7 +128,7 @@
         @if (sharedHead().length === 0) {
             <p class="empty">{{ t.compareNoShared }}</p>
         } @else {
-            <div class="scroller">
+            <div class="card card--scroll">
                 <table>
                     <thead>
                         <tr>
@@ -158,7 +176,7 @@
         @if (ownHead().length === 0) {
             <p class="empty">{{ t.compareNoOwn }}</p>
         } @else {
-            <div class="scroller">
+            <div class="card card--scroll">
                 <table>
                     <thead>
                         <tr>

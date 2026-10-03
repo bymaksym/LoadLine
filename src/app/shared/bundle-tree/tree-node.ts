@@ -94,12 +94,4 @@ export class TreeNodeComponent {
         const ratio = total > 0 ? this.node().bytes / total : 0;
         return ratio >= this.store.criteria().heavyInZoneRatio ? Math.round(ratio * 100) : 0;
     });
-
-    protected readonly barColour = computed(() => {
-        const zone = this.node().zone;
-        if (zone === 'boot') {
-            return 'var(--seg-boot)';
-        }
-        return zone === 'shared' ? 'var(--seg-shared)' : 'var(--seg-own)';
-    });
 }

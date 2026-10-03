@@ -24,13 +24,19 @@ type SortKey = 'total' | 'shared' | 'own' | 'waves' | 'name' | 'delta';
  * header that drifts off its rows.
  */
 const COLUMN_WIDTH: Record<SortKey, string> = {
-    name: '13rem',
-    waves: '5rem',
-    shared: '7rem',
-    own: '6rem',
+    name: '10rem',
+    waves: '5.5rem',
+    shared: '7.5rem',
+    own: '6.5rem',
     total: '7rem',
     delta: '6rem',
 };
+
+/**
+ * The narrowest the bar column gets. Below it the table stops shrinking and scrolls sideways inside
+ * its card: a bar of a few pixels compares nothing.
+ */
+const BAR_MIN = '10rem';
 type VerdictFilter = Verdict | 'all';
 
 /** The delta cell of a row: text with its sign, and which way it moved. `new` = not in the baseline. */
@@ -155,36 +161,16 @@ export class ScreensTabComponent {
      */
     protected readonly allColumns = computed(() => {
         const t = this.i18n.ui();
-        const columns: { key: SortKey; cls: string; label: string; help: string }[] = [
-            { key: 'waves', cls: 'screen-row__num screen-row__num--waves', label: t.colWaves, help: t.helpWaves },
-            {
-                key: 'shared',
-                cls: 'screen-row__num screen-row__num--shared',
-                label: t.colShared,
-                help: t.helpSharedCol,
-            },
-            {
-                key: 'own',
-                cls: 'screen-row__num screen-row__num--own',
-                label: t.colOwn,
-                help: `${t.helpOwnCol} ${this.ownRule()}`,
-            },
-            {
-                key: 'total',
-                cls: 'screen-row__num screen-row__total',
-                label: t.colTotal,
-                help: `${t.helpTotal} ${this.totalRule()}`,
-            },
+        const columns: { key: SortKey; label: string; help: string }[] = [
+            { key: 'waves', label: t.colWaves, help: t.helpWaves },
+            { key: 'shared', label: t.colShared, help: t.helpSharedCol },
+            { key: 'own', label: t.colOwn, help: `${t.helpOwnCol} ${this.ownRule()}` },
+            { key: 'total', label: t.colTotal, help: `${t.helpTotal} ${this.totalRule()}` },
         ];
 
         const compared = this.showDelta();
         if (compared) {
-            columns.push({
-                key: 'delta',
-                cls: 'screen-row__num screen-row__delta',
-                label: t.colDelta,
-                help: t.helpDelta(compared.baselineName),
-            });
+            columns.push({ key: 'delta', label: t.colDelta, help: t.helpDelta(compared.baselineName) });
         }
 
         return columns;
@@ -222,7 +208,11 @@ export class ScreensTabComponent {
      * lining up with the rows under it.
      */
     protected readonly gridColumns = computed(() =>
-        ['13rem', 'minmax(0, 1fr)', ...this.numberColumns().map(column => COLUMN_WIDTH[column.key])].join(' '),
+        [
+            COLUMN_WIDTH.name,
+            `minmax(${BAR_MIN}, 1fr)`,
+            ...this.numberColumns().map(column => COLUMN_WIDTH[column.key]),
+        ].join(' '),
     );
 
     protected shows(key: SortKey): boolean {
@@ -271,6 +261,10 @@ export class ScreensTabComponent {
         const c = this.store.criteria();
         return this.i18n.ui().verdictRule(formatBytes(c.screenOk), formatBytes(c.screenBad));
     });
+
+    /** What the two ticks on the bars stand for, in the legend above them: the thresholds themselves. */
+    protected readonly okLabel = computed(() => formatBytes(this.store.criteria().screenOk));
+    protected readonly badLabel = computed(() => formatBytes(this.store.criteria().screenBad));
 
     protected readonly ownRule = computed(() => {
         const c = this.store.criteria();

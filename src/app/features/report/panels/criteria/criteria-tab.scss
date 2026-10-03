@@ -3,9 +3,9 @@
 }
 
 .mode-note {
-    max-width: 60ch;
+    max-width: 640px;
     margin: 0;
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     color: var(--muted);
 
     /* Which of the two compressed figures drives the report, when both are available. */
@@ -23,103 +23,137 @@
     }
 }
 
-.crit-group {
-    margin-bottom: var(--space-8);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface);
+/*
+   One grid for the header, the group rows and every criterion, so the two value columns line up
+   from the first threshold to the last. The minimum width keeps the columns and lets the card
+   scroll on a phone rather than folding the inputs under the text.
+*/
+.crit-table {
+    /*
+    The text column stops growing at a reading width: on a wide screen an elastic one pushed the
+    inputs a thousand pixels away from the name they belong to.
+    */
+    --crit-cols: minmax(260px, 44rem) 150px 150px;
 
-    h3 {
-        margin: 0;
-        padding: var(--space-4) var(--space-8);
+    min-width: 720px;
+
+    &__head {
+        display: grid;
+        grid-template-columns: var(--crit-cols);
+        gap: var(--space-8);
+
+        padding: var(--row-y-head) var(--space-7);
         border-bottom: 1px solid var(--line);
 
-        font-size: var(--fs-note);
+        font-size: var(--fs-label);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    &__head-ok {
+        color: var(--ok);
+    }
+
+    &__head-bad {
+        color: var(--crit);
+    }
+
+    &__group-title {
+        margin: 0;
+        padding: var(--row-y-head) var(--space-7);
+        border-bottom: 1px solid var(--line);
+
+        font-size: var(--fs-label);
         font-weight: 600;
         color: var(--muted);
-        letter-spacing: 0.01em;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+
+        background: var(--surface-sunk);
+    }
+
+    &__group:last-child .crit:last-child {
+        border-bottom: none;
     }
 }
 
-/* One row per criterion: text on the left, fields on the right. */
+/* One row per criterion: name, source and help on the left, then the one or two values. */
 .crit {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-4) var(--space-12);
+    grid-template-columns: var(--crit-cols);
+    gap: var(--space-8);
+    align-items: center;
 
-    padding: var(--space-6) var(--space-8);
+    padding: var(--row-y) var(--space-7);
     border-bottom: 1px solid var(--line);
-    border-left: 3px solid transparent;
 
-    &:last-child {
-        border-bottom: none;
-    }
-
-    /* Custom: the left border marks it, and the recommended value reads right below the field. */
+    /* Custom: an accent edge marks it, and the recommended value reads under the help. */
     &--custom {
-        border-left-color: var(--accent);
         background: var(--accent-soft);
+        box-shadow: inset 3px 0 0 var(--accent);
     }
 
     &__text {
         display: grid;
         gap: var(--space-1);
+        padding: var(--space-2) 0;
     }
 
     &__label {
-        font-size: var(--fs-2);
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-4);
+        align-items: baseline;
+    }
+
+    &__name {
+        font-size: var(--fs-body);
         font-weight: 600;
     }
 
+    /* The source as a chip with an edge, in the same figure font as the values it qualifies. */
+    &__from {
+        padding: 0 var(--space-3);
+        border: 1px solid var(--line);
+
+        font-family: var(--font-data);
+        font-weight: 400;
+
+        background: transparent;
+    }
+
     &__help {
-        max-width: 60ch;
-        font-size: var(--fs-body);
+        font-size: var(--fs-small);
         color: var(--muted);
     }
 
-    &__inputs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3) var(--space-8);
-        align-items: center;
-
-        label {
-            display: inline-flex;
-            gap: var(--space-3);
-            align-items: center;
-
-            font-size: var(--fs-body);
-            color: var(--muted);
-        }
-    }
-
-    &__unit {
-        min-width: 1.5rem;
-        font-family: var(--font-data);
-        font-size: var(--fs-body);
-    }
-
     &__rec {
-        flex-basis: 100%;
-
         font-family: var(--font-data);
         font-size: var(--fs-note);
         font-variant-numeric: tabular-nums;
         color: var(--muted);
     }
-}
 
-/*
-   Wide, the text column used to take everything the row had and push the fields to the far right:
-   fourteen rows with the words against the left edge and the number against the right one, and
-   pairing them up cost a sweep of the eyes per row. The text column is capped instead, so the field
-   is next to the label it belongs to and the rest of the row is empty space, which costs nothing.
-*/
-@media (width >= 800px) {
-    .crit {
-        grid-template-columns: minmax(0, 34rem) auto;
-        gap: var(--space-4) var(--space-16);
-        align-items: start;
-        justify-content: start;
+    &__value {
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+    }
+
+    &__input {
+        width: 76px;
+        height: 30px;
+        padding: 0 var(--space-4);
+
+        font-size: var(--fs-small);
+
+        background: var(--ground);
+    }
+
+    &__unit {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        color: var(--muted);
     }
 }

@@ -13,19 +13,12 @@ import { PanelHeaderComponent } from '../panel-header/panel-header';
 type Zone = 'all' | 'boot' | 'lazy' | 'shared' | 'own';
 type SortKey = 'name' | 'bytes';
 
-/**
- * One line of the block above the list: a group — eager or lazy — or one of the two zones nested
- * under lazy. `who` is empty on a group that has children, because its children say it.
- */
-interface ShapeRow {
-    key: string;
-    /** Which colour the square takes. `lazy` is the two zones under it, as one gradient. */
-    dot: string;
-    name: string;
-    who: string;
+/** One entry of the legend under the bar: a zone, what it weighs and how many files carry it. */
+interface ShapeItem {
+    zone: ZoneShape['zone'];
+    label: string;
     size: string;
     files: number;
-    sub: boolean;
 }
 
 /** The bundle from the inside: zone filter, text filter and the chunk → package → file tree. */
@@ -66,11 +59,10 @@ export class TreeTabComponent {
     private readonly zoneShapes = computed(() => shapeOf(this.tree(), this.store.criteria()));
 
     /**
-     * How the build is divided, in the two questions that order it: **when** each part comes down —
-     * eager or lazy, which is the split every bundler reports — and, inside the lazy half, **who
-     * pays** for it, which is the one only Loadline counts. Nesting the second under the first is
-     * what makes the two figures comparable at a glance: in a typical app they come out about
-     * even, and reading it takes no adding up of two rows by hand.
+     * How the build is divided: one bar on the report's three colours and a legend entry per zone,
+     * each saying **when** it comes down — eager or lazy, the split every bundler reports — and
+     * **who pays** for it, which is the one only Loadline counts. The sentence under them says the
+     * eager share as a proportion, so nobody has to add the lazy two up by hand.
      *
      * It is also the only reading of the bundle that does not depend on which row happens to be open.
      */
@@ -82,61 +74,20 @@ export class TreeTabComponent {
             return null;
         }
 
-        const whoPaysFor = (zone: ZoneShape['zone']): string =>
-            zone === 'boot' ? t.shapeBoot : zone === 'shared' ? t.shapeShared : t.shapeOwn;
-        const eager = zones.find(zone => zone.zone === 'boot');
-        const lazy = zones.filter(zone => zone.zone !== 'boot');
-        const lazyBytes = lazy.reduce((total, zone) => total + zone.bytes, 0);
-        const total = (eager?.bytes ?? 0) + lazyBytes;
-        // A group with a single child is not a group: its zone goes on the group's own line.
-        const onlyLazy = lazy.length === 1 ? lazy[0] : null;
+        const total = zones.reduce((sum, zone) => sum + zone.bytes, 0);
+        const eager = zones.find(zone => zone.zone === 'boot')?.bytes ?? 0;
 
-        const rows: ShapeRow[] = [];
-        if (eager) {
-            rows.push({
-                key: 'eager',
-                dot: 'boot',
-                name: t.tagDelivery.eager,
-                who: whoPaysFor('boot'),
-                size: formatBytes(eager.bytes),
-                files: eager.files,
-                sub: false,
-            });
-        }
-        if (lazy.length > 0) {
-            rows.push({
-                key: 'lazy',
-                dot: 'lazy',
-                name: t.tagDelivery.lazy,
-                who: onlyLazy ? whoPaysFor(onlyLazy.zone) : '',
-                size: formatBytes(lazyBytes),
-                files: lazy.reduce((count, zone) => count + zone.files, 0),
-                sub: false,
-            });
-        }
-        if (!onlyLazy) {
-            rows.push(
-                ...lazy.map(zone => ({
-                    key: zone.zone,
-                    dot: zone.zone,
-                    name: '',
-                    who: whoPaysFor(zone.zone),
-                    size: formatBytes(zone.bytes),
-                    files: zone.files,
-                    sub: true,
-                })),
-            );
-        }
-
-        // The bar keeps the three colours the whole report uses and breaks where eager ends, so the
-        // proportion is read off it instead of worked out from the numbers next to it.
-        const bar = zones.map(zone => ({
+        // Each stretch grows by its weight rather than taking a width in percent, so the 1 px gaps
+        // between them come out of the stretches and the bar never overflows its track.
+        const bar = zones.filter(zone => zone.bytes > 0).map(zone => ({ zone: zone.zone, grow: zone.bytes }));
+        const items: ShapeItem[] = zones.map(zone => ({
             zone: zone.zone,
-            percent: total > 0 ? (zone.bytes / total) * 100 : 0,
-            break: zone.zone !== 'boot' && zone === lazy[0] && !!eager,
+            label: t.shapeZone[zone.zone],
+            size: formatBytes(zone.bytes),
+            files: zone.files,
         }));
 
-        return { rows, bar, split: t.shapeSplit(Math.round(((eager?.bytes ?? 0) / (total || 1)) * 100)) };
+        return { items, bar, split: t.shapeSplit(Math.round((eager / (total || 1)) * 100)) };
     });
 
     /**

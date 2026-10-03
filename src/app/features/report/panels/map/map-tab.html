@@ -57,10 +57,17 @@
     </div>
 </div>
 
+<!-- Each texture with its word, as one piece, so a narrow screen never wraps a swatch from its label. -->
 <p class="map-note">
     <span>{{ areaNote() }}</span>
-    <span aria-hidden="true" class="map-note__key"></span>{{ t.mapLegendPackage }}
-    <span aria-hidden="true" class="map-note__key map-note__key--own"></span>{{ t.mapLegendOwn }}
+    <span class="map-note__entry">
+        <i aria-hidden="true" class="map-note__key"></i>
+        {{ t.mapLegendPackage }}
+    </span>
+    <span class="map-note__entry">
+        <i aria-hidden="true" class="map-note__key map-note__key--own"></i>
+        {{ t.mapLegendOwn }}
+    </span>
     <span class="map-note__hint">{{ t.mapHint }}</span>
 </p>
 

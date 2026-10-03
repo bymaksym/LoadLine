@@ -1,4 +1,4 @@
-import { Service, signal } from '@angular/core';
+import { computed, Service, signal } from '@angular/core';
 
 type Theme = 'light' | 'dark';
 
@@ -10,10 +10,25 @@ type Theme = 'light' | 'dark';
 export class ThemeService {
     readonly forced = signal<Theme | null>(null);
 
+    /** The system's preference, kept current: the button names the theme it switches to. */
+    private readonly systemDark = signal(false);
+
+    readonly dark = computed(() => this.forced() === 'dark' || (this.forced() === null && this.systemDark()));
+
+    constructor() {
+        // A test DOM has no `matchMedia`: there the system preference is light, which is what it is
+        // anyway when nobody says otherwise.
+        if (typeof matchMedia !== 'function') {
+            return;
+        }
+
+        const query = matchMedia('(prefers-color-scheme: dark)');
+        this.systemDark.set(query.matches);
+        query.addEventListener('change', event => this.systemDark.set(event.matches));
+    }
+
     toggle(): void {
-        const isDark =
-            this.forced() === 'dark' || (this.forced() === null && matchMedia('(prefers-color-scheme: dark)').matches);
-        const next: Theme = isDark ? 'light' : 'dark';
+        const next: Theme = this.dark() ? 'light' : 'dark';
 
         this.forced.set(next);
         document.documentElement.dataset['theme'] = next;

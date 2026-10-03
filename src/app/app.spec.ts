@@ -56,10 +56,13 @@ describe('the page, with the example loaded', () => {
 
         expect(countOf(fixture, 'app-report-page')).toBe(1);
 
-        // The headline: 568 140 raw bytes across four bootstrap chunks. If this moves, either the
-        // walk of the import graph changed or the example did.
-        expect(textOf(fixture, '.tile--hero .tile__figure')).toContain('555 kB');
-        expect(textOf(fixture, '.tile--hero .tile__sub')).toContain('4');
+        // The declared bootstrap: 568 140 raw bytes across four bootstrap chunks. If this moves,
+        // either the walk of the import graph changed or the example did.
+        expect(textOf(fixture, '.kpi .kpi__value')).toContain('555 kB');
+        expect(textOf(fixture, '.kpi .kpi__sub')).toContain('4');
+
+        // The lead figure: that, plus the one lazy chunk five of the eight screens load anyway.
+        expect(textOf(fixture, '.hero__figure')).toMatch(/^722\s+kB$/);
 
         // Eight screens, and the widget deferred inside one of them is not a ninth.
         expect(store.analysis()?.screens).toHaveLength(8);
@@ -71,7 +74,26 @@ describe('the page, with the example loaded', () => {
         await fixture.whenStable();
         fixture.detectChanges();
 
-        expect(textOf(fixture, 'app-intake-page .loadbar__status')).toContain('Example build');
+        expect(textOf(fixture, '.build-chip')).toContain('Example build');
+    });
+
+    /** The chip that names the build is the way back to the files: the report gives way to them. */
+    it('goes back to the front page from the build chip, and returns to the report', async () => {
+        store.loadSample();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        const host = fixture.nativeElement as HTMLElement;
+        host.querySelector<HTMLButtonElement>(':scope .build-chip')?.click();
+        await fixture.whenStable();
+        fixture.detectChanges();
+        expect(countOf(fixture, 'app-report-page')).toBe(0);
+        expect(countOf(fixture, '.drop')).toBe(1);
+
+        host.querySelector<HTMLButtonElement>(':scope .home__back button')?.click();
+        await fixture.whenStable();
+        fixture.detectChanges();
+        expect(countOf(fixture, 'app-report-page')).toBe(1);
     });
 
     /**
@@ -146,11 +168,10 @@ describe('the page, with the example loaded', () => {
     });
 
     /**
-     * The palette has no control anywhere on the page, so the only thing that can prove it exists is
-     * the keystroke. `?` opens the shortcuts and Ctrl+K opens the jump list, which is the whole of
-     * what it promises.
+     * The palette opens from the keyboard as well as from its button in the header: `?` opens the
+     * shortcuts and Ctrl+K opens the jump list, which is the whole of what it promises.
      */
-    it('opens from the keyboard, which is the only way it opens', async () => {
+    it('opens from the keyboard', async () => {
         store.loadSample();
         await fixture.whenStable();
         fixture.detectChanges();
@@ -169,6 +190,20 @@ describe('the page, with the example loaded', () => {
 
         // With nothing typed it offers the tabs and the handful of things the report does.
         expect(countOf(fixture, 'app-palette .palette__row')).toBeGreaterThan(REPORT_TABS.length);
+    });
+
+    it('opens from the search button in the header', async () => {
+        store.loadSample();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        (fixture.nativeElement as HTMLElement)
+            .querySelector<HTMLButtonElement>(':scope .masthead__actions button')
+            ?.click();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(countOf(fixture, 'app-palette .palette__box')).toBe(1);
     });
 
     it('finds a screen by name from the palette', async () => {

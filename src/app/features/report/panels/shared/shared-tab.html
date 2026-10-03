@@ -3,16 +3,20 @@
 
 <app-panel-header [howTo]="t.howToShared" [subtitle]="t.secSharedSub" [title]="t.secShared" />
 
-<p class="sum" [innerHTML]="sumText()"></p>
+<!--
+One line: what the near-global chunks add up to, and the two coverage thresholds that sort them.
+Each run is its own span, with nothing around its text: a bare text run here picks up the
+template's whitespace and puts a space before every colon.
+-->
+<p class="sum">
+    @for (part of sumParts(); track $index) {
+        <span [class.sum__fig]="part.figure">{{ part.text }}</span>
+    }
+</p>
 
 <!-- The same chunks, split by whether there is anything to do about them. -->
 @if (triage(); as triage) {
-    <p class="triage">
-        {{ triage }}
-        <!-- The rule the colours in this table follow, written out: it used to live in a `title`. -->
-        <span aria-hidden="true" class="triage__dot">·</span>
-        <span>{{ coverageRule() }}</span>
-    </p>
+    <p class="triage">{{ triage }}</p>
 }
 
 <!-- Fifteen rows here, a hundred and fifty in a big build, and no way to look for one. -->
@@ -30,12 +34,13 @@
     </div>
 </div>
 
-<div class="scroller--tall">
-    <table>
+<div class="scroller--tall scroller--swipe">
+    <table class="shared">
         <thead>
             <tr>
                 <th
                     app-sort
+                    class="shared__chunk-col"
                     scope="col"
                     [active]="order().key === 'name'"
                     [dir]="order().dir"
@@ -46,7 +51,7 @@
                 </th>
                 <th
                     app-sort
-                    class="cov-col"
+                    class="shared__cov-col"
                     scope="col"
                     [active]="order().key === 'coverage'"
                     [dir]="order().dir"
@@ -68,7 +73,7 @@
                 >
                     {{ t.thSize }}
                 </th>
-                <th scope="col">{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
+                <th class="shared__main-col" scope="col">{{ t.thMain }}<app-explain [text]="t.helpMain" /></th>
             </tr>
         </thead>
         <tbody>
@@ -86,35 +91,40 @@
                     (keydown.space)="toggle(row); $event.preventDefault()"
                 >
                     <!--
-                    One tag, where there were three systems of them on the same row.
-
-                    `lazy` said the same thing on every row of a tab that is only about lazy chunks.
-                    "below the threshold" said it on fourteen of fifteen, which distinguishes
-                    nothing — and the row already carries that answer in the size column and in the
-                    detail. What is left is the tag that names where the weight comes from, and only
-                    when it names something: those are the handful of rows that lead anywhere.
+                    The name, and under it where the weight comes from — only when that names
+                    something. "Below the threshold" would say it on fourteen rows of fifteen, which
+                    distinguishes nothing; the row already carries that answer in its size and its
+                    detail. The same sentence opens the detail, so it is said here quietly.
                     -->
-                    <td class="path">
-                        <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
-                        {{ row.name }}
+                    <td class="chunk">
+                        <span class="chunk__name">
+                            <span aria-hidden="true" class="chunk__twist">{{ isOpen ? '−' : '+' }}</span>
+                            {{ row.name }}
+                        </span>
                         @if (row.worth.origin !== 'small') {
-                            <!-- The same sentence is in the detail this row opens; twice is once too many. -->
-                            <span class="tag" [class.tag--act]="row.worth.level === 'try'">{{
-                                worthLabel(row.worth)
-                            }}</span>
+                            <span class="chunk__worth">{{ worthLabel(row.worth) }}</span>
                         }
                     </td>
+
+                    <!--
+                    Coverage as a bar with the effective-bootstrap line drawn on it, and under it
+                    the figure, the band in words and the rating as a shape. No colour and no shape
+                    when the chunk is too small to be worth touching, whatever its coverage.
+                    -->
                     <td class="cov">
-                        <span class="cov__row">
-                            <span class="track cov__track" [attr.data-cov]="row.coverage">
-                                <i [style.width.%]="row.ratio * 100"></i>
-                            </span>
-                            <span class="cov__n" [attr.data-v]="row.verdict">
-                                {{ t.coverageOf(row.screens, total) }} · {{ (row.ratio * 100).toFixed(0) }} %
-                            </span>
+                        <span aria-hidden="true" class="cov__bar">
+                            <i class="cov__fill" [style.width.%]="row.ratio * 100"></i>
+                            <i class="cov__tick" [style.left.%]="bootTick()"></i>
                         </span>
-                        <span class="tag" [class]="'tag ' + tagClass(row.coverage)">{{ covLabel(row.coverage) }}</span>
+                        <span class="cov__line" [attr.data-v]="row.verdict">
+                            @if (row.verdict) {
+                                <i aria-hidden="true" class="dot-v" [attr.data-v]="row.verdict"></i>
+                            }
+                            {{ t.coverageOf(row.screens, total) }} · {{ (row.ratio * 100).toFixed(0) }} % ·
+                            {{ covLabel(row.coverage) }}
+                        </span>
                     </td>
+
                     <td class="num" [attr.data-v]="row.sizeVerdict">
                         {{ row.bytes | bytes }}
                         @if (row.sizeVerdict === 'bad') {
@@ -122,12 +132,13 @@
                             <span class="sr-only">, {{ t.verdictBad }}.</span>
                         }
                     </td>
+
                     <!-- An empty cell here used to be the whole explanation of a 0 B chunk. -->
-                    <td class="path" [title]="row.mainContent">
+                    <td class="contents" [title]="row.mainContent">
                         @if (row.mainContent) {
                             {{ elide(row.mainContent) }}
                         } @else {
-                            <span class="muted">{{ t.chunkNoContent }}</span>
+                            <span class="contents__none">{{ t.chunkNoContent }}</span>
                         }
                     </td>
                 </tr>
@@ -149,12 +160,12 @@
                                     {{ worthWhy(row.worth) }}
                                 </p>
                                 <p class="worth__line">{{ worthCost(row.worth) }}</p>
-                                <p class="worth__line worth__line--note">{{ t.worthNoSplit }}</p>
+                                <p class="worth__line">{{ t.worthNoSplit }}</p>
                             </div>
 
-                            <div class="detail__grid">
+                            <div class="split">
                                 <div>
-                                    <h4>{{ t.loadedBy(row.loadedBy.length) }}</h4>
+                                    <h4 class="detail__title">{{ t.loadedBy(row.loadedBy.length) }}</h4>
                                     <div class="chips">
                                         @for (screen of row.loadedBy; track screen.source) {
                                             <button
@@ -170,7 +181,7 @@
                                 </div>
 
                                 <div>
-                                    <h4>{{ t.contents }}</h4>
+                                    <h4 class="detail__title">{{ t.contents }}</h4>
                                     <app-path-tree [items]="row.files" />
                                 </div>
                             </div>

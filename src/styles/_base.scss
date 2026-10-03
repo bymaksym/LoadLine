@@ -10,12 +10,10 @@
 
 body {
     margin: 0;
-    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- room under the last panel so its last row can be scrolled clear of the bottom edge: a stretch of page, not a step of air */
-    padding: 0 var(--space-10) 5rem;
 
     font-family: var(--font-ui);
     font-size: var(--fs-page);
-    line-height: 1.55;
+    line-height: 1.45;
     color: var(--ink);
 
     background: var(--ground);

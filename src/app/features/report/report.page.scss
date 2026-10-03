@@ -2,65 +2,323 @@
     display: block;
 }
 
+/* ---------- summary: the lead figure and the four that lead to their tab ---------- */
+
+/* One box, its parts separated by 1 px of the line colour showing through the gaps. */
 .summary {
-    /* The sentence the big figure means nothing without: read as a sentence, in the reading colour. */
-    &__lead {
-        max-width: 62ch;
-        margin: 0 0 var(--space-1);
-        font-size: var(--fs-3);
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+
+    background: var(--line);
+}
+
+.hero {
+    display: grid;
+    flex: 2 1 320px;
+    gap: var(--space-4);
+    align-content: start;
+
+    padding: var(--space-8) var(--space-10);
+
+    background: var(--surface);
+
+    &__top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+        justify-content: space-between;
+
+        font-size: var(--fs-small);
+        color: var(--muted);
+    }
+
+    &__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-5);
+        align-items: baseline;
+    }
+
+    &__figure {
+        font-family: var(--font-data);
+        font-size: var(--fs-hero);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        white-space: nowrap;
+    }
+
+    &__unit {
+        font-size: 0.5em;
+        font-weight: 400;
+        color: var(--muted);
+        letter-spacing: 0;
+    }
+
+    &__verdict {
+        display: inline-flex;
+        align-items: center;
+        font-size: var(--fs-small);
+        font-weight: 400;
+    }
+
+    /* The bar, its two threshold ticks and their labels: 30 px, labels included. */
+    &__bar {
+        position: relative;
+        height: 30px;
+        margin-top: var(--space-1);
+    }
+
+    &__track {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+
+        overflow: hidden;
+        display: flex;
+        gap: 1px;
+
+        height: 8px;
+        border-radius: 2px;
+
+        background: var(--track);
+    }
+
+    &__seg {
+        &[data-zone='boot'] {
+            background: var(--seg-boot);
+        }
+
+        &[data-zone='shared'] {
+            background: var(--seg-shared);
+        }
+    }
+
+    &__tick {
+        position: absolute;
+        top: -3px;
+        height: 14px;
+        border-left: 1px solid var(--ink);
+    }
+
+    &__tick-label {
+        position: absolute;
+        top: 13px;
+        transform: translateX(-50%);
+
+        font-family: var(--font-data);
+        font-size: var(--fs-label);
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    &__caption {
+        margin: 0;
+        font-size: var(--fs-small);
+        color: var(--muted);
+    }
+}
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    flex: 3 1 400px;
+    gap: 1px;
+}
+
+/* Each figure is a button to its tab: the whole cell is the target, and it says so on hover. */
+.kpi {
+    cursor: pointer;
+
+    display: grid;
+    gap: var(--space-3);
+    align-content: start;
+
+    padding: var(--space-8);
+    border: 0;
+
+    font: inherit;
+    color: inherit;
+    text-align: left;
+
+    background: var(--surface);
+
+    &:hover {
+        background: var(--surface-sunk);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+
+    &__label {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: space-between;
+
+        font-size: var(--fs-label);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    &__row {
+        display: flex;
+        gap: var(--space-4);
+        align-items: center;
+    }
+
+    &__value {
+        font-family: var(--font-data);
+        font-size: var(--fs-figure);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+    }
+
+    /* The one badge in the summary: on the worst of the rated figures, and on no other. */
+    &__worst {
+        padding: 1px var(--space-3);
+        border-radius: var(--radius-chip);
+
+        font-size: var(--fs-label);
+        font-weight: 600;
+        color: var(--crit);
+
+        background: var(--crit-soft);
+    }
+
+    &__sub {
+        font-size: var(--fs-small);
+        color: var(--muted);
+    }
+
+    /* The stylesheet the figure above does not count: a caveat on it, in ink — no colour of the bars. */
+    &__css {
         color: var(--ink);
     }
 
-    /* Everything that is not the framing: which criteria, where the split came from, what was left out. */
+    /* Movement against the baseline. Up is the bad direction here. */
+    &__delta {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        font-variant-numeric: tabular-nums;
+
+        &[data-tone='up'] {
+            color: var(--crit);
+        }
+
+        &[data-tone='down'] {
+            color: var(--ok);
+        }
+    }
+}
+
+/* Under the summary: where to start acting on it, and which criteria rated it. */
+.summary-after {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-8);
+    align-items: baseline;
+    justify-content: space-between;
+
+    margin: var(--space-5) 0 var(--space-9);
+
+    font-size: var(--fs-small);
+    color: var(--muted);
+
+    &__act {
+        cursor: pointer;
+
+        padding: 0;
+        border: 0;
+
+        font: inherit;
+        font-weight: 600;
+        color: var(--accent);
+
+        background: none;
+
+        &:hover {
+            color: var(--ink);
+        }
+
+        &:focus-visible {
+            border-radius: 2px;
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+    }
+
     &__meta {
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-1) var(--space-3);
         align-items: baseline;
 
-        margin: 0 0 var(--space-6);
+        margin: 0;
+    }
+}
 
-        font-size: var(--fs-body);
+.panel {
+    min-height: 40vh;
+    padding-top: var(--space-10);
+
+    /* The views drawn only for paper: never on screen, even if `afterprint` never came. */
+    &--print {
+        display: none;
+    }
+}
+
+/* ---------- foot: where the figures come from, and exporting them ---------- */
+
+.report-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8) var(--space-16);
+    align-items: flex-start;
+    justify-content: space-between;
+
+    margin-top: var(--space-20);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--line);
+
+    &__legend {
+        display: grid;
+        gap: var(--space-4);
+        max-width: 640px;
+    }
+
+    &__title {
+        font-size: var(--fs-small);
+        font-weight: 600;
+    }
+
+    &__sources {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4) var(--space-8);
+
+        font-size: var(--fs-small);
         color: var(--muted);
-    }
 
-    &__dot {
-        color: var(--line-strong);
-    }
-
-    &__help {
-        cursor: help;
-        text-decoration: underline dotted;
-        text-decoration-color: var(--line-strong);
-        text-underline-offset: 0.25em;
+        .tag {
+            margin-right: var(--space-2);
+        }
     }
 
     &__tools {
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-3);
-        justify-content: flex-end;
-
-        margin-top: var(--space-12);
-        padding-top: var(--space-7);
-        border-top: 1px solid var(--line);
     }
-}
-
-/* Movement against the baseline, under the bootstrap figure. Up is the bad direction here. */
-.tile__delta {
-    font-family: var(--font-data);
-    font-variant-numeric: tabular-nums;
-
-    &[data-tone='up'] {
-        color: var(--crit);
-    }
-
-    &[data-tone='down'] {
-        color: var(--ok);
-    }
-}
-
-.panel {
-    min-height: 40vh;
 }

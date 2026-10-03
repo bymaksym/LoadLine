@@ -1,11 +1,12 @@
 @let t = i18n.ui();
 @let tally = counts();
+@let total = saving();
 
 <app-panel-header [howTo]="t.howToFindings" [subtitle]="t.secFindingsSub" [title]="t.secFindings" />
 
 <!--
-Ten cards in a row with no way to tell them apart. The front page says "3 important · 6 to review"
-and that split did not exist here: these are the same three numbers, and they filter.
+The front page says "3 important · 6 to review": these are the same three numbers, they filter, and
+each carries the shape its lines are marked with below.
 -->
 <div class="toolbar">
     <div class="toolbar__group" role="group" [attr.aria-label]="t.secFindings">
@@ -18,6 +19,7 @@ and that split did not exist here: these are the same three numbers, and they fi
                 [disabled]="tally[option] === 0 && option !== 'all'"
                 (click)="filter.set(option)"
             >
+                <span aria-hidden="true" class="dot-v signals__mark" [attr.data-v]="filterShape(option)"></span>
                 {{ filterLabel(option) }}
                 <span class="ctl__n">{{ tally[option] }}</span>
             </button>
@@ -30,97 +32,119 @@ and that split did not exist here: these are the same three numbers, and they fi
             <button class="ctl" type="button" (click)="clearSeen()">{{ t.findingsSeenReset }}</button>
         </div>
     }
+
+    <!-- What doing all of it is worth, beside the filters rather than under the last line. -->
+    @if (total && total.counted > 0) {
+        <p class="signals__total" [title]="estimated() ? t.actionsTotalNoteEstimated : t.actionsTotalNote">
+            {{ t.actionsTotal(total.counted) }}
+            <strong class="signals__figure">{{ savingText(total.bytes) }}</strong>
+            {{ t.actionsTotalAfter }} <strong class="signals__figure">{{ remainingText(total) }}</strong
+            >.
+        </p>
+    }
 </div>
 
 <!--
-The order somebody would do them in, and what doing all of it is worth. It sits above the cards
-rather than replacing any of them: thirty-seven signals in no order are thirty-seven signals nobody
-reads, and thirty-seven signals with five of them shown is a list that has to be checked elsewhere.
+One table, in the order worth fixing. It replaced a ranked list above a column of long cards: the
+same signals twice, once ordered and once explained. Every signal is a line, and the explanation
+opens in place under the line it belongs to.
 -->
-@if (actions().length > 0) {
-    @let total = saving();
+<div class="card signals">
+    <div class="signals__head">
+        <span>#</span>
+        <span>{{ t.findingsColSignal }}</span>
+        <span class="signals__head-off">{{ t.findingsColOff }}</span>
+        <span class="signals__head-fix">{{ t.findingsColFix }}</span>
+        <span></span>
+    </div>
 
-    <section class="actions">
-        <h3 class="actions__title">{{ t.actionsTitle }}</h3>
-        <p class="actions__note">{{ t.actionsNote }}</p>
-
-        <ol class="actions__list">
-            @for (action of actions(); track action.finding.title) {
-                <li class="actions__row">
-                    <button class="actions__go" type="button" (click)="goToCard(action.finding)">
-                        {{ action.finding.title }}
-                    </button>
-                    <span class="actions__saving">
-                        @if (action.saving > 0) {
-                            {{ action.saving | bytes }}
-                        } @else {
-                            <span class="muted">—</span>
-                        }
-                    </span>
-                    <span class="actions__effort">{{ effortLabel(action.effort) }}</span>
-                </li>
-            }
-        </ol>
-
-        @if (total && total.counted > 0) {
-            <p class="actions__total">
-                {{ t.actionsTotal(total.counted) }}
-                <strong>{{ total.bytes | bytes }}</strong>
-                {{ t.actionsTotalAfter }} <strong>{{ total.after | bytes }}</strong
-                >. <span class="actions__note">{{ t.actionsTotalNote }}</span>
-            </p>
-        }
-    </section>
-}
-
-<div class="findings">
-    @for (finding of rows(); track finding.title) {
+    @for (row of rows(); track row.finding.title) {
+        @let finding = row.finding;
         @let isSeen = seen().has(finding.title);
+        @let isOpen = open() === finding.title;
+        @let effort = effortLabel(row.effort);
 
-        <article
-            class="finding"
+        <div
+            class="signal"
+            [attr.data-key]="finding.title"
             [attr.data-sev]="finding.severity"
             [attr.data-title]="finding.title"
-            [class.finding--seen]="isSeen"
+            [class.signal--open]="isOpen"
+            [class.signal--seen]="isSeen"
         >
-            <div class="finding__top">
-                <span class="tag" [class]="'tag ' + sevClass(finding.severity)">{{ sevLabel(finding.severity) }}</span>
-                <span class="finding__kind">{{ finding.chip }}</span>
-
-                <!--
-                The action is next to the title, not five paragraphs below it: it is what somebody
-                came to this card to press, and it used to be the last thing on the way out.
-                -->
-                <span class="finding__actions">
-                    @if (finding.target; as target) {
-                        <button
-                            class="ctl ctl--active"
-                            type="button"
-                            (click)="nav.go(target.tab, target.key || undefined)"
-                        >
-                            {{ targetLabel(target) }} →
-                        </button>
-                    }
-                    <button
-                        class="ctl"
-                        type="button"
-                        [attr.aria-pressed]="isSeen"
-                        [title]="t.findingsSeenHelp"
-                        (click)="toggleSeen(finding.title)"
-                    >
-                        {{ isSeen ? t.findingsUnsee : t.findingsSee }}
-                    </button>
+            <button
+                class="signal__row"
+                type="button"
+                [attr.aria-controls]="'signal-' + row.rank"
+                [attr.aria-expanded]="isOpen"
+                (click)="toggle(finding.title)"
+            >
+                <span class="signal__rank">
+                    <span class="dot-v signals__mark" [attr.data-v]="sevShape(finding.severity)"></span>
+                    <span class="sr-only">{{ sevLabel(finding.severity) }}</span>
+                    {{ row.rank }}
                 </span>
-            </div>
+                <span class="signal__title">{{ finding.title }}</span>
+                <span class="signal__off">
+                    @if (row.saving > 0) {
+                        {{ savingText(row.saving) }}
+                    } @else {
+                        <span class="muted">—</span>
+                    }
+                </span>
+                <span class="signal__fix">
+                    @if (effort) {
+                        <span class="signal__effort">{{ effort }}</span>
+                    }
+                </span>
+                <span aria-hidden="true" class="signal__chev">{{ isOpen ? '▴' : '▾' }}</span>
+            </button>
 
-            <h3 class="finding__title">{{ finding.title }}</h3>
-            <p class="finding__body" [innerHTML]="finding.body"></p>
+            @if (isOpen) {
+                <div class="signal__detail" [id]="'signal-' + row.rank">
+                    <span class="signal__kind">{{ sevLabel(finding.severity) }} · {{ finding.chip }}</span>
+                    <p class="signal__body" [innerHTML]="finding.body"></p>
 
-            <p class="finding__fix">
-                <span class="finding__fix-label">{{ t.fixLabel }} — </span><span [innerHTML]="finding.fix"></span>
-            </p>
-        </article>
+                    @if (finding.fix) {
+                        <p class="signal__what">
+                            <strong>{{ t.fixLabel }} · </strong><span [innerHTML]="finding.fix"></span>
+                        </p>
+                    }
+
+                    <div class="signal__actions">
+                        @if (finding.target; as target) {
+                            <button
+                                class="ctl ctl--outline"
+                                type="button"
+                                (click)="nav.go(target.tab, target.key || undefined)"
+                            >
+                                {{ targetLabel(target) }} →
+                            </button>
+                        }
+                        <button
+                            class="ctl"
+                            type="button"
+                            [attr.aria-pressed]="isSeen"
+                            [title]="t.findingsSeenHelp"
+                            (click)="toggleSeen(finding.title)"
+                        >
+                            {{ isSeen ? t.findingsUnsee : t.findingsSee }}
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
     } @empty {
         <p class="empty">{{ t.findingsNoneHere }}</p>
     }
 </div>
+
+<!--
+The general advice — who pays for a figure and the four ways to bring it down — used to sit on the
+report page. The summary now links here with the same label, and the note is folded under the table
+it is about.
+-->
+<details class="signals-advice">
+    <summary class="signals-advice__toggle">{{ t.howToAct }}</summary>
+    <div class="signals-advice__body" [innerHTML]="t.howToActBody"></div>
+</details>

@@ -1,40 +1,53 @@
 @let t = i18n.ui();
 @let loaded = !!store.analysis();
 
-<div class="wrap">
-    <header class="masthead" [class.masthead--slim]="loaded">
-        <div>
-            <div class="brand">
-                <!-- Three screens, each with its bar: boot / shared / own. Same drawing as the report rows. -->
-                <svg aria-hidden="true" class="brand__mark" focusable="false" viewBox="0 0 64 64">
-                    <rect class="brand__tile" height="64" rx="14" width="64" />
-                    <rect fill="#6f7a8b" height="10" rx="2" width="11" x="10" y="13" />
-                    <rect fill="#d97b40" height="10" rx="2" width="15" x="23" y="13" />
-                    <rect fill="#3fa0a0" height="10" rx="2" width="14" x="40" y="13" />
-                    <rect fill="#6f7a8b" height="10" rx="2" width="11" x="10" y="27" />
-                    <rect fill="#d97b40" height="10" rx="2" width="15" x="23" y="27" />
-                    <rect fill="#3fa0a0" height="10" rx="2" width="5" x="40" y="27" />
-                    <rect fill="#6f7a8b" height="10" rx="2" width="11" x="10" y="41" />
-                    <rect fill="#d97b40" height="10" rx="2" width="15" x="23" y="41" />
-                    <rect fill="#3fa0a0" height="10" rx="2" width="9" x="40" y="41" />
-                </svg>
-                <h1>Loadline</h1>
-                <!--
-                Which build this is talking about comes before the slogan: the slogan says the same
-                thing on every visit, the project name is the one word that changes.
-                -->
-                @if (store.projectName(); as project) {
-                    <span class="brand__project" [title]="t.projectNameHelp">{{ project }}</span>
-                }
-                <span class="brand__tagline">{{ t.tagline }}</span>
-            </div>
-            @if (!loaded) {
-                <p class="lede">{{ t.lede }}</p>
-            }
-        </div>
+<!--
+One row, whatever is loaded: the mark, which build the figures are about, and the four controls.
+It wraps instead of cutting a button off at the edge, which is what "Switch theme" used to do on a
+phone.
+-->
+<header class="masthead">
+    <div class="masthead__inner">
+        <button class="brand" type="button" [attr.aria-label]="t.homeAria" (click)="home.show()">
+            <!-- Three screens, each with its bar: boot / shared / own. Same drawing as the report rows. -->
+            <svg aria-hidden="true" class="brand__mark" focusable="false" viewBox="0 0 26 26">
+                <rect fill="#171b21" height="26" rx="6" width="26" />
+                <rect fill="#8a94a3" height="3" width="7" x="5" y="5.5" />
+                <rect fill="#e58450" height="3" width="4" x="13" y="5.5" />
+                <rect fill="#45a9a9" height="3" width="5" x="18" y="5.5" />
+                <rect fill="#8a94a3" height="3" width="7" x="5" y="11.5" />
+                <rect fill="#e58450" height="3" width="4" x="13" y="11.5" />
+                <rect fill="#45a9a9" height="3" width="2" x="18" y="11.5" />
+                <rect fill="#8a94a3" height="3" width="7" x="5" y="17.5" />
+                <rect fill="#45a9a9" height="3" width="1" x="13" y="17.5" />
+            </svg>
+            <strong class="brand__name">Loadline</strong>
+            <span class="brand__tagline">{{ t.tagline }}</span>
+        </button>
 
-        <div class="controls">
-            <button class="ctl ctl--lang" type="button" (click)="i18n.toggle()">
+        <!--
+        Which build this is talking about. It is a button because the answer to "this is not the
+        build I meant" is right behind it: the front page, where the files are changed.
+        -->
+        @if (loaded) {
+            <button class="build-chip" type="button" [title]="t.buildChipHelp" (click)="home.show()">
+                <span aria-hidden="true" class="build-chip__ok">✓</span>
+                @if (store.projectName(); as project) {
+                    <span class="build-chip__project" [title]="t.projectNameHelp">{{ project }}</span>
+                }
+                <span class="build-chip__name">{{ home.statsStatus() }}</span>
+                <span class="build-chip__unit" [attr.data-tone]="store.compressed() ? null : 'warn'">
+                    · {{ store.compressed() ? store.mode() : t.unitRaw }}
+                </span>
+            </button>
+        }
+
+        <div class="masthead__actions">
+            <button class="ctl ctl--bar" type="button" (click)="palette.show('jump')">
+                {{ t.searchBtn }}
+                <kbd class="masthead__kbd">{{ t.searchKeys }}</kbd>
+            </button>
+            <button class="ctl ctl--bar ctl--lang" type="button" (click)="i18n.toggle()">
                 {{ i18n.lang() === 'es' ? 'EN' : 'ES' }}
             </button>
             <!--
@@ -44,7 +57,7 @@
             -->
             @if (loaded) {
                 <button
-                    class="ctl"
+                    class="ctl ctl--bar"
                     type="button"
                     [attr.aria-pressed]="density.density() === 'compact'"
                     [title]="t.densityHelp"
@@ -53,38 +66,22 @@
                     {{ density.density() === 'compact' ? t.densityComfortable : t.densityCompact }}
                 </button>
             }
-            <button class="ctl" type="button" (click)="theme.toggle()">{{ t.themeBtn }}</button>
+            <button class="ctl ctl--bar" type="button" [title]="t.themeBtn" (click)="theme.toggle()">
+                {{ theme.dark() ? t.themeToLight : t.themeToDark }}
+            </button>
         </div>
-    </header>
+    </div>
+</header>
 
-    <!--
-    Jump anywhere: Ctrl/Cmd + K, `/` to search, `?` for the shortcuts. It has no button on the page
-    on purpose — the audience already has that gesture, and a control in the header would be one
-    more thing on screen for everybody who does not use it.
-    -->
-    @if (palette.open()) {
-        <app-palette />
-    }
+<!-- Jump anywhere: Ctrl/Cmd + K or the button above, `/` to search, `?` for the shortcuts. -->
+@if (palette.open()) {
+    <app-palette />
+}
 
+<main class="page" [class.page--home]="home.open()">
     <app-intake-page />
 
-    @if (loaded) {
+    @if (loaded && !home.open()) {
         <app-report-page />
     }
-
-    <!--
-    Where the figures come from is a five-line answer, and it belongs to the front page: under a
-    report it sat below all nine tabs, saying the same thing every time. Once there is something to
-    read it folds into the question, which is one line.
-    -->
-    <footer>
-        @if (loaded) {
-            <details>
-                <summary>{{ t.footerSummary }}</summary>
-                <p>{{ t.footer }}</p>
-            </details>
-        } @else {
-            <p>{{ t.footer }}</p>
-        }
-    </footer>
-</div>
+</main>

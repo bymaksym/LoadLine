@@ -26,34 +26,26 @@ export class NotScreensComponent {
     protected readonly store = inject(ReportStore);
 
     // * ATTRIBUTES
-    protected readonly groups = computed(() => {
+    /**
+     * Every entry, in the order of its kind: lazy blocks, files that group routes, data. Each one
+     * carries the name of its kind, and the first of each kind the explanation of it.
+     */
+    protected readonly items = computed(() => {
         const analysis = this.store.analysis();
         if (!analysis) {
             return [];
         }
 
         const t = this.i18n.ui();
+        const groups = [
+            { kind: t.notScreenKind.block, help: t.blocksHelp, items: analysis.deferredBlocks },
+            { kind: t.notScreenKind.grouper, help: t.groupersHelp, items: analysis.routeGroupers },
+            { kind: t.notScreenKind.data, help: t.dataHelp, items: analysis.lazyData },
+        ];
 
-        return [
-            {
-                key: 'blocks',
-                note: t.blocksNote(analysis.deferredBlocks.length),
-                help: t.blocksHelp,
-                items: analysis.deferredBlocks,
-            },
-            {
-                key: 'groupers',
-                note: t.groupersNote(analysis.routeGroupers.length),
-                help: t.groupersHelp,
-                items: analysis.routeGroupers,
-            },
-            {
-                key: 'data',
-                note: t.dataNote(analysis.lazyData.length),
-                help: t.dataHelp,
-                items: analysis.lazyData,
-            },
-        ].filter(group => group.items.length > 0);
+        return groups.flatMap(group =>
+            group.items.map((item, index) => ({ ...item, kind: group.kind, help: group.help, first: index === 0 })),
+        );
     });
 
     /** How many entries were reclassified by hand: the table is not showing the rules' answer. */

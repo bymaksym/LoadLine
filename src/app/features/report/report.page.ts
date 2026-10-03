@@ -1,19 +1,19 @@
-import { Component, computed, inject, signal, type WritableSignal } from '@angular/core';
+import { ApplicationRef, Component, computed, DestroyRef, inject, signal, type WritableSignal } from '@angular/core';
 import { rate } from '@core/criteria/criteria';
-import { type Mode, type Verdict } from '@core/criteria/criteria.types';
+import { type DataSource, type Mode, type Verdict } from '@core/criteria/criteria.types';
 import { formatBytes, formatDelta } from '@core/format/format.utils';
+import { QUESTIONS } from '@core/situation/situation';
 import { globalSharedChunks } from '@core/worth/worth';
 import { copyText } from '@shared/clipboard.utils';
 import { ExplainComponent } from '@shared/explain/explain';
 import { BytesPipe } from '@shared/pipes/bytes.pipe';
-import { VerdictComponent } from '@shared/verdict/verdict';
 import { CompareStore } from '@state/compare.store';
 import { CriteriaService } from '@state/criteria.service';
 import { ExportService } from '@state/export.service';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
-import { REPORT_TABS, type ReportTab } from '@state/report-nav.types';
+import { FIRST_INPUT_TAB, REPORT_TABS, type ReportTab } from '@state/report-nav.types';
 import { labelOfTab } from '@state/report-tab-label';
 import { SituationService } from '@state/situation.service';
 import { BootTabComponent } from './panels/boot/boot-tab';
@@ -32,7 +32,13 @@ import { TreeTabComponent } from './panels/tree/tree-tab';
 /** What separates two clauses of one explanation. The bubble keeps the break as a break. */
 const PARAGRAPH = '\n\n';
 
-/** The report: five rated summary figures and one tab per view. Every tab is a component. */
+/**
+ * How much room the bar under the lead figure leaves past the worse threshold, so the tick of
+ * "bad above" is never drawn on the right edge and a figure over it still has somewhere to end.
+ */
+const BAR_HEADROOM = 1.17;
+
+/** The report: one lead figure, four that lead to their tab, and one tab per view. Every tab is a component. */
 @Component({
     selector: 'app-report-page',
     templateUrl: './report.page.html',
@@ -50,7 +56,6 @@ const PARAGRAPH = '\n\n';
         ProjectTabComponent,
         SituationTabComponent,
         CriteriaTabComponent,
-        VerdictComponent,
         ExplainComponent,
         CompareTabComponent,
     ],
@@ -67,8 +72,49 @@ export class ReportPageComponent {
 
     // * CONSTANTS
     protected readonly tabs = REPORT_TABS;
+    protected readonly firstInputTab = FIRST_INPUT_TAB;
+    /** The four kinds of figure, in the order the legend at the foot of the report gives them. */
+    protected readonly sources: readonly DataSource[] = ['measured', 'derived', 'declared', 'unknown'];
+
+    constructor() {
+        // The browser lays the page out for paper right after `beforeprint`, without waiting for a
+        // scheduled change detection: the panels are drawn by hand, twice, because the map measures
+        // its frame after the first render and draws itself with that width on the second.
+        const appRef = inject(ApplicationRef);
+        const before = (): void => {
+            this.printing.set(true);
+            appRef.tick();
+            appRef.tick();
+        };
+        const after = (): void => this.printing.set(false);
+
+        addEventListener('beforeprint', before);
+        addEventListener('afterprint', after);
+        inject(DestroyRef).onDestroy(() => {
+            removeEventListener('beforeprint', before);
+            removeEventListener('afterprint', after);
+        });
+    }
 
     // * ATTRIBUTES
+    /** Between `beforeprint` and `afterprint`: the page is being laid out for paper. */
+    private readonly printing = signal(false);
+
+    /**
+     * The panels drawn. On screen, the open tab. On paper, every view of the build in the order of
+     * the strip, plus the open tab if it is one of the inputs: an empty form says nothing on paper,
+     * but one somebody filled in and chose to print does.
+     */
+    protected readonly shownTabs = computed<ReportTab[]>(() => {
+        const open = this.nav.tab();
+        if (!this.printing()) {
+            return [open];
+        }
+
+        const views = REPORT_TABS.slice(0, REPORT_TABS.indexOf(FIRST_INPUT_TAB));
+        return views.includes(open) ? views : [...views, open];
+    });
+
     /** Feedback after copying the Markdown table; goes back to the button label after a moment. */
     protected readonly copied = signal(false);
     protected readonly copiedDiagnostics = signal(false);
@@ -123,18 +169,48 @@ export class ReportPageComponent {
 
     protected readonly effectiveBytes = computed(() => (this.store.analysis()?.bootBytes ?? 0) + this.extraBytes());
 
+    /** The lead figure, with its unit apart: the number is what is read, the unit is set smaller. */
+    protected readonly heroFigure = computed(() => {
+        const text = formatBytes(this.effectiveBytes());
+        // Whichever space `formatBytes` joins them with: plain for the command, narrow here.
+        const space = Math.max(text.lastIndexOf(' '), text.lastIndexOf(' '));
+        return { value: text.slice(0, space), unit: text.slice(space + 1) };
+    });
+
+    /**
+     * The bar under the lead figure: the declared bootstrap and what the near-global chunks add to
+     * it, on a scale that always shows both thresholds, so where the figure ends says how far it is
+     * from each of them without reading a number.
+     */
+    protected readonly heroBar = computed(() => {
+        const { bootOk, bootBad } = this.store.criteria();
+        const boot = this.store.analysis()?.bootBytes ?? 0;
+        const scale = Math.max(bootBad, this.effectiveBytes()) * BAR_HEADROOM;
+        const at = (bytes: number): number => (bytes / scale) * 100;
+        return {
+            boot: at(boot),
+            extra: at(this.extraBytes()),
+            okAt: at(bootOk),
+            badAt: at(bootBad),
+            okLabel: formatBytes(bootOk),
+            badLabel: formatBytes(bootBad),
+        };
+    });
+
     protected readonly medianTotal = computed(() => {
         const totals = (this.store.analysis()?.screens ?? []).map(screen => screen.total).toSorted((a, b) => a - b);
         return totals[Math.floor(totals.length / 2)] ?? 0;
     });
 
-    /** `info` findings are context: they neither count nor colour anything. */
+    /**
+     * The signals by severity. `rest` is context (`ok` and `info`): it colours nothing, but it is
+     * counted, so the summary, the tab and the filter inside it all say the same total.
+     */
     protected readonly severityCount = computed(() => {
         const findings = this.store.findings();
-        return {
-            high: findings.filter(f => f.severity === 'high').length,
-            mid: findings.filter(f => f.severity === 'mid').length,
-        };
+        const high = findings.filter(f => f.severity === 'high').length;
+        const mid = findings.filter(f => f.severity === 'mid').length;
+        return { all: findings.length, high, mid, rest: findings.length - high - mid };
     });
 
     /** Under the bootstrap tile: how it moved against the baseline, when there is one. */
@@ -212,20 +288,21 @@ export class ReportPageComponent {
      *
      * The five figures used to show "Bad" five times over, which left the whole row in one flat
      * block of red and ranked nothing. The colour of each figure already rates it; the badge earns
-     * its place only by pointing at the worst of them. The screens tile is not a candidate: how
-     * many screens there are has no threshold, and what is rated there — the typical screen — is a
-     * figure in its subtitle.
+     * its place only by pointing at the worst of them. Neither the screens tile nor the signals one
+     * is a candidate: how many screens or signals there are is a count with no threshold, and a
+     * second alarm on it would be the same fact twice.
      */
-    protected readonly loudestTile = computed<'boot' | 'effective' | 'shared' | 'findings'>(() => {
+    protected readonly loudestTile = computed<'boot' | 'effective' | 'shared' | null>(() => {
         const rank: Record<Verdict, number> = { good: 0, ok: 1, bad: 2 };
         const tiles = [
             ['boot', this.bootVerdict()],
             ['effective', this.effectiveVerdict()],
             ['shared', this.sharedVerdict()],
-            ['findings', this.findingsVerdict()],
         ] as const;
 
-        return tiles.reduce((worst, tile) => (rank[tile[1]] > rank[worst[1]] ? tile : worst))[0];
+        // "Worst" is an alarm: on a figure that is only fair it would be one about nothing.
+        const worst = tiles.reduce((loudest, tile) => (rank[tile[1]] > rank[loudest[1]] ? tile : loudest));
+        return worst[1] === 'bad' ? worst[0] : null;
     });
 
     /**
@@ -248,10 +325,8 @@ export class ReportPageComponent {
 
     protected readonly counts = computed<Record<ReportTab, number>>(() => {
         const analysis = this.store.analysis();
-        const { high, mid } = this.severityCount();
-
         return {
-            findings: high + mid,
+            findings: this.severityCount().all,
             screens: analysis?.screens.length ?? 0,
             measured: this.store.measured()?.extra.length ?? 0,
             boot: analysis?.bootBuckets.length ?? 0,
@@ -276,14 +351,34 @@ export class ReportPageComponent {
         return words[verdict];
     }
 
+    /**
+     * The tooltip of a rated figure: the rule it was rated by and, when the rating is not good,
+     * what moves it. On a green figure the answer to "how do I fix this" is "nothing", and saying
+     * it anyway makes the tooltip less useful.
+     */
+    protected hint(rule: string, advice: string, verdict: Verdict): string {
+        if (verdict === 'good') {
+            return rule;
+        }
+        return rule ? `${rule}${PARAGRAPH}${advice}` : advice;
+    }
+
     protected tabLabel(tab: ReportTab): string {
         return labelOfTab(tab, this.i18n.ui());
     }
 
-    /** Tabs whose counter is only shown when there is something to count. */
-    protected showsCount(tab: ReportTab): boolean {
-        const quiet: ReportTab[] = ['criteria', 'project', 'search', 'measured', 'compare', 'situation', 'map'];
-        return !quiet.includes(tab) || this.counts()[tab] > 0;
+    /**
+     * The counter beside a tab, or nothing. The views count what is in them; the inputs are quiet
+     * until something was put in, except the questions, whose counter says how many are answered.
+     */
+    protected countLabel(tab: ReportTab): string | null {
+        const n = this.counts()[tab];
+        if (tab === 'situation') {
+            return `${n}/${QUESTIONS.length}`;
+        }
+
+        const quiet: ReportTab[] = ['criteria', 'project', 'search', 'measured', 'compare', 'map'];
+        return quiet.includes(tab) && n === 0 ? null : String(n);
     }
 
     /** Arrows, Home and End between tabs, as the `tablist` pattern requires. */

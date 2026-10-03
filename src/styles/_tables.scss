@@ -5,20 +5,22 @@
    tree tab and every row is a `tree-node`, and a grid template written twice is a grid template
    that stops agreeing.
 
-   The name is capped and the bar takes what is left, rather than the other way round: with the name
-   column elastic there were some 700 px of nothing between a chunk's name and its bar.
+   Expand, name, zone, bar, size, pin. Name and bar share what is left at 1 : 1.4, the split of the
+   redesign of 02/10/2026; the zone column holds "lazy · 26 screens" and the size one the raw figure
+   under a compressed one. On a phone the bar goes and the zone drops under the name (`tree-node`),
+   so the template is four columns there.
 
    `--tree-twist` is the first column, the expand button, named because a chunk's file list indents
    by exactly it plus the gap to sit under the name.
 */
 :root {
     --tree-twist: 1.3rem;
-    --tree-cols: var(--tree-twist) minmax(0, 22rem) auto minmax(6rem, 1fr) 7.5rem 1.6rem;
+    --tree-cols: var(--tree-twist) minmax(0, 1fr) 11rem minmax(6rem, 1.4fr) 6.5rem 1.6rem;
 }
 
 @media (width < 600px) {
     :root {
-        --tree-cols: var(--tree-twist) minmax(0, 1fr) auto 7rem 1.6rem;
+        --tree-cols: var(--tree-twist) minmax(0, 1fr) 6rem 1.6rem;
     }
 }
 
@@ -39,7 +41,7 @@
 */
 .scroller--tall {
     border: 1px solid var(--line);
-    border-radius: var(--radius);
+    border-radius: var(--radius-card);
     background: var(--surface);
 
     table {
@@ -74,6 +76,22 @@
     }
 }
 
+/*
+   A long list wider than a phone: on a narrow screen it scrolls sideways inside its card instead of
+   squeezing its columns. A box that scrolls is the box a sticky header sticks to — left pinned, the
+   header would sit the tab strip's height down inside the card, on top of the first row — so there
+   the header stops pinning.
+*/
+@media (width < 800px) {
+    .scroller--swipe {
+        overflow-x: auto;
+
+        > table > thead th {
+            position: static;
+        }
+    }
+}
+
 table {
     border-collapse: collapse;
     width: 100%;
@@ -81,15 +99,15 @@ table {
 }
 
 th {
-    padding: var(--row-y-head) var(--space-6) var(--row-y-head) 0;
-    border-bottom: 1px solid var(--line-strong);
+    padding: var(--row-y-head) var(--space-7) var(--row-y-head) 0;
+    border-bottom: 1px solid var(--line);
 
-    font-size: var(--fs-note);
-    font-weight: 600;
+    font-size: var(--fs-label);
+    font-weight: 400;
     color: var(--muted);
     text-align: left;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
     white-space: nowrap;
 
     /* Header with an explanation: dotted underline and help cursor, the title shows on hover. */
@@ -118,6 +136,7 @@ th {
 
     font: inherit;
     color: inherit;
+    text-transform: inherit;
     letter-spacing: inherit;
 
     background: none;
@@ -148,9 +167,13 @@ th {
 }
 
 td {
-    padding: var(--row-y) var(--space-6) var(--row-y) 0;
+    padding: var(--row-y) var(--space-7) var(--row-y) 0;
     border-bottom: 1px solid var(--line);
     vertical-align: top;
+}
+
+td.num {
+    font-size: var(--fs-small);
 }
 
 td.num,
@@ -168,7 +191,7 @@ th.num {
 */
 td.path {
     font-family: var(--font-data);
-    font-size: var(--fs-body);
+    font-size: var(--fs-small);
     overflow-wrap: break-word;
 }
 
@@ -180,15 +203,16 @@ tr.row-btn {
         background: var(--surface-sunk);
     }
 
+    /* An open row and its detail share the page's ground: one block, set in from the card. */
     &[aria-expanded='true'] td {
         border-bottom-color: transparent;
-        background: var(--surface-sunk);
+        background: var(--ground);
     }
 }
 
 tr.detail td {
-    padding: var(--space-2) var(--space-7) var(--space-8);
-    background: var(--surface-sunk);
+    padding: var(--space-2) var(--space-7) var(--space-9);
+    background: var(--ground);
 }
 
 /*
@@ -216,10 +240,10 @@ tr.detail td {
 
     width: 100%;
     min-width: 90px;
-    height: 7px;
+    height: 6px;
     border-radius: 2px;
 
-    background: var(--surface-sunk);
+    background: var(--track);
 
     i {
         display: block;
@@ -231,6 +255,82 @@ tr.detail td {
 
 .empty {
     padding: var(--space-12) 0;
-    font-size: var(--fs-2);
+    font-size: var(--fs-body);
     color: var(--muted);
+}
+
+/*
+   A table drawn as a card: the redesign's one look for a list of rows. Header in small capitals,
+   rows divided by the line colour, the padding of a row from `--row-y` so the compact mode reaches
+   it. Used as `.card` around a `table`, or around grid rows a tab draws itself.
+*/
+.card {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+
+    /* Wide tables keep their columns and scroll inside the card rather than squeezing. */
+    &--scroll {
+        overflow-x: auto;
+    }
+
+    /* A table inside: its outer columns set in from the card's edge, and no line under the last row. */
+    th:first-child,
+    td:first-child {
+        padding-left: var(--space-7);
+    }
+
+    th:last-child,
+    td:last-child {
+        padding-right: var(--space-7);
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* A block of figures rather than a list: its own padding instead of the rows'. */
+    &--pad {
+        padding: var(--space-8);
+    }
+}
+
+/*
+   An empty state that asks for something: a dashed edge says "this is where it goes", the same
+   language as the drop zone of the front page.
+*/
+.empty-card {
+    display: grid;
+    gap: var(--space-6);
+    align-content: start;
+
+    padding: var(--space-11);
+    border: 1.5px dashed var(--line);
+    border-radius: var(--radius-card);
+
+    background: var(--surface);
+
+    &__state {
+        font-family: var(--font-data);
+        font-size: var(--fs-label);
+        color: var(--muted);
+    }
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-3);
+        font-weight: 600;
+    }
+
+    &__body {
+        margin: 0;
+        color: var(--muted);
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+    }
 }

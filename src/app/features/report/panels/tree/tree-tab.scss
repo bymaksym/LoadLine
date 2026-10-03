@@ -2,36 +2,132 @@
     display: block;
 }
 
-.tree {
-    padding: var(--space-4) var(--space-4) var(--space-4) var(--space-2);
+/*
+   How the build divides, above the list: a bar on the report's three colours, a legend that gives
+   each zone its weight, and one sentence. It is the only reading of the bundle that does not depend
+   on which chunk happens to be open.
+*/
+.shape {
+    display: grid;
+    gap: var(--space-6);
+    margin-bottom: var(--space-7);
+
+    /* The three zones side by side, a hair apart so two neighbours of close colour still read as two. */
+    &__bar {
+        overflow: hidden;
+        display: flex;
+        gap: 1px;
+
+        height: 10px;
+        border-radius: 2px;
+    }
+
+    &__seg {
+        flex: 0 1 0;
+        min-width: 2px;
+
+        &[data-zone='boot'] {
+            background: var(--seg-boot);
+        }
+
+        &[data-zone='shared'] {
+            background: var(--seg-shared);
+        }
+
+        &[data-zone='own'] {
+            background: var(--seg-own);
+        }
+    }
+
+    &__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4) var(--space-16);
+        font-size: var(--fs-small);
+    }
+
+    &__item {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: var(--space-1) var(--space-3);
+        align-items: baseline;
+    }
+
+    /* The legend's square: the same colour the bar and every row use for that zone. */
+    &__key {
+        align-self: center;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+
+        &[data-zone='boot'] {
+            background: var(--seg-boot);
+        }
+
+        &[data-zone='shared'] {
+            background: var(--seg-shared);
+        }
+
+        &[data-zone='own'] {
+            background: var(--seg-own);
+        }
+    }
+
+    &__size {
+        font-family: var(--font-data);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__files {
+        font-family: var(--font-data);
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+    }
+
+    &__note {
+        margin: 0;
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
 }
 
-/* The header of the list, on the same columns as every row (`--tree-cols`). */
+/*
+   The list of chunks, as a card. `clip` and not `hidden`: it trims the hover of the last row to the
+   rounded corners without making the card a scrolling box, which would take the pinned header with
+   it.
+*/
+.tree {
+    overflow: clip;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+}
+
+/*
+   The header of the list, on the same columns as every row (`--tree-cols`). Its bottom line sits on
+   the first row's top one, so the two never draw a double rule.
+*/
 .tree__head {
     position: sticky;
-    z-index: 1;
+    z-index: 2;
     top: var(--tabs-h);
 
     display: grid;
     grid-template-columns: var(--tree-cols);
-    gap: var(--space-4);
+    gap: var(--space-6);
     align-items: center;
 
-    margin-bottom: var(--space-2);
-    padding: var(--space-3) var(--space-4) var(--space-2) 0;
-    border-bottom: 1px solid var(--line-strong);
+    margin-bottom: -1px;
+    padding: var(--row-y-head) var(--space-5) var(--row-y-head) var(--space-3);
+    border-bottom: 1px solid var(--line);
 
-    font-size: var(--fs-note);
-    font-weight: 600;
+    font-size: var(--fs-label);
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
 
     background: var(--surface);
-
-    &-zone {
-        width: 9px;
-    }
 
     &-size {
         text-align: right;
@@ -45,12 +141,12 @@
     display: block;
 
     width: 100%;
-    padding: var(--space-3) var(--space-4);
+    padding: var(--row-y) var(--space-5) var(--row-y) var(--space-3);
     border: none;
-    border-radius: 3px;
+    border-top: 1px solid var(--line);
 
     font-family: var(--font-ui);
-    font-size: var(--fs-body);
+    font-size: var(--fs-note);
     color: var(--muted);
     text-align: left;
 
@@ -65,140 +161,41 @@
         outline: 2px solid var(--accent);
         outline-offset: -2px;
     }
-
-    .twist {
-        display: inline-block;
-        width: 1.3rem;
-        font-family: var(--font-data);
-        font-weight: 700;
-    }
 }
 
-.empty--pad {
+/* Its toggle sits in the rows' expand column, so the line starts under the chunk names. */
+.tree__tail-twist {
+    display: inline-block;
+
+    width: calc(var(--tree-twist) + var(--space-6));
+    padding-left: var(--space-2);
+
+    font-family: var(--font-data);
+    font-weight: 600;
+}
+
+.tree__empty {
     padding: var(--space-12) var(--space-7);
-}
-
-/*
-   How the build divides, above the list: a bar, two groups and one sentence. It is the only reading
-   of the bundle that does not depend on which chunk happens to be open.
-*/
-.shape {
-    max-width: 84ch;
-    margin-bottom: var(--space-7);
-    padding: var(--space-6) var(--space-7);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-
-    background: var(--surface);
-
-    &__title {
-        margin: 0 0 var(--space-4);
-
-        font-size: var(--fs-note);
-        font-weight: 600;
-        color: var(--muted);
-        letter-spacing: 0.01em;
-    }
-
-    /* One bar on the report's three colours, cut where eager ends. */
-    &__bar {
-        overflow: hidden;
-        display: flex;
-
-        height: 10px;
-        border-radius: 999px;
-
-        background: var(--surface-sunk);
-    }
-
-    /* One coloured stretch of that bar. */
-    &__seg {
-        display: block;
-        height: 100%;
-
-        &[data-zone='boot'] {
-            background: var(--seg-boot);
-        }
-
-        &[data-zone='shared'] {
-            background: var(--seg-shared);
-        }
-
-        &[data-zone='own'] {
-            background: var(--seg-own);
-        }
-
-        /* The one gap in the bar is the eager/lazy boundary, and the only one. */
-        &--break {
-            /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a cut in a bar drawn in px; in rem it would widen with the font while the bar does not */
-            margin-left: 3px;
-        }
-    }
-
-    &__split {
-        margin: var(--space-3) 0 var(--space-6);
-        font-size: var(--fs-body);
-        color: var(--muted);
-    }
-
-    &__rows {
-        display: grid;
-        grid-template-columns: auto auto 1fr;
-        gap: var(--space-2) var(--space-10);
-        align-items: baseline;
-
-        font-size: var(--fs-body);
-    }
-
-    &__label {
-        display: inline-flex;
-        gap: var(--space-4);
-        align-items: baseline;
-
-        /* The two zones are nested under "lazy": the indent is what says they add up to it. */
-        &--sub {
-            padding-left: var(--space-8);
-            color: var(--muted);
-        }
-    }
-
-    /* The dictionary holds these as tags, in lower case; here they open a line. */
-    &__name::first-letter {
-        text-transform: uppercase;
-    }
-
-    &__sep {
-        color: var(--line-strong);
-    }
-
-    &__size {
-        font-family: var(--font-data);
-        font-variant-numeric: tabular-nums;
-        text-align: right;
-    }
-
-    &__files {
-        font-family: var(--font-data);
-        font-size: var(--fs-body);
-        color: var(--muted);
-    }
-
-    &__note {
-        margin: var(--space-5) 0 0;
-        font-size: var(--fs-body);
-        color: var(--muted);
-    }
 }
 
 /*
    The pinned rows, held above the list. The rule under them is what says the list restarts below:
    without it two chunks with nothing to do with each other read as the top two of one ordering.
+   It is drawn over the next row's top line rather than beside it.
 */
 .tree__pins {
-    margin-bottom: var(--space-3);
-    padding-bottom: var(--space-3);
+    position: relative;
+    z-index: 1;
+
+    margin-bottom: -1px;
     border-bottom: 1px dashed var(--line-strong);
-    border-radius: 3px;
 
     background: var(--surface-sunk);
+}
+
+@media (width < 600px) {
+    /* The zone moves under the name and the bar goes, so their two headings have nothing to head. */
+    .tree__head-wide {
+        display: none;
+    }
 }
