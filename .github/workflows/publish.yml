@@ -65,3 +65,20 @@ jobs:
                       --notes "Published to npm as \`@bymaksym/loadline@${GITHUB_REF_NAME#v}\`.
 
                   See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md) for what changed."
+
+            # Last, and only once npm has it: an announcement for something nobody can install yet is
+            # a promise. The post itself is built by .github/scripts/announce-release.py, the same
+            # file every public repo of ByMaksymDev Labs carries. Discord failing must not turn a
+            # good publish red, hence continue-on-error. Without the secret it only prints.
+            - name: Announce on Discord
+              continue-on-error: true
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  DISCORD_ROLE_ID: ${{ vars.DISCORD_RELEASES_ROLE_ID }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAG: ${{ github.ref_name }}
+                  APP: Loadline
+                  COLOR: '4169888'
+                  ICON: https://raw.githubusercontent.com/bymaksym/LoadLine/main/public/icon-192.png
+                  FOOTER: npm · @bymaksym/loadline
+              run: python3 .github/scripts/announce-release.py

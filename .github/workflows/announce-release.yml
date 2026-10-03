@@ -1,0 +1,36 @@
+# Announce a release in Discord by hand, for one that came out before the announcement step in
+# publish.yml existed (v1.0.0), or to post one again. The automatic one is the last step of
+# publish.yml: releases here are made with GITHUB_TOKEN, and an event that token causes starts no
+# workflow, so `on: release` would never fire.
+
+name: Announce release
+
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: Release to announce (empty = the latest)
+                required: false
+
+permissions:
+    contents: read
+
+jobs:
+    discord:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  sparse-checkout: .github/scripts
+
+            - name: Post to Discord
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  DISCORD_ROLE_ID: ${{ vars.DISCORD_RELEASES_ROLE_ID }}
+                  GITHUB_TOKEN: ${{ github.token }}
+                  TAG: ${{ inputs.tag }}
+                  APP: Loadline
+                  COLOR: '4169888'
+                  ICON: https://raw.githubusercontent.com/bymaksym/LoadLine/main/public/icon-192.png
+                  FOOTER: npm · @bymaksym/loadline
+              run: python3 .github/scripts/announce-release.py
