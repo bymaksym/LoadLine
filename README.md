@@ -148,8 +148,8 @@ jobs:
     weight:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
               with: { node-version: 22 }
             - run: npm ci && npm run build
 
@@ -170,11 +170,11 @@ jobs:
 
             # On main, the snapshot becomes the baseline of every pull request opened after it.
             - if: github.event_name == 'push'
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with: { name: loadline-baseline, path: loadline-baseline.json }
 
             - run: npx @bymaksym/loadline dist/app/browser --format sarif > loadline.sarif
-            - uses: github/codeql-action/upload-sarif@v3
+            - uses: github/codeql-action/upload-sarif@v4
               with: { sarif_file: loadline.sarif }
 ```
 
