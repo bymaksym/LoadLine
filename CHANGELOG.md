@@ -8,6 +8,30 @@ is numbers, so a release that moves one silently is indistinguishable from a reg
 `1.0.0`, a minor bump may change the command's flags or its output. The page and the command share
 their analysis, so a change to one is a change to both unless an entry says otherwise.
 
+## [1.0.0](https://github.com/bymaksym/LoadLine/compare/v0.1.0...v1.0.0) (2026-10-03)
+
+
+### Features
+
+* a map of the bundle, --html with the build inside, and what moved since the last run ([5e92dc4](https://github.com/bymaksym/LoadLine/commit/5e92dc4ec8633df3890319edacd45e9a04f0bb68))
+* a redesigned page, savings in the report's unit, and CI that compares each PR with main ([2ebe2dc](https://github.com/bymaksym/LoadLine/commit/2ebe2dc5beea0268a00ded58961825c2d6b9fe4d))
+
+
+### Bug Fixes
+
+* --what-if is answered in the summary and json formats, and the others say so on stderr ([2ebe2dc](https://github.com/bymaksym/LoadLine/commit/2ebe2dc5beea0268a00ded58961825c2d6b9fe4d))
+* "Fixing both would take…" instead of "Acting on all 2 would take…" ([2ebe2dc](https://github.com/bymaksym/LoadLine/commit/2ebe2dc5beea0268a00ded58961825c2d6b9fe4d))
+* **ci:** anchor release-please at 0.1.0 so it stops proposing 1.0.0 ([f4cb6f5](https://github.com/bymaksym/LoadLine/commit/f4cb6f56f65c96143fab88804e823b2df19b6a1a))
+* **ci:** tag releases as v0.2.0, which is the shape publish.yml listens for ([f7f7466](https://github.com/bymaksym/LoadLine/commit/f7f74664bc85904917a61c032343bcc29db96467))
+* keep the header buttons on screen on a narrow phone ([5e92dc4](https://github.com/bymaksym/LoadLine/commit/5e92dc4ec8633df3890319edacd45e9a04f0bb68))
+* reject a stats.json without inputs before the analysis starts ([5e92dc4](https://github.com/bymaksym/LoadLine/commit/5e92dc4ec8633df3890319edacd45e9a04f0bb68))
+* the signal count is the same in the summary, the tab and the filter ([2ebe2dc](https://github.com/bymaksym/LoadLine/commit/2ebe2dc5beea0268a00ded58961825c2d6b9fe4d))
+
+
+### Miscellaneous Chores
+
+* release 1.0.0 ([1c09574](https://github.com/bymaksym/LoadLine/commit/1c095742e9e7ed5b09ef809986c8974b24df6c46))
+
 ## [Unreleased]
 
 Nothing yet.
