@@ -18,6 +18,10 @@ fixtures/vite-app/dist
 # Generated from the .woff2 files by scripts/embed-fonts.mjs: one base64 line per family.
 src/styles/_fonts.scss
 
+# Written by release-please from the commit subjects, in its own layout: reformatting it here would
+# be undone on the next release, and failing CI on it failed the release commit itself (03/10/2026).
+CHANGELOG.md
+
 # The golden file of the sample build: vitest writes it (`toMatchFileSnapshot`), and a formatter
 # rewriting it would make the test fail on whitespace nobody chose.
 fixtures/sample-report.json

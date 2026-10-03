@@ -40,6 +40,8 @@ on:
 permissions:
     contents: write
     pull-requests: write
+    # To start publish.yml: see the last step.
+    actions: write
 
 # Two pushes to main would otherwise race to write the same release pull request.
 concurrency:
@@ -51,3 +53,15 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: googleapis/release-please-action@v4
+              id: release
+
+            # The tag release-please pushes is pushed with GITHUB_TOKEN, and GitHub starts no workflow
+            # from an event that token caused — so publish.yml, which listens for that tag, never ran:
+            # v1.0.0 was tagged, released on GitHub and missing from npm, with every check green
+            # (03/10/2026). A workflow_dispatch is the one event that token is allowed to start, so the
+            # tag is handed to publish.yml that way, at the tag, where package.json says the version.
+            - if: steps.release.outputs.release_created
+              run: gh workflow run publish.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG"
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ steps.release.outputs.tag_name }}

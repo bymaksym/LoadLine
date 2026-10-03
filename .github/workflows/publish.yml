@@ -3,6 +3,9 @@ name: Publish
 on:
     push:
         tags: ['v*']
+    # Started by release-please.yml at the tag it just created: a tag pushed by GITHUB_TOKEN starts
+    # no workflow on its own. Run at a tag, GITHUB_REF_NAME is that tag and the checks below hold.
+    workflow_dispatch:
 
 jobs:
     publish:
