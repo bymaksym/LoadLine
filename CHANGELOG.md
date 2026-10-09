@@ -8,6 +8,32 @@ is numbers, so a release that moves one silently is indistinguishable from a reg
 `1.0.0`, a minor bump may change the command's flags or its output. The page and the command share
 their analysis, so a change to one is a change to both unless an entry says otherwise.
 
+## [1.1.0](https://github.com/bymaksym/LoadLine/compare/v1.0.0...v1.1.0) (2026-10-09)
+
+
+### Features
+
+* `--format agent`, `--format badge`, `--why` and `--entry` in the command ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* `build.own`, `build.dependencies` and `build.routeKeys` in loadline.json ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* `extends` shares one loadline.json across repositories; `--print-config` shows the result ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* `forbidden` rules raise a signal when a package or folder ships where it must not ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* `gates.failOnSignals` fails the build on the signals it names, whatever their severity ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* AMD, SystemJS and nomodule builds, and route tables that name the screens ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* the page shows the bootstrap against the baseline, screens by packages and round trips ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* the project root as a target, with the build found inside it ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* webpack stats, older builds, and loadline.json extends, forbidden rules and signal gates ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* webpack's stats.json is read, for Angular 8 to 16, Create React App, Vue CLI and webpack ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+
+
+### Bug Fixes
+
+* a dropped folder the browser cannot list is reported instead of doing nothing ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* a folder chosen with the button reads the stats file inside it, as a dropped one does ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* a stylesheet stored twice and downloaded once is no longer said to be downloaded twice ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* re-reading a rebuilt folder reads its import graph again instead of keeping the old one ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* Sapper's screens are named by their routes when the folder has no source maps ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+* the page reads the build folder again when a later loadline.json changes how it is read ([6a38612](https://github.com/bymaksym/LoadLine/commit/6a386128e0d0683d527708e38ed08fd8bf55b6ad))
+
 ## [1.0.0](https://github.com/bymaksym/LoadLine/compare/v0.1.0...v1.0.0) (2026-10-03)
 
 
