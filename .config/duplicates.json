@@ -1,0 +1,13 @@
+{
+    "$comment": "Read by tooling/validate-duplicates.mjs (pnpm run duplicates:audit). minTokens is the smallest copy that counts. `allowed` holds the pairs of files copied on purpose, each with its reason.",
+    "minTokens": 100,
+    "allowed": [
+        {
+            "files": [
+                "src/app/features/report/panels/boot/boot-diff.scss",
+                "src/app/features/report/panels/map/map-tab.scss"
+            ],
+            "reason": "Two treemaps lay a rectangle out the same way: absolute, clipped, a name over a figure. A global class for it would put a treemap-only rule in the stylesheet of every panel, and the two tiles differ in everything else (one is a button that opens a level, the other a static figure coloured by a comparison)."
+        }
+    ]
+}

@@ -1,0 +1,46 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 89302,
+        "rawBytes": 285046,
+        "files": 4
+    },
+    "firstTrip": {
+        "total": 93375,
+        "files": 5
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 0,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "article: own 3315, shared 11742, total 104359",
+        "home: own 7477, shared 4155, total 100934",
+        "editor: own 1611, shared 9127, total 100040",
+        "auth: own 1337, shared 8706, total 99345",
+        "settings: own 1310, shared 8706, total 99318",
+        "profile-favorites: own 642, shared 6807, total 96751",
+        "profile-articles: own 634, shared 6807, total 96743"
+    ],
+    "deferred": [],
+    "shared": 10,
+    "workers": 0,
+    "onDemand": 0,
+    "data": 0,
+    "signals": [
+        "mid slowScreens: profile-favorites takes 4 round trips to be complete: 600 ms of pure waiting",
+        "mid assetOrigin: The render-blocking stylesheet is served from //code.ionicframework.com, not from the page's own origin",
+        "mid unstableChunk: 2 chunks mix dependencies with your own code: ≈90 kB is re-invalidated on every deploy",
+        "info cascadeShape: chunk-JC6VLHRF.js is imported by 19 of 22 chunks: any change inside it renames all of them",
+        "info cycles: 1 cycle between folders of yours: features/article › features/profile › features/article",
+        "info theirs: 97 % of your first load is code you did not write",
+        "info media: 25 kB across 5 image or video files",
+        "info unhashable: 5 files carry no hash in the name",
+        "info devLeftovers: One development marker in the build, author unknown",
+        "info situationMissing: 4 unanswered questions would change what this report says"
+    ]
+}

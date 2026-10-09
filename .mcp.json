@@ -6,6 +6,7 @@
                 "-y",
                 "chrome-devtools-mcp@latest",
                 "--channel=stable",
+                "--isolated",
                 "--viewport=1440x900",
                 "--no-usage-statistics",
                 "--no-performance-crux"

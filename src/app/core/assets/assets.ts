@@ -8,6 +8,7 @@
  * in, and whether a modern version of it is sitting in the same folder.
  */
 
+import { pagePathsIn, prefetchPathsIn } from '../build-text/index-html';
 import { asMember } from '../json/json.utils';
 import {
     type AssetFile,
@@ -59,6 +60,17 @@ const SUPERSEDED_BY: Record<string, string[]> = {
 export const extensionOf = (name: string): string => (/\.([\da-z]+)$/i.exec(name)?.[1] ?? '').toLowerCase();
 
 export const kindOf = (name: string): AssetKind => EXTENSIONS[extensionOf(name)] ?? 'other';
+
+/**
+ * Files whose name is fixed by whoever reads them: the host (`_redirects`, `_headers`,
+ * `_routes.json`, `.htaccess`, `CNAME`), a crawler (`robots.txt`, `sitemap.xml`), the browser
+ * looking for a service worker or a manifest at a URL that does not move, and the pages a host
+ * serves on its own (`404.html`, `200.html`). Nothing in the build names them and none can carry a
+ * hash, so "not referenced" and "no hash" are both true of them and say nothing: three real builds
+ * listed them under both.
+ */
+export const SERVER_FILE =
+    /^(?:_redirects|_headers|_routes\.json|\.htaccess|CNAME|robots\.txt|sitemap[\w-]*\.xml|[\w-]*\.webmanifest|sw\.js|service-worker\.js|(?:200|404|50\d)\.html)$/i;
 
 /** The three of the eight kinds the media table holds. The only place they are listed. */
 const MEDIA_KINDS: ReadonlySet<MediaFile['kind']> = new Set<MediaFile['kind']>(['image', 'video', 'audio']);
@@ -155,6 +167,11 @@ export interface AssetInput {
      * right for a picture or a font: those are already compressed and travel as they are.
      */
     weigh?: ReadonlyMap<string, number>;
+    /**
+     * The same figures keyed by the path inside the folder, for files that share a name: `weigh` is
+     * keyed by name, which is how the metafile names chunks, and gives 25 `plugin.min.js` one size.
+     */
+    weighPath?: ReadonlyMap<string, number>;
 }
 
 /** Fonts grouped into the faces they really are. */
@@ -191,6 +208,7 @@ const fontsOf = (files: readonly AssetFile[], preloaded: ReadonlySet<string>): F
 };
 
 /** Pictures and video, with whether a modern version of the same name is already there. */
+/** @param inPage the paths of the files the page asks for. */
 const mediaOf = (files: readonly AssetFile[], inPage: ReadonlySet<string>): MediaFile[] => {
     const media = files.filter(file => mediaKindOf(file.name) !== null);
     // Two files are the same picture when everything but the extension matches. The hash a bundler
@@ -214,7 +232,7 @@ const mediaOf = (files: readonly AssetFile[], inPage: ReadonlySet<string>): Medi
                 // Never the fallback: `media` is exactly the files whose kind is one of the three.
                 kind: mediaKindOf(file.name) ?? 'image',
                 format,
-                inPage: inPage.has(file.name),
+                inPage: inPage.has(file.path),
                 modernNeighbour: modern ?? null,
             };
         })
@@ -300,6 +318,13 @@ const inlinedOf = (texts: ReadonlyMap<string, string>): InlinedData[] => {
     return rows.toSorted((a, b) => b.bytes - a.bytes);
 };
 
+/**
+ * What is downloaded once and kept, and can be kept twice. A stylesheet too: Sapper wrote the same
+ * 204 bytes as `main.css` and `chunk.css`, and both were counted. Not a script, whose name carries
+ * the hash of its content, so two of them with one content have one name.
+ */
+const DUPLICATE_KINDS: ReadonlySet<AssetKind> = new Set<AssetKind>(['font', 'image', 'video', 'audio', 'style']);
+
 /** Files with the same content under two names, when something actually compared the content. */
 const duplicatesOf = (
     files: readonly AssetFile[],
@@ -311,6 +336,14 @@ const duplicatesOf = (
 
     const byHash = new Map<string, AssetFile[]>();
     for (const file of files) {
+        // What is downloaded once and kept: a font, a picture, a recording. An HTML document and a
+        // data file are one per navigation, and two of them being equal says nothing about waste —
+        // Nuxt's 200.html, 404.html and every route's shell are the same page on purpose, and two
+        // routes' `_payload.json` came out "identical" because they held the same timestamp.
+        // Nor is an empty file: Ember writes two empty stylesheets, and "0 B twice" is no copy.
+        if (!DUPLICATE_KINDS.has(kindOf(file.name)) || file.bytes === 0) {
+            continue;
+        }
         const hash = hashes.get(file.path);
         if (hash) {
             byHash.set(hash, [...(byHash.get(hash) ?? []), file]);
@@ -326,21 +359,84 @@ const duplicatesOf = (
             names: group.map(file => file.path),
             bytes: group[0]?.bytes ?? 0,
             wasted: (group.length - 1) * (group[0]?.bytes ?? 0),
+            named: null,
         }))
         .toSorted((a, b) => b.wasted - a.wasted);
 };
 
-/** The whole first trip: everything the page asks for before anything appears. */
-const firstTripOf = (input: AssetInput, sizeOf: (name: string) => number): FirstTrip => {
-    const named = [...input.inPage];
-    const total = (kinds: AssetKind[]): number =>
-        named.filter(name => kinds.includes(kindOf(name))).reduce((sum, name) => sum + sizeOf(name), 0);
+/** How many files of the folder carry each name. */
+const namesakesOf = (files: readonly AssetFile[]): Map<string, number> => {
+    const counts = new Map<string, number>();
+    for (const file of files) {
+        counts.set(file.name, (counts.get(file.name) ?? 0) + 1);
+    }
+    return counts;
+};
 
-    const scripts = total(['script']);
+/** Whether a path the page wrote is this file: the same path, or one under a `base` or a subfolder. */
+const isPathOf = (file: AssetFile, path: string): boolean =>
+    file.path === path || file.path.endsWith(`/${path}`) || path.endsWith(`/${file.path}`);
+
+/**
+ * The files the page asks for. By name, which is how everything else here keys a file — except a
+ * name several files share, where only the path the page wrote says which one it is. By name,
+ * PocketBase's page asked for all 25 `plugin.min.js` of TinyMCE.
+ */
+const askedFiles = (input: AssetInput): AssetFile[] => {
+    const namesakes = namesakesOf(input.files);
+    const shared = input.files.filter(file => input.inPage.has(file.name) && (namesakes.get(file.name) ?? 0) > 1);
+    const paths = shared.length > 0 && input.html ? pagePathsIn(input.html) : [];
+    // One file per path, the exact one first and then the shortest: a folder holding `browser/`
+    // and `server/` has two `main.js`, and the page names one of them.
+    const picked = new Set(
+        paths.flatMap(path =>
+            shared
+                .filter(file => isPathOf(file, path))
+                .toSorted((a, b) => Number(b.path === path) - Number(a.path === path) || a.path.length - b.path.length)
+                .slice(0, 1),
+        ),
+    );
+    return input.files.filter(
+        file => input.inPage.has(file.name) && ((namesakes.get(file.name) ?? 0) < 2 || picked.has(file)),
+    );
+};
+
+/**
+ * What a file weighs in the unit given: by path when the folder was read by path, and by name
+ * only when the name is its own — 25 `plugin.min.js` keyed by name all weigh the last one read.
+ */
+const weigherOf = (
+    files: readonly AssetFile[],
+    weigh: ReadonlyMap<string, number> | null | undefined,
+    weighPath: ReadonlyMap<string, number> | null | undefined,
+): ((file: AssetFile) => number) => {
+    const namesakes = namesakesOf(files);
+    return file =>
+        weighPath?.get(file.path) ??
+        ((namesakes.get(file.name) ?? 0) > 1 ? file.bytes : (weigh?.get(file.name) ?? file.bytes));
+};
+
+/** The whole first trip: everything the page asks for before anything appears. */
+const firstTripOf = (input: AssetInput, weighFile: (file: AssetFile) => number, inline = 0): FirstTrip => {
+    // A `prefetch` is named by the page and is still not part of this trip: it is for the next
+    // navigation. Counted, PocketBase's warm-up of TinyMCE read "731 kB across 12 files" for a first
+    // trip of 392 kB in 5, under a signal of the same report saying prefetches are not counted.
+    // And only what this folder holds: a stylesheet from a font host or forty posters from an image
+    // CDN are files of somebody else's, and counting them as files of the trip made "55 files" out
+    // of 14. Taking the files rather than the names the page wrote is what keeps them out.
+    // Nor is the page's icon: the browser asks for it beside the page and paints without it. Counted,
+    // the favicon of every build was part of "before anything appears".
+    const named = askedFiles(input).filter(
+        file => (!input.prefetched?.has(file.name) || input.preloaded.has(file.name)) && !input.icons?.has(file.name),
+    );
+    const total = (kinds: AssetKind[]): number =>
+        named.filter(file => kinds.includes(kindOf(file.name))).reduce((sum, file) => sum + weighFile(file), 0);
+
+    const scripts = total(['script']) + inline;
     const styles = total(['style']);
     const fonts = named
-        .filter(name => kindOf(name) === 'font' && input.preloaded.has(name))
-        .reduce((sum, name) => sum + sizeOf(name), 0);
+        .filter(file => kindOf(file.name) === 'font' && input.preloaded.has(file.name))
+        .reduce((sum, file) => sum + weighFile(file), 0);
     const images = total(['image']);
 
     return {
@@ -348,10 +444,36 @@ const firstTripOf = (input: AssetInput, sizeOf: (name: string) => number): First
         styles,
         fonts,
         images,
+        inline,
         total: scripts + styles + fonts + images,
-        files: named.filter(name => kindOf(name) !== 'font' || input.preloaded.has(name)).length,
+        files: named.filter(file => kindOf(file.name) !== 'font' || input.preloaded.has(file.name)).length,
     };
 };
+
+/**
+ * The first trip with the bootstrap chunks `index.html` does not name, once the analysis has found
+ * them. The folder alone only sees what the page names, and a chunk the browser discovers by
+ * parsing is still downloaded before anything appears, one round trip later. Left out, a real build
+ * read "the whole first trip is 133 kB" under a 464 kB bootstrap: the 346 kB it left out was the
+ * chunk that made the bootstrap take two trips.
+ */
+export const withLateBoot = (trip: FirstTrip, late: readonly number[]): FirstTrip => {
+    const bytes = late.reduce((sum, size) => sum + size, 0);
+    return { ...trip, scripts: trip.scripts + bytes, total: trip.total + bytes, files: trip.files + late.length };
+};
+
+/**
+ * The first trip weighed with other figures than the report's: raw bytes when `weigh` is absent.
+ * The command reads the folder before it knows which unit it was asked for, and a trip weighed in
+ * brotli under `--mode raw` read "Bootstrap 110 kB" over "the whole first trip is 48 kB".
+ */
+/** @param inline what the page's inline scripts weigh, in the unit of `weigh` (`inlineScriptsIn`). */
+export const firstTripIn = (
+    input: AssetInput,
+    weigh: ReadonlyMap<string, number> | null,
+    weighPath: ReadonlyMap<string, number> | null = null,
+    inline = 0,
+): FirstTrip => firstTripOf(input, weigherOf(input.files, weigh, weighPath), inline);
 
 export const readAssets = (input: AssetInput): AssetReport => {
     const sizes = new Map(input.files.map(file => [file.name, file.bytes]));
@@ -363,15 +485,25 @@ export const readAssets = (input: AssetInput): AssetReport => {
 
     // Scripts only. A prefetched font or picture is a different conversation and a much smaller
     // one; what makes this worth a line is a framework fetching whole routes nobody asked for.
-    const prefetched = [...(input.prefetched ?? [])]
-        .filter(name => kindOf(name) === 'script')
-        .map(name => ({ name, bytes: sizeOf(name) }))
+    // Matched by the path the page wrote where it can be, and weighed per path: by name alone,
+    // files that share one counted once and weighed the same (see `prefetchPathsIn`).
+    const weighFile = weigherOf(input.files, input.weigh, input.weighPath);
+    const byPath = input.html
+        ? prefetchPathsIn(input.html).flatMap(path => input.files.filter(file => isPathOf(file, path)).slice(0, 1))
+        : [];
+    const asked = askedFiles(input);
+    const prefetched = (
+        byPath.length > 0
+            ? byPath.map(file => ({ name: file.path, bytes: weighFile(file) }))
+            : [...(input.prefetched ?? [])].map(name => ({ name, bytes: sizeOf(name) }))
+    )
+        .filter(file => kindOf(file.name) === 'script')
         .toSorted((a, b) => b.bytes - a.bytes);
 
     return {
         files: input.files.map(file => ({ ...file, kind: kindOf(file.name) })),
         fonts: fontsOf(input.files, input.preloaded),
-        media: mediaOf(input.files, input.inPage),
+        media: mediaOf(input.files, new Set(asked.map(file => file.path))),
         prefetched,
         prefetchedBytes: prefetched.reduce((sum, file) => sum + file.bytes, 0),
         // A source map is nobody's reference and never will be: it is named by the chunk it belongs
@@ -387,20 +519,38 @@ export const readAssets = (input: AssetInput): AssetReport => {
                       kindOf(file.name) !== 'map' &&
                       !PRE_COMPRESSED.test(file.name) &&
                       !input.texts.has(file.name) &&
+                      !SERVER_FILE.test(file.name) &&
                       !/^index(?:\.[\w-]+)?\.html$/i.test(file.name),
               )
             : [],
         referencesRead,
         // A favicon and a touch icon holding the same picture are alternatives the browser picks one
         // of, not a file downloaded twice under two names.
-        duplicates: duplicatesOf(input.files, input.hashes).filter(entry =>
-            entry.names.some(path => !input.icons?.has(path.split('/').at(-1) ?? path)),
-        ),
+        duplicates: duplicatesOf(input.files, input.hashes)
+            .filter(entry => entry.names.some(path => !input.icons?.has(path.split('/').at(-1) ?? path)))
+            .map(entry => ({
+                ...entry,
+                named: referencesRead
+                    ? entry.names.filter(path => referenced.has(path.split('/').at(-1) ?? path)).length
+                    : null,
+            })),
         contentCompared: !!input.hashes && input.hashes.size > 0,
         inlined,
         inlinedBytes: inlined.reduce((sum, row) => sum + row.bytes, 0),
         stylesByChunk: stylesByChunk(input, sizeOf),
-        firstTrip: firstTripOf(input, sizeOf),
+        firstTrip: firstTripOf(input, weighFile),
         inPage: [...input.inPage],
+        inPagePaths: asked.map(file => file.path),
     };
+};
+
+/**
+ * The stylesheets the code loads and the page does not ask for: the CSS of a lazy route, which
+ * Vite writes beside its chunk. Not "named by a lazy chunk": Vite lists every route's CSS in the
+ * preload table of whichever chunk imports the route, and that is usually the bootstrap. Left out
+ * of every total — the figures are JavaScript — and named, so leaving them out is said.
+ */
+export const routeStylesOf = (report: AssetReport): string[] => {
+    const asked = new Set(report.inPage);
+    return [...new Set(report.stylesByChunk.flatMap(row => row.styles))].filter(style => !asked.has(style));
 };

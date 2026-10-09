@@ -14,12 +14,13 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { analyze } from '../src/app/core/analysis/analysis';
-import { announcedIn } from '../src/app/core/intake/index-html';
+import { announcedIn } from '../src/app/core/build-text/index-html';
 import { EMPTY_CONTEXT } from '../src/app/core/project/project-context';
 import { SAMPLE_NAME, SAMPLE_PAGE, SAMPLE_STATS } from '../src/app/core/sample/sample-build';
 import { parseArgs } from './args';
-import { type BuildInput } from './read-build.types';
-import { renderJson } from './render-json';
+import { type BuildInput } from './read/read-build.types';
+import { renderAgent } from './render/render-agent';
+import { renderJson } from './render/render-json';
 import { buildReport } from './report';
 
 const announced = new Set(announcedIn(SAMPLE_PAGE));
@@ -28,6 +29,7 @@ const announced = new Set(announcedIn(SAMPLE_PAGE));
 const INPUT: BuildInput = {
     meta: SAMPLE_STATS,
     parallel: null,
+    routes: null,
     statsName: SAMPLE_NAME,
     gzip: null,
     brotli: null,
@@ -75,8 +77,13 @@ describe('the sample build', () => {
         expect(analysis.routeGroupers.map(entry => entry.label)).toEqual(['admin']);
 
         // The finding the whole tool is about: a chunk the bundler calls deferred that five of the
-        // eight screens import, so everybody who uses the app downloads it.
-        expect(analysis.sharedChunks.map(chunk => [chunk.name, chunk.screens])).toEqual([['chunk-GRID-5NPX7J.js', 5]]);
+        // eight screens import, so everybody who uses the app downloads it. And the admin route
+        // file, which both admin screens download before their own chunk: it is not a screen, and
+        // it is paid for by the two reached through it.
+        expect(analysis.sharedChunks.map(chunk => [chunk.name, chunk.screens])).toEqual([
+            ['chunk-GRID-5NPX7J.js', 5],
+            ['chunk-ADMIN-9TYU2E.js', 2],
+        ]);
 
         // index.html names three of the four bootstrap chunks; the fourth costs a second round trip.
         expect(analysis.startup).toEqual({
@@ -90,6 +97,8 @@ describe('the sample build', () => {
 
         // And one screen is three static imports deep, which is what the round-trips signal is for.
         expect(analysis.screens.find(screen => screen.label === 'dashboard')?.waves).toBe(3);
+        // And one is three deep because the route file in front of it has to arrive first.
+        expect(analysis.screens.find(screen => screen.label === 'users')?.waves).toBe(3);
         expect(analysis.duplicates.map(dupe => dupe.name)).toEqual(['date-fns']);
 
         // Three screens carry far more of their own code than the rest, and they are ONE signal.
@@ -97,5 +106,24 @@ describe('the sample build', () => {
         const report = buildReport(INPUT, options());
         expect(report.findings.filter(finding => finding.kind === 'heavy')).toHaveLength(1);
         expect(analysis.commonJs.map(pkg => pkg.name)).toEqual(['xlsx']);
+    });
+});
+
+describe('--format agent on the sample build', () => {
+    const lines = renderAgent(buildReport(INPUT, options()), [], false).split('\n');
+
+    it('opens with its version and the figures as fixed key=value fields', () => {
+        expect(lines[0]).toBe('loadline agent v1');
+        expect(lines[1]).toMatch(/^build=\S+ unit=raw boot=\S+ verdict=\w+ screens=\d+ measurable=yes$/);
+        expect(lines).toContain('gates: none asked');
+    });
+
+    it('numbers at most five actions, each with its kind, severity, saving and effort', () => {
+        const actions = lines.filter(line => /^\d+\. /.test(line));
+        expect(actions.length).toBeGreaterThan(0);
+        expect(actions.length).toBeLessThanOrEqual(5);
+        for (const action of actions) {
+            expect(action).toMatch(/kind=\w+ .*severity=\w+ saving=\S+ effort=\w+$/);
+        }
     });
 });

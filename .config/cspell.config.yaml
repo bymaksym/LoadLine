@@ -1,0 +1,99 @@
+# cspell (`pnpm run spell:audit`, and the matching files of a commit): spelling of the text people
+# read. That is the documentation, which is public, and the strings the page and the command print,
+# in English and in Spanish. Code is not checked: identifiers are not prose.
+version: '0.2'
+# Found on its own: cspell looks in `.config/`, and so does its editor extension. The globs below
+# are read from the repository root, not from this folder.
+language: en-GB,es
+import:
+    - '@cspell/dict-es-es/cspell-ext.json'
+files:
+    - '*.md'
+    - .github/*.md
+    - docs/HOW-IT-WORKS.md
+    - docs/CONFIG.md
+    - src/app/core/i18n/*.ts
+    - src/app/core/findings/text/finding-text.ts
+ignorePaths:
+    - .claude/**
+    # Written by release-please from the commit subjects: a typo there is fixed in the commit.
+    - CHANGELOG.md
+ignoreRegExpList:
+    # What sits inside a string but is not prose: `${…}` interpolations, inline code in backticks
+    # and markdown, HTML tags, URLs and file names with an extension.
+    - '/\$\{[^}]*\}/g'
+    - '/`[^`\n]*`/g'
+    - '/<\/?[a-z][^>]*>/g'
+    - '/https?:\/\/\S+/g'
+    - '/\b[\w-]+\.(?:js|mjs|cjs|ts|json|html|css|scss|map|md|yml|yaml|lock|woff2?)\b/g'
+    # The keys of the dictionaries (`lede:`, `critOver:`): identifiers, not words anybody reads.
+    - '/^\s*[''"]?[\w$-]+[''"]?\??(?=:)/gm'
+# Words no dictionary has. Reviewed one by one on 02/10/2026: none of them was a typo.
+words:
+    # The project, its author and the projects and tools it names
+    - bymaksym
+    - realworld
+    - vendored
+    - Excalidraw
+    - exoego
+    - Hawkeye
+    - immich
+    - loadline
+    - loadline's
+    - maks
+    - Maksym
+    - msal
+    - nginx
+    - rspack
+    - sarif
+    - treemap
+    - turbopack
+    - turbopack's
+    # Product names spelt the American way, which en-GB would otherwise correct
+    - analyzer
+    # Command-line flags and image names quoted in the CI recipes (curl's --data-urlencode, CircleCI's
+    # convenience images)
+    - urlencode
+    - cimg
+    # Web performance terms
+    - HPACK
+    - QPACK
+    - TTFB
+    - microfrontends
+    - reexports
+    - uncacheable
+    - zoneless
+    - elses
+    # Spanish: technical verbs and nouns the dictionary does not have yet
+    - accionable
+    - cachés
+    - commitearlo
+    - especificadores
+    - minificada
+    - minificador
+    - minificados
+    - multiplexado
+    - parsea
+    - parseando
+    - parseo
+    - precalentados
+    - precalentar
+    - precarga
+    - reclasificadas
+    - recompilar
+    - recomprime
+    - redescarga
+    - redirección
+    - reinvalida
+    - renderizado
+    # Spanish: imperatives and infinitives with the pronoun attached, which the dictionary lists
+    # only in their bare form
+    - aplanarlos
+    - cópialo
+    - importadla
+    - muévela
+    - Pégalo
+    - precargarlo
+    - recórrelos
+    - Súbelo
+    - vigílalo

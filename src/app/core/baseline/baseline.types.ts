@@ -15,12 +15,29 @@ export interface SnapshotFinding {
     severity: Severity;
 }
 
+/** A package or a folder of the project's own code, with what it weighs somewhere. Raw bytes. */
+export interface SnapshotPart {
+    name: string;
+    bytes: number;
+    /** A folder of the project's own code rather than a package. */
+    own: boolean;
+}
+
 export interface SnapshotScreen {
     source: string;
     label: string;
     total: number;
     shared: number;
     own: number;
+    /**
+     * What the screen loads beyond the bootstrap, by package and own folder, biggest first: what
+     * `bootPackages` and `bootOwn` are for the bootstrap, so a screen that grew can be put down to
+     * what grew in it. Absent in snapshots written before it existed, and when the build did not
+     * say what is inside its chunks: an empty list there would read as a screen made of nothing.
+     */
+    lazyParts?: SnapshotPart[];
+    /** Its lazy chunks in raw bytes: what turns `lazyParts` into the unit of `shared` and `own`. */
+    lazyRaw?: number;
 }
 
 export interface Snapshot {
@@ -35,6 +52,17 @@ export interface Snapshot {
     boot: number;
     /** npm packages in the bootstrap. Project folders are left out: they always change. */
     bootPackages: { name: string; bytes: number }[];
+    /**
+     * The folders of the project's own code in the bootstrap, like `bootPackages` for packages.
+     * With both, a growth of the bootstrap can be put down to what caused it. Absent in snapshots
+     * written before it existed, which then explain growth by package only.
+     */
+    bootOwn?: { name: string; bytes: number }[];
+    /**
+     * The bootstrap in raw minified bytes. The weights of `bootPackages` and `bootOwn` are raw
+     * too, and this is what turns them into the unit of `boot` when the report is compressed.
+     */
+    bootRaw?: number;
     screens: SnapshotScreen[];
     /**
      * The signals raised when the snapshot was taken. Optional: exports written before this field
@@ -79,6 +107,34 @@ export interface ScreenDelta {
     total: Delta;
     /** Shared + own: what the screen adds on top of the bootstrap. */
     lazy: Delta;
+    /**
+     * What `lazy`'s change is made of, biggest first, by the rules of `Comparison.bootCauses`.
+     * `null` when either snapshot lacks the screen's breakdown: unknown, which is not none.
+     */
+    causes: BootCause[] | null;
+    /** Report unit per raw byte for this screen's `causes`. `1` in a raw report. */
+    causesRatio: number;
+    /** Whether `causesRatio` is an estimate: true in a compressed report. */
+    causesEstimated: boolean;
+}
+
+/**
+ * One thing that moved inside the bootstrap, or inside what a screen loads beyond it: a package or
+ * a folder of the project's own code. The figures are raw minified bytes; `causesRatio`, on the
+ * comparison or on the screen's delta, turns them into the report's unit.
+ */
+export interface BootCause {
+    name: string;
+    /** A folder of the project's own code rather than a package. */
+    own: boolean;
+    before: number;
+    after: number;
+    diff: number;
+    /**
+     * `new` and `gone` are about the part being compared: a package gone from the bootstrap may
+     * still be in the build lazily, and one gone from a screen may have moved into the bootstrap.
+     */
+    change: 'new' | 'gone' | 'grew' | 'shrank';
 }
 
 export interface Comparison {
@@ -106,4 +162,15 @@ export interface Comparison {
     goneFindings: SnapshotFinding[];
     /** Whether the baseline carried its signals at all. */
     findingsComparable: boolean;
+    /**
+     * What the bootstrap's change is made of, biggest first: the answer to "what did I add?" that
+     * the delta alone does not give. Raw bytes.
+     */
+    bootCauses: BootCause[];
+    /** Report unit per raw byte, to print `bootCauses` next to `boot`. `1` in a raw report. */
+    causesRatio: number;
+    /** Whether `causesRatio` is an estimate: true in a compressed report. */
+    causesEstimated: boolean;
+    /** Whether the project's own folders could be compared, or packages only (an older baseline). */
+    causesOwnKnown: boolean;
 }

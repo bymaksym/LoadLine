@@ -140,20 +140,29 @@
             </div>
             <div class="figure">
                 <span class="figure__label">{{ t.measureCacheState }}</span>
+                <!-- Nothing counted means nothing said: a list of names carries no sizes to count. -->
                 <span class="figure__value">
-                    {{ t.measureCacheSplit(env.cache.fromCache, env.cache.revalidated, env.cache.network) }}
+                    {{
+                        env.cache.fromCache + env.cache.revalidated + env.cache.network === 0
+                            ? t.measureUnknown
+                            : t.measureCacheSplit(env.cache.fromCache, env.cache.revalidated, env.cache.network)
+                    }}
                 </span>
             </div>
             <div class="figure">
                 <span class="figure__label">{{ t.measureConnections }}</span>
-                <span class="figure__value">{{ env.connections.opened }}</span>
+                <span class="figure__value">{{ env.timed ? env.connections.opened : t.measureUnknown }}</span>
             </div>
             <div class="figure">
                 <span class="figure__label">{{ t.measureThird }}</span>
-                <span class="figure__value">
-                    {{ t.measureThirdValue(env.thirdParty.requests, env.thirdParty.origins.length) }}
-                </span>
-                <span class="figure__sub">{{ env.thirdParty.total }}</span>
+                @if (env.thirdParty.known) {
+                    <span class="figure__value">
+                        {{ t.measureThirdValue(env.thirdParty.requests, env.thirdParty.origins.length) }}
+                    </span>
+                    <span class="figure__sub">{{ env.thirdParty.total }}</span>
+                } @else {
+                    <span class="figure__value">{{ t.measureUnknown }}</span>
+                }
             </div>
             @if (env.serviceWorker !== null) {
                 <div class="figure">

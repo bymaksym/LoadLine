@@ -12,6 +12,7 @@ in the face the names it finds are written in. It used to be 175 px wide, cuttin
     <input
         #box
         class="field lookup__box"
+        name="search"
         type="search"
         [attr.aria-label]="t.searchPlaceholder"
         [placeholder]="t.searchPlaceholder"
@@ -197,7 +198,11 @@ already computed, they are the ones anybody would look for first, and they cost 
                                         }
 
                                         <h4 class="detail__title">{{ t.searchPlaces }}</h4>
-                                        @if (row.places.length > 1) {
+                                        <!--
+                                        One file in two chunks is paid twice. A package in fourteen is
+                                        its files split fourteen ways, each paid once: no note.
+                                        -->
+                                        @if (row.kind === 'file' && row.places.length > 1) {
                                             <p class="note">{{ t.searchTwice }}</p>
                                         }
                                         <table class="inner">

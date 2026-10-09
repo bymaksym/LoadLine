@@ -9,8 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { stylesIn } from '../build-text/index-html';
 import { pageCssOf } from './dist-files';
-import { stylesIn } from './index-html';
 
 const PAGE = `<!doctype html>
 <html><head>

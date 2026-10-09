@@ -12,6 +12,7 @@ import { type Finding } from '../src/app/core/findings/finding.types';
 import { type Lang } from '../src/app/core/i18n/ui-strings';
 import { type ScanReport } from '../src/app/core/scan/scan.types';
 import { type DeferResult } from '../src/app/core/whatif/defer';
+import { type WhyResult } from '../src/app/core/whatif/why';
 
 export interface CliReport {
     /** The file the figures came from, so a log says which build it is talking about. */
@@ -59,9 +60,15 @@ export interface CliReport {
     deps: DepsReport;
     /** One answer per `--what-if`, in the order they were asked. Empty when none was. */
     whatIf: DeferResult[];
+    /** One answer per `--why`, in the order they were asked. Empty when none was. */
+    why: WhyResult[];
     comparison: Comparison | null;
+    /** The branch the remembered run was made on, when it is not the one checked out now. */
+    sinceLastBranch: string | null;
     /** A baseline measured in another unit: the figures are not comparable and nothing is shown. */
     comparisonBlocked: boolean;
+    /** The unit the baseline was measured in, so a blocked comparison can say which to ask for. */
+    baselineMode: Mode | null;
     /**
      * Against the previous run of the same build, remembered in `node_modules/.cache/loadline`.
      * Shown as one line and a column, never as signals and never against a gate: it answers "did

@@ -49,27 +49,73 @@ const fileFor = async (cwd: string, target: string): Promise<string | null> => {
     return join(modules, '.cache', 'loadline', `last-${key}.json`);
 };
 
-export const readLastRun = async (cwd: string, target: string): Promise<Snapshot | null> => {
+/**
+ * The branch checked out where the command runs, read from `.git/HEAD` — or from the folder a
+ * worktree's `.git` file points at. `null` outside a repository or on a detached HEAD.
+ *
+ * The memory is kept per build and not per branch, on purpose: the first run on a new branch is
+ * the one that most wants yesterday's `main` to compare against. What was wrong was saying nothing
+ * about it, so a run on `feature-a` after one on `feature-b` read as "what my change did". The
+ * branch is remembered, and the line names it when it is not this one.
+ */
+export const branchOf = async (cwd: string): Promise<string | null> => {
+    let folder = resolve(cwd);
+    for (;;) {
+        const dotGit = join(folder, '.git');
+        try {
+            const info = await stat(dotGit);
+            const pointer = info.isDirectory() ? null : await readFile(dotGit, 'utf8');
+            const gitDir = pointer === null ? dotGit : resolve(folder, pointer.replace(/^gitdir:\s*/, '').trim());
+            const text = await readFile(join(gitDir, 'HEAD'), 'utf8');
+            const head = text.trim();
+            return head.startsWith('ref: refs/heads/') ? head.slice('ref: refs/heads/'.length) : null;
+        } catch {
+            // No repository here; one level up.
+        }
+        const parent = dirname(folder);
+        if (parent === folder) {
+            return null;
+        }
+        folder = parent;
+    }
+};
+
+/** The last run, and the branch it was made on when the file says. */
+export interface LastRun {
+    snapshot: Snapshot;
+    branch: string | null;
+}
+
+export const readLastRun = async (cwd: string, target: string): Promise<LastRun | null> => {
     const file = await fileFor(cwd, target);
     if (!file) {
         return null;
     }
     try {
         const parsed: unknown = JSON.parse(await readFile(file, 'utf8'));
-        return isSnapshot(parsed) ? parsed : null;
+        if (!isSnapshot(parsed)) {
+            return null;
+        }
+        const branch = (parsed as { branch?: unknown }).branch;
+        return { snapshot: parsed, branch: typeof branch === 'string' ? branch : null };
     } catch {
         return null;
     }
 };
 
-export const writeLastRun = async (cwd: string, target: string, snapshot: Snapshot): Promise<void> => {
+export const writeLastRun = async (
+    cwd: string,
+    target: string,
+    snapshot: Snapshot,
+    branch: string | null,
+): Promise<void> => {
     const file = await fileFor(cwd, target);
     if (!file) {
         return;
     }
     try {
         await mkdir(dirname(file), { recursive: true });
-        await writeFile(file, JSON.stringify(snapshot), 'utf8');
+        await writeFile(file, JSON.stringify({ ...snapshot, branch }), 'utf8');
     } catch {
         // A read-only checkout or a full disk: the report is still right, it just will not remember.
     }

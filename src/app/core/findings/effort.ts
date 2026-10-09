@@ -116,6 +116,8 @@ export const EFFORT: Record<FindingKind, Effort> = {
     thirdParty: 'none',
     licences: 'none',
     transitive: 'none',
+    // The import the chain names, removed or made dynamic: the rule already said what to use instead.
+    forbidden: 'import',
     updateWeight: 'none',
     bootGrew: 'none',
     bootNewPackages: 'none',

@@ -7,7 +7,7 @@
    so a rule copied into a second component reaches the second component and nowhere else. The
    copy drifts and the third panel to use the class gets nothing at all — `.muted`, `.dot`,
    `.chips`, `.chip`, `.detail__title` and `.dot-v--after` were all found that way.
-   `scripts/check-styles.mjs` checks it now, and CI runs it.
+   `tooling/check-styles.mjs` checks it now, and CI runs it.
 
    Three conventions the whole page holds to, because breaking them once costs more than they save:
 

@@ -13,9 +13,9 @@ import { type Analysis } from '../analysis/analysis.types';
 import { type Comparison } from '../baseline/baseline.types';
 import { formatRemaining, formatSaving, rankActions, totalSaving, unitScale } from '../findings/actions';
 import { type Finding } from '../findings/finding.types';
-import { plainText } from '../findings/finding-plain';
+import { plainText } from '../findings/text/finding-plain';
 import { formatBytes, formatDelta } from '../format/format.utils';
-import { type DeferResult } from '../whatif/defer';
+import { blindBoot, type DeferResult } from '../whatif/defer';
 
 export interface SummaryInput {
     analysis: Analysis;
@@ -32,6 +32,11 @@ export interface SummaryInput {
     since?: string | null;
     /** The `--what-if` answers, when the command was asked any: one line each. */
     whatIf?: readonly DeferResult[];
+    /**
+     * The gates, when the command checked any: the broken ones as lines, already in the report's
+     * language; empty when all passed. Absent when none was asked for, or from the page.
+     */
+    gates?: readonly string[];
 }
 
 const WORDS = {
@@ -40,12 +45,17 @@ const WORDS = {
         trip: 'First trip',
         screens: 'Screens',
         worst: 'Heaviest screen',
-        signals: 'Signals',
+        signals: (shown: number, all: number) => `Signals to review: ${shown} of ${all}`,
         actions: 'What to fix first',
         saving: 'All of it is worth',
         whatIf: 'What if it were deferred',
+        gatesPassed: 'Gates: all passed',
+        gatesBroken: (count: number) => `Gates: ${count} broken`,
         without: (target: string, saved: string, after: string) =>
             `  without ${target}: ${saved} off the first load, which would then weigh ${after}`,
+        unknown: (target: string) =>
+            `  without ${target}: cannot be measured, this build does not say which file imports which`,
+        opaque: 'No source maps: what each chunk weighs is known, what is inside it is not.',
         tail: (unit: string) => `— Loadline, figures ${unit}`,
     },
     es: {
@@ -53,12 +63,17 @@ const WORDS = {
         trip: 'Primer viaje',
         screens: 'Pantallas',
         worst: 'Pantalla más pesada',
-        signals: 'Señales',
+        signals: (shown: number, all: number) => `Señales a revisar: ${shown} de ${all}`,
         actions: 'Qué arreglo primero',
         saving: 'Todo junto vale',
         whatIf: 'Y si se difiriera',
+        gatesPassed: 'Gates: todos pasan',
+        gatesBroken: (count: number) => `Gates: ${count} ${count === 1 ? 'roto' : 'rotos'}`,
         without: (target: string, saved: string, after: string) =>
             `  sin ${target}: ${saved} menos en la primera carga, que pasaría a pesar ${after}`,
+        unknown: (target: string) =>
+            `  sin ${target}: no se puede medir, este build no dice qué fichero importa a cuál`,
+        opaque: 'Sin source maps: se sabe lo que pesa cada chunk, no lo que hay dentro.',
         tail: (unit: string) => `— Loadline, cifras ${unit}`,
     },
 };
@@ -76,6 +91,7 @@ export const summaryText = (input: SummaryInput): string => {
     const total = totalSaving(analysis, input.findings);
     const actions = rankActions(input.findings).slice(0, 3);
     const whatIf = input.whatIf ?? [];
+    const opaque = blindBoot(analysis);
 
     const bootLine = comparison
         ? `${formatBytes(analysis.bootBytes)} (${formatDelta(comparison.boot.diff)} vs ${comparison.baselineName})`
@@ -83,13 +99,25 @@ export const summaryText = (input: SummaryInput): string => {
 
     const lines = [
         `Loadline · ${input.name}`,
+        // Up here and not in a signal: it decides how every line below is read, and a paste is
+        // read once, from the top.
+        ...(opaque ? [words.opaque] : []),
         '',
         `${words.boot}: ${bootLine}`,
         ...(input.since ? [input.since] : []),
         ...(input.firstTrip === null ? [] : [`${words.trip}: ${formatBytes(input.firstTrip)}`]),
         `${words.screens}: ${analysis.screens.length}`,
         ...(worst ? [`${words.worst}: ${worst.label} — ${formatBytes(worst.total)}`] : []),
-        `${words.signals}: ${problems.length}`,
+        // The ones worth a look, out of all of them: "Signals: 2" next to another format's 7
+        // read as two reports disagreeing.
+        words.signals(problems.length, input.findings.length),
+        // A pipeline that went red has to say why in the step that turned it red: the summary is
+        // the format recommended for a job log, and it used to exit 1 without naming the gate.
+        ...(input.gates === undefined
+            ? []
+            : input.gates.length === 0
+              ? [words.gatesPassed]
+              : [words.gatesBroken(input.gates.length), ...input.gates.map(line => `  x ${line}`)]),
         ...(actions.length > 0
             ? [
                   '',
@@ -108,11 +136,13 @@ export const summaryText = (input: SummaryInput): string => {
                   '',
                   `${words.whatIf}:`,
                   ...whatIf.map(result =>
-                      words.without(
-                          result.target,
-                          formatSaving(result.saved, scale),
-                          formatRemaining(analysis, result.saved, result.after),
-                      ),
+                      result.measurable
+                          ? words.without(
+                                result.target,
+                                formatSaving(result.saved, scale),
+                                formatRemaining(analysis, result.saved, result.after),
+                            )
+                          : words.unknown(result.target),
                   ),
               ]
             : []),

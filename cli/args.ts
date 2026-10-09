@@ -10,6 +10,7 @@ import { type Lang, LANGS as LANG_LIST } from '../src/app/core/i18n/ui-strings';
 import { asMember } from '../src/app/core/json/json.utils';
 import { parseSize } from '../src/app/core/project/project-context';
 import { type FailOn, type Options, type OutputFormat, type ParsedArgs } from './args.types';
+import { ERROR_TEXT, type ErrorStrings } from './text/text-errors';
 
 // The two lists the page also uses. Written out again here, they drifted: adding a language would
 // have been accepted by the page and rejected by the command.
@@ -22,12 +23,15 @@ const FORMATS: ReadonlySet<OutputFormat> = new Set<OutputFormat>([
     'pr-comment',
     'sarif',
     'summary',
+    'agent',
+    'badge',
 ]);
 const SEVERITIES: ReadonlySet<FailOn> = new Set<FailOn>(['high', 'mid', 'none']);
 
 /** Flags that take a value. Everything else is a switch, which is how a missing value gets caught. */
 const WITH_VALUE = new Set([
     '--dist',
+    '--entry',
     '--baseline',
     '--export',
     '--project',
@@ -39,6 +43,7 @@ const WITH_VALUE = new Set([
     '--lock',
     '--audit',
     '--what-if',
+    '--why',
     '--max-boot',
     '--max-screen',
     '--max-own',
@@ -60,21 +65,26 @@ const EMPTY: Options = {
     lock: null,
     audit: null,
     whatIf: [],
+    why: [],
+    entries: [],
     lang: 'en',
     format: 'text',
     gates: {
         maxBoot: null,
         maxScreen: null,
+        screenLimits: {},
         maxOwn: null,
         maxGrowth: null,
         maxGrowthRatio: null,
         failOn: 'none',
         failOnNewPackage: false,
+        failOnSignals: [],
     },
     color: true,
     help: false,
     version: false,
     selfCheck: false,
+    printConfig: false,
     html: null,
     open: false,
     cache: true,
@@ -86,14 +96,38 @@ const parsePercent = (value: string): number | null => {
     return Number.isFinite(number) && number >= 0 ? number / 100 : null;
 };
 
-const sizeError = (flag: string, value: string): string =>
-    `${flag} takes a size like 350kB, 1.5MB or a number of bytes, not "${value}".`;
+/** The flags that take a size, and the gate each one sets. */
+const SIZE_GATES = {
+    '--max-boot': 'maxBoot',
+    '--max-screen': 'maxScreen',
+    '--max-own': 'maxOwn',
+    '--max-growth': 'maxGrowth',
+} as const;
+
+/** Below this a bare number is a size somebody meant in kilobytes: no bootstrap is that small. */
+const BARE_FLOOR = 1000;
+
+/**
+ * A size for a gate, or the message saying why not. A number with no unit is bytes, as Angular
+ * reads it — and `--max-boot 350` then failed every build with "over the 350 B allowed", which
+ * looks like a broken tool rather than a typo. Small enough to be that typo, it is refused with
+ * both spellings it could have meant.
+ */
+const gateSize = (flag: string, value: string, t: ErrorStrings): number | string => {
+    const bytes = parseSize(value);
+    if (bytes === null) {
+        return t.badSize(flag, value);
+    }
+    const typed = value.trim();
+    const typo = bytes < BARE_FLOOR && /^\d+(?:\.\d+)?$/.test(typed);
+    return typo ? t.bareSize(flag, typed) : bytes;
+};
 
 /**
  * Applies one flag to the options. Returns the message when the value cannot be used, so every
  * rejection names the flag it was about instead of saying "invalid arguments".
  */
-const apply = (options: Options, flag: string, value: string, positional: string[]): string | null => {
+const apply = (options: Options, flag: string, value: string, positional: string[], t: ErrorStrings): string | null => {
     switch (flag) {
         case '-h':
         case '--help': {
@@ -111,6 +145,10 @@ const apply = (options: Options, flag: string, value: string, positional: string
         }
         case '--self-check': {
             options.selfCheck = true;
+            return null;
+        }
+        case '--print-config': {
+            options.printConfig = true;
             return null;
         }
         case '--html': {
@@ -161,6 +199,14 @@ const apply = (options: Options, flag: string, value: string, positional: string
             options.whatIf.push(value);
             return null;
         }
+        case '--why': {
+            options.why.push(value);
+            return null;
+        }
+        case '--entry': {
+            options.entries.push(value);
+            return null;
+        }
         case '--fail-on-new-package': {
             options.gates.failOnNewPackage = true;
             return null;
@@ -168,7 +214,7 @@ const apply = (options: Options, flag: string, value: string, positional: string
         case '--mode': {
             const mode = asMember(value, MODES);
             if (mode === null) {
-                return `--mode takes raw, gzip or brotli, not "${value}".`;
+                return t.badMode(value);
             }
             options.mode = mode;
             return null;
@@ -176,7 +222,7 @@ const apply = (options: Options, flag: string, value: string, positional: string
         case '--lang': {
             const lang = asMember(value, LANGS);
             if (lang === null) {
-                return `--lang takes en or es, not "${value}".`;
+                return t.badLang(value);
             }
             options.lang = lang;
             return null;
@@ -184,7 +230,7 @@ const apply = (options: Options, flag: string, value: string, positional: string
         case '--format': {
             const format = asMember(value, FORMATS);
             if (format === null) {
-                return `--format takes text, json, markdown, pr-comment, sarif or summary, not "${value}".`;
+                return t.badFormat(value);
             }
             options.format = format;
             return null;
@@ -192,34 +238,30 @@ const apply = (options: Options, flag: string, value: string, positional: string
         case '--fail-on': {
             const failOn = asMember(value, SEVERITIES);
             if (failOn === null) {
-                return `--fail-on takes high, mid or none, not "${value}".`;
+                return t.badFailOn(value);
             }
             options.gates.failOn = failOn;
+            options.gates.failOnTyped = true;
             return null;
         }
-        case '--max-boot': {
-            options.gates.maxBoot = parseSize(value);
-            return options.gates.maxBoot === null ? sizeError(flag, value) : null;
-        }
-        case '--max-screen': {
-            options.gates.maxScreen = parseSize(value);
-            return options.gates.maxScreen === null ? sizeError(flag, value) : null;
-        }
-        case '--max-own': {
-            options.gates.maxOwn = parseSize(value);
-            return options.gates.maxOwn === null ? sizeError(flag, value) : null;
-        }
+        case '--max-boot':
+        case '--max-screen':
+        case '--max-own':
         case '--max-growth': {
-            options.gates.maxGrowth = parseSize(value);
-            return options.gates.maxGrowth === null ? sizeError(flag, value) : null;
+            const size = gateSize(flag, value, t);
+            if (typeof size === 'string') {
+                return size;
+            }
+            options.gates[SIZE_GATES[flag]] = size;
+            return null;
         }
         case '--max-growth-pct': {
             options.gates.maxGrowthRatio = parsePercent(value);
-            return options.gates.maxGrowthRatio === null ? `--max-growth-pct takes a number, not "${value}".` : null;
+            return options.gates.maxGrowthRatio === null ? t.badPct(value) : null;
         }
         default: {
             if (flag.startsWith('-')) {
-                return `Unknown flag: ${flag}`;
+                return t.unknownFlag(flag);
             }
             positional.push(flag);
             return null;
@@ -235,134 +277,43 @@ const expand = (argv: string[]): string[] =>
     });
 
 export const parseArgs = (argv: string[]): ParsedArgs => {
-    const options: Options = { ...EMPTY, gates: { ...EMPTY.gates } };
+    // The lists are fresh too: spread, they would be EMPTY's own arrays, and every parse after the
+    // first would push onto what the previous one asked.
+    const options: Options = { ...EMPTY, whatIf: [], why: [], entries: [], gates: { ...EMPTY.gates } };
     const args = expand(argv);
     const positional: string[] = [];
+    // Looked for before anything else, so a mistake in the flags that come before it is already
+    // said in the language asked for. One it cannot read is the first mistake, said in English.
+    const asked = asMember(args[args.indexOf('--lang') + 1] ?? '', LANGS);
+    const lang = args.includes('--lang') && asked ? asked : 'en';
+    const t = ERROR_TEXT[lang];
 
     for (let index = 0; index < args.length; index++) {
         const flag = args[index] ?? '';
         const takesValue = WITH_VALUE.has(flag);
         const value = takesValue ? args[++index] : undefined;
         if (takesValue && value === undefined) {
-            return { ok: false, message: `${flag} needs a value.` };
+            return { ok: false, lang, message: t.needsValue(flag) };
         }
 
-        const failed = apply(options, flag, value ?? '', positional);
+        const failed = apply(options, flag, value ?? '', positional, t);
         if (failed) {
-            return { ok: false, message: failed };
+            return { ok: false, lang, message: failed };
         }
     }
 
-    if (options.help || options.version) {
+    if (options.help || options.version || options.printConfig) {
         return { ok: true, options };
     }
 
     const target = positional[0];
     if (!target) {
-        return { ok: false, message: 'Missing the stats.json or the build folder to analyse.' };
+        return { ok: false, lang, message: t.missingTarget };
     }
     if (positional.length > 1) {
-        return { ok: false, message: `Unexpected argument: ${positional[1]}` };
+        return { ok: false, lang, message: t.unexpected(positional[1] ?? '') };
     }
     return options.open && !options.html
-        ? { ok: false, message: '--open opens what --html writes: add --html <file>.' }
+        ? { ok: false, lang, message: t.openNeedsHtml }
         : { ok: true, options: { ...options, target } };
 };
-
-export const USAGE = `Loadline — weight per screen, from the terminal.
-
-Usage
-  loadline <build root|stats.json|browser folder> [options]
-
-  The root of an Angular build — dist/<app> — is enough: browser-stats.json (Angular 22.2+) or
-  stats.json, and the browser/ folder next to it, are found on their own.
-
-  A build folder works on its own too: its chunks carry the import graph, so anything that emits ES
-  modules — Vite, Rollup, Rolldown, esbuild — is read without a stats file. It has to hold the
-  index.html of the build, which is what names the chunk the application starts at.
-
-Reading the build
-  --dist <folder>          The build output (the "browser" folder). Gives gzip figures, brotli when
-                           it carries .br files, and exact per-file weights when it carries .js.map.
-                           Not needed when the folder is what is being analysed.
-  --baseline <file>        A previous stats.json or a Loadline export, to compare against.
-  --export <file>          Write this build's snapshot there, to be the --baseline of a later run.
-                           The other half of --baseline, and the only one a build that writes no
-                           stats.json has: a folder read as a graph could be compared against a
-                           baseline and never produce one.
-  --lock <file>            pnpm-lock.yaml, package-lock.json or yarn.lock. Says which packages you
-                           did not ask for directly and what pulls each one in.
-  --audit <file.json>      The output of "pnpm audit --json" or "npm audit --json". Crossed with
-                           what actually ships: "3 of your 47 are in the first load" instead of
-                           "you have 47". Nothing is fetched — both files are ones you already have.
-  --project <folder>       Where angular.json, package.json and the pipeline file live. Adds the
-                           budget checks. Not read unless asked for.
-  --mode raw|gzip|brotli   Which figure the report is in. Default: the best --dist allows.
-  --criteria <file.json>   Thresholds replacing the recommended ones. The Criteria tab of the page
-                           writes this file with its "Download criteria" button.
-  --config <file.json>     loadline.json: the thresholds, the gates and the signals the team has
-                           decided to live with, kept next to the code. Without the flag, a
-                           loadline.json in the working directory is read if there is one. Flags on
-                           the command line win over the file.
-
-Output
-  --format <format>             text (default), summary, json, markdown, pr-comment or sarif.
-                                summary is the whole report in a dozen lines — the figures, what to
-                                fix first and nothing else — for a pipeline step that runs next to
-                                twenty others and should not bury them.
-                                pr-comment writes the comment a bot leaves on a merge request, with
-                                an HTML marker so the next run edits it instead of adding a
-                                sixteenth one. sarif anchors each signal to a file, which is what
-                                GitHub's code scanning reads.
-  --html <file>                 Also write the page — treemap, search, every chunk — with this build
-                                already loaded into it. One self-contained file: nothing to drag in,
-                                nothing fetched, opens offline.
-  --open                        Open what --html wrote.
-  --lang en|es                  Default: en.
-  --no-color                    Never emit colour. It is off already when stdout is not a terminal.
-  --no-cache                    Do not remember this run. By default each run is kept in
-                                node_modules/.cache/loadline and the next one says what moved —
-                                "bootstrap 156 kB → 129 kB" — without a --baseline.
-
-Failing the build
-  --max-boot <size>        Fail when the bootstrap is over it.
-  --max-screen <size>      Fail when the total download of a screen is over it.
-  --max-own <size>         Fail when the own code of a screen is over it.
-  --max-growth <size>      With --baseline: fail when the bootstrap or a screen grows by more.
-  --max-growth-pct <n>     The same, as a percentage.
-  --fail-on high|mid|none  Fail when a signal of that severity is raised. Default: none.
-  --fail-on-new-package    Fail when a package enters the bootstrap that was not in the baseline,
-                           or that the "packages" list of loadline.json does not name.
-
-Asking what if
-  --what-if <name>         What the first load would weigh without that package, folder or file —
-                           the figure to have BEFORE spending the afternoon. Exact: the graph is
-                           walked without those files, and what stops being reachable is what stops
-                           being downloaded. It does not re-chunk the build, so the round trips and
-                           the per-screen totals are not recomputed and the output says so.
-                           Repeatable.
-
-Checking the tool itself
-  --self-check             Work the bootstrap out twice — once by walking the import graph, once
-                           by closing what index.html announces — and fail when the two disagree.
-                           It says nothing about the bundle: it catches the build changing shape
-                           under Loadline, which is how the figures go wrong without an error.
-                           Needs the index.html, so pass the build folder or add --dist. Prints
-                           the check and nothing else.
-
-Exit codes
-  0  ran, nothing broke a gate.
-  1  a gate broke.
-  2  the arguments or the files could not be used.
-
-Examples
-  loadline dist/app
-  loadline dist/app --html loadline.html --open
-  loadline dist/app/browser
-  loadline dist/app/stats.json --dist dist/app/browser
-  loadline dist/app/stats.json --dist dist/app/browser --max-boot 350kB --fail-on high
-  loadline dist/app/stats.json --baseline prev/stats.json --max-growth 20kB --format json
-  loadline dist --export loadline-baseline.json
-  loadline dist --baseline loadline-baseline.json --max-growth 20kB
-  loadline dist/app/stats.json --dist dist/app/browser --self-check
-`;

@@ -62,6 +62,9 @@ total arrives, which is the half no size figure can show.
     <span class="detail__more">· {{ granularity(s) }}</span>
 </p>
 
+<!-- The round trips above, laid out in time: three trips cost three waits however little they weigh. -->
+<app-screen-trips [screen]="s" />
+
 <!--
 The chunks this screen pulls on top of the bootstrap, heaviest first. One list rather than one per
 zone: the square in front of each name is the colour of its segment on the bar, and the screens

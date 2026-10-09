@@ -1,7 +1,7 @@
 /**
  * The browser's half of reading the rest of the build folder.
  *
- * The command does the same thing off a disk in `cli/read-build.ts`; both of them end up calling
+ * The command does the same thing off a disk in `cli/read/read-build.ts`; both of them end up calling
  * `readAssets`, which is where the rules live. What is here is only the part that differs: a
  * `FileList` instead of paths, `crypto.subtle` instead of `node:crypto`.
  *
@@ -9,10 +9,11 @@
  * own line limit exists: the store is what holds state, and reading a folder is not state.
  */
 
+import { isScriptMapName } from '../analysis/sourcemap/sourcemap';
 import { readAssets } from '../assets/assets';
 import { type AssetFile, type AssetReport } from '../assets/assets.types';
-import { hashOf, isSearchable } from './dist-files';
-import { announcedIn, assetsIn, stylesIn } from './index-html';
+import { announcedIn, assetsIn, stylesIn } from '../build-text/index-html';
+import { hashOf, isSearchable, pathInside } from './dist-files';
 
 /**
  * @param files the whole folder, not only what was compressed: this is the half of it the tool
@@ -34,10 +35,10 @@ export const readFolderAssets = async (
     files: readonly File[],
     html: string | null,
     weigh: ReadonlyMap<string, number>,
+    weighPath: ReadonlyMap<string, number>,
     onProgress?: (done: number, total: number) => void,
 ): Promise<FolderRead> => {
-    const inside = (file: File): string => (file.webkitRelativePath || '').split('/').slice(1).join('/') || file.name;
-    const list: AssetFile[] = files.map(file => ({ path: inside(file), name: file.name, bytes: file.size }));
+    const list: AssetFile[] = files.map(file => ({ path: pathInside(file), name: file.name, bytes: file.size }));
 
     const texts = new Map<string, string>();
     const maps: { name: string; text: string }[] = [];
@@ -45,10 +46,15 @@ export const readFolderAssets = async (
     let done = 0;
 
     for (const file of files) {
-        if (/\.m?js\.map$/i.test(file.name)) {
+        if (isScriptMapName(file.name)) {
             maps.push({ name: file.name, text: await file.text() });
         } else if (isSearchable(file.name)) {
             texts.set(file.name, await file.text());
+            // A stylesheet can be the same file twice under two names (`DUPLICATE_KINDS`).
+            const hash = /\.css$/i.test(file.name) ? await hashOf(file) : null;
+            if (hash) {
+                hashes.set(pathInside(file), hash);
+            }
         } else {
             // Everything else is what a duplicate would be: a font, a picture, a video. Reading a
             // chunk to hash it would compare files whose names already carry a content hash.
@@ -56,7 +62,7 @@ export const readFolderAssets = async (
             if (hash) {
                 // Keyed by path: a folder per route writes several `index.html`, and keyed by name
                 // they would collapse onto one hash and come out as copies of each other.
-                hashes.set(inside(file), hash);
+                hashes.set(pathInside(file), hash);
             }
         }
 
@@ -79,9 +85,12 @@ export const readFolderAssets = async (
         icons: new Set(named.icons),
         bootChunks: new Set<string>(),
         weigh,
+        weighPath,
     });
 
     // Only the code goes on to the scan: a manifest or a `robots.txt` is worth searching for file
     // names and is not what a browser executes.
-    return { report, texts: new Map([...texts].filter(([name]) => /\.(?:m?js|css)$/i.test(name))), maps };
+    // The page too, for what its inline scripts carry: they are downloaded like any chunk.
+    const code = [...texts].filter(([name]) => /\.(?:m?js|css)$/i.test(name));
+    return { report, texts: new Map([...code, ...(html ? [['index.html', html] as const] : [])]), maps };
 };

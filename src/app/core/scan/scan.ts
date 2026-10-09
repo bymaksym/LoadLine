@@ -9,8 +9,9 @@
  */
 
 import { type ModuleEntry } from '../analysis/analysis.types';
-import { isSourceMap, segmentsOf, sourceAt } from '../analysis/sourcemap';
+import { isSourceMap, projectRootsOf, segmentsOf, sourceAt, sourcePathOf } from '../analysis/sourcemap/sourcemap';
 import { baseName, packageOf } from '../format/format.utils';
+import { isOwnFile } from '../format/ownership';
 import { asArray, asRecord, asText } from '../json/json.utils';
 import { categoryOf } from './catalog';
 import {
@@ -202,7 +203,7 @@ const envOwners = (modules: readonly ModuleEntry[], readerFor: (chunk: string) =
     return (chunk, index, match) => {
         const source = readerFor(chunk)?.(index) ?? null;
         if (source !== null) {
-            return source.includes('node_modules') ? packageOf(source.replace(/^(?:\.\.\/)+/, '')) : null;
+            return packageOf(source.replace(/^(?:\.\.\/)+/, ''));
         }
 
         const variable = match.replace(/^process\.env\./, '').toLowerCase();
@@ -212,6 +213,26 @@ const envOwners = (modules: readonly ModuleEntry[], readerFor: (chunk: string) =
     };
 };
 
+/** Average line length above which a chunk is minified: a minifier writes lines of thousands. */
+const MINIFIED_LINE = 300;
+
+/** Whether a chunk is minified, read from how long its lines are on average. */
+const isMinified = (text: string): boolean => text.length / (text.split('\n').length || 1) > MINIFIED_LINE;
+
+/**
+ * Whether a match starts an indented line: in a minified chunk, that is text inside a string,
+ * because a minifier writes no line breaks and no indentation of its own. PocketBase ships its API
+ * documentation as template literals — `function (e) {↵    console.log(e.record);` — and those
+ * examples were 26 "development leftovers". Only asked of a minified chunk: in one that is not, an
+ * indented line is how real code looks.
+ */
+const startsIndentedLine = (text: string, index: number): boolean => {
+    let start = index;
+    while (start > 0 && index - start < 200 && (text[start - 1] === ' ' || text[start - 1] === '\t')) {
+        start--;
+    }
+    return start < index && text[start - 1] === '\n';
+};
 const leftoversOf = (
     texts: ReadonlyMap<string, string>,
     modules: readonly ModuleEntry[],
@@ -224,7 +245,8 @@ const leftoversOf = (
      * decided at all. Without a map the honest answer is "all of them, and I do not know whose".
      */
     const countIn = (chunk: string, text: string, pattern: RegExp): { count: number; attributed: boolean } => {
-        const hits = [...text.matchAll(pattern)];
+        const minified = isMinified(text);
+        const hits = [...text.matchAll(pattern)].filter(hit => !minified || !startsIndentedLine(text, hit.index));
         if (hits.length === 0) {
             return { count: 0, attributed: true };
         }
@@ -236,7 +258,7 @@ const leftoversOf = (
 
         const mine = hits.filter(hit => {
             const source = reader(hit.index);
-            return source !== null && !source.includes('node_modules');
+            return source !== null && isOwnFile(source.replace(/^(?:\.\.\/)+/, ''));
         });
         return { count: mine.length, attributed: true };
     };
@@ -312,6 +334,9 @@ const thirdPartyOf = (modules: readonly ModuleEntry[], boot: ReadonlySet<string>
         .toSorted((a, b) => b.bootBytes - a.bootBytes || b.bytes - a.bytes);
 };
 
+/** An environment variable read in source: Node's way, and Vite's. */
+const ENV_REFERENCE = /\b(?:process\.env|import\.meta\.env)\.[A-Z][\dA-Z_]{2,}/g;
+
 /**
  * What a deployed source map actually gives away.
  *
@@ -324,30 +349,48 @@ export const exposureOf = (maps: readonly { name: string; text: string }[]): Sou
         return null;
     }
 
-    const paths = new Set<string>();
-    let hasContent = false;
-    let envReferences = 0;
-
-    for (const map of maps) {
+    // Every map read first: where the project starts in their paths is decided across all of them
+    // (see `projectRootsOf`), or a build written outside the project listed `excalidraw/…` in front
+    // of every one of its 702 files.
+    const read = maps.map(map => {
         try {
             // Both fields are checked entry by entry rather than asserted whole: the assertion
             // made a map with one non-string in `sources` throw on the first `.includes`, and the
             // catch below then dropped everything that map knew instead of the one bad entry.
             const parsed = asRecord(JSON.parse(map.text));
-            const sources = (asArray(parsed?.['sources']) ?? []).map(source => asText(source));
-            for (const source of sources) {
-                if (source !== null && !source.includes('node_modules')) {
-                    paths.add(source.replace(/^(?:\.\.\/)+/, ''));
-                }
-            }
-
-            const contents = asArray(parsed?.['sourcesContent']) ?? [];
-            hasContent ||= contents.some(content => typeof content === 'string' && content.length > 0);
-            for (const content of contents) {
-                envReferences += [...(asText(content) ?? '').matchAll(/\bprocess\.env\.[A-Z][\dA-Z_]{2,}/g)].length;
-            }
+            return {
+                sources: (asArray(parsed?.['sources']) ?? []).map(source => asText(source)),
+                contents: asArray(parsed?.['sourcesContent']) ?? [],
+            };
         } catch {
             // A map that will not parse says nothing about the build, only about the file.
+            return { sources: [], contents: [] };
+        }
+    });
+    const roots = projectRootsOf(read.map(map => map.sources.filter(source => source !== null)));
+
+    const paths = new Set<string>();
+    let hasContent = false;
+    let envReferences = 0;
+
+    for (const [index, { sources, contents }] of read.entries()) {
+        const own = sources.map(source => source !== null && isOwnFile(source.replace(/^(?:\.\.\/)+/, '')));
+        for (const source of sources) {
+            if (source !== null && isOwnFile(source.replace(/^(?:\.\.\/)+/, ''))) {
+                // `App.vue?vue&type=script&setup=true&lang.ts` is `App.vue` again: the query is the
+                // compiler's, and counting it made one file of the project two.
+                paths.add(sourcePathOf(source, roots[index] ?? '').replace(/\?.*$/, ''));
+            }
+        }
+
+        hasContent ||= contents.some(content => typeof content === 'string' && content.length > 0);
+        // In the project's own files only: every library checks `process.env.NODE_ENV`, and a Vue
+        // app read "394 references to environment variables" when its own code had none of those
+        // and one `import.meta.env.VITE_API_HOST`, which was not counted at all.
+        for (const [position, content] of contents.entries()) {
+            if (own[position]) {
+                envReferences += [...(asText(content) ?? '').matchAll(ENV_REFERENCE)].length;
+            }
         }
     }
 

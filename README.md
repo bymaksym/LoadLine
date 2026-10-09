@@ -19,8 +19,8 @@ own fonts and works offline.
 
 ## Quick start
 
-**In the browser.** Open [`loadline.html`](loadline.html) and drop your build on it. No install, no
-server, no build step. Press **See an example** to see the report on a synthetic build that ships
+**In the browser.** Open [`loadline.html`](loadline.html) and drop your build on it, or choose it with
+**Choose build folder**. No install, no server, no build step. Press **See an example** to see the report on a synthetic build that ships
 inside the page.
 
 **In the terminal.**
@@ -29,6 +29,7 @@ inside the page.
 npx @bymaksym/loadline dist/app                        # the build root: the metafile and browser/ are found
 npx @bymaksym/loadline dist/app --html loadline.html --open   # and the page, with the build already in it
 npx @bymaksym/loadline dist/app/browser                # the build folder on its own
+npx @bymaksym/loadline .                               # the project: the newest build inside it is found
 npx @bymaksym/loadline dist/app/browser-stats.json --dist dist/app/browser
 ```
 
@@ -48,16 +49,29 @@ ships `loadline.html` next to the command, under `npm root -g`.
 ## Compatibility
 
 Loadline reads ES module output, either from an esbuild metafile or from the compiled folder, whose
-chunks carry their own import graph.
+chunks carry their own import graph, and webpack builds from their `stats.json`.
 
-| Build tool                 | Frameworks                                                        | What to pass                                                               |
-| -------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| esbuild (metafile)         | Angular 17+, plain esbuild                                        | The build root, or the metafile with `--dist`                              |
-| Vite, Rollup, Rolldown     | Vue, React, Svelte, Solid, Nuxt, SvelteKit, Astro, React Router 7 | The build folder                                                           |
-| webpack, Turbopack, Rspack | Angular ≤ 16, Next.js, Create React App                           | Not supported — see [Statoscope](https://github.com/statoscope/statoscope) |
+| Build tool                               | Frameworks                                                        | What to pass                                                             |
+| ---------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| esbuild (metafile)                       | Angular 17+, plain esbuild                                        | The build root, or the metafile with `--dist`                            |
+| Vite, Rollup, Rolldown                   | Vue, React, Svelte, Solid, Nuxt, SvelteKit, Astro, React Router 7 | The build folder                                                         |
+| Older formats: AMD, SystemJS, `nomodule` | Sapper, Stencil, Polymer, Ember, RequireJS, Vite's legacy plugin  | The build folder, or the project root: the build is found inside it      |
+| webpack, Rspack                          | Angular ≤ 16, Create React App, Vue CLI, Gatsby, Nuxt 2           | The `stats.json` with `--dist`, or the build folder when it is inside it |
+| Turbopack                                | Next.js                                                           | Not supported: it writes no stats file                                   |
 
 Webpack resolves imports at run time through its own loader, so the shipped files contain no graph
-to read. Builds in that format are named for what they are rather than analysed.
+to read; its `stats.json` does, and Loadline reads it as a metafile. How to get one:
+
+| Tool             | Command                               | Where it lands                   |
+| ---------------- | ------------------------------------- | -------------------------------- |
+| Angular 8 to 16  | `ng build --stats-json`               | `dist/<app>/stats(-es2015).json` |
+| Create React App | `react-scripts build --stats`         | `build/bundle-stats.json`        |
+| Vue CLI          | `vue-cli-service build --report-json` | `dist/report.json`               |
+| plain webpack    | `webpack --json > stats.json`         | wherever it is redirected        |
+
+Inside the build folder, `loadline <folder>` finds it; anywhere else, pass it with `--dist <folder>`.
+A module's size in that file is its source before minification, so what each file weighs inside a
+chunk is shared out in proportion until the folder's source maps measure it.
 
 A build folder must contain the `index.html` of the build, which names the chunk the application
 starts at. Source maps in the folder are optional: without them every figure still comes out, but
@@ -106,6 +120,114 @@ Optional inputs widen the report:
 
 ## In CI
 
+### The minimum
+
+Enough for most projects: every pull request is built and fails if the first load is over the
+limit. Copy one, change `dist/my-app` to your build folder (`outputPath` in `angular.json`, `outDir`
+in Vite), and that is all.
+
+**GitHub Actions** — `.github/workflows/loadline.yml`:
+
+```yaml
+name: Loadline
+on: pull_request
+jobs:
+    loadline:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with: { node-version: 22 }
+            - run: npm ci && npm run build
+            - run: npx @bymaksym/loadline@1 dist/my-app --format summary --max-boot 350kB
+```
+
+**GitLab CI** — `.gitlab-ci.yml`:
+
+```yaml
+loadline:
+    image: node:22
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    script:
+        - npm ci && npm run build
+        - npx @bymaksym/loadline@1 dist/my-app --format summary --max-boot 350kB
+```
+
+**Bitbucket Pipelines** — `bitbucket-pipelines.yml`:
+
+```yaml
+image: node:22
+pipelines:
+    pull-requests:
+        '**':
+            - step:
+                  name: Loadline
+                  script:
+                      - npm ci && npm run build
+                      - npx @bymaksym/loadline@1 dist/my-app --format summary --max-boot 350kB
+```
+
+**Azure Pipelines** — `azure-pipelines.yml` (the `pr` trigger covers GitHub and Bitbucket
+repositories; in Azure Repos, a branch policy runs it):
+
+```yaml
+trigger: none
+pr:
+    - '*'
+pool:
+    vmImage: ubuntu-latest
+steps:
+    - task: NodeTool@0
+      inputs: { versionSpec: '22.x' }
+    - script: npm ci && npm run build
+    - script: npx @bymaksym/loadline@1 dist/my-app --format summary --max-boot 350kB
+```
+
+**CircleCI** — `.circleci/config.yml` (it runs on every push; "Only build pull requests" in the
+project settings limits it to pull requests):
+
+```yaml
+version: 2.1
+jobs:
+    loadline:
+        docker:
+            - image: cimg/node:22
+        steps:
+            - checkout
+            - run: npm ci && npm run build
+            - run: npx @bymaksym/loadline@1 dist/my-app --format summary --max-boot 350kB
+workflows:
+    loadline:
+        jobs:
+            - loadline
+```
+
+- **Your own install command** if it is not npm: `pnpm install --frozen-lockfile`, `yarn`.
+- **More to fail on**: `--fail-on high` adds the most serious signals; run it once first without
+  the flag, so an existing build does not fail on day one for something nobody touched.
+- **Limits in `loadline.json`** instead of flags, and the step becomes
+  `npx @bymaksym/loadline@1 dist/my-app --format summary`. See [Configuration](#configuration).
+- **The whole report** — package names, the import chains, the screens by name — needs the build to
+  say what is inside each file: `ng build --stats-json` in Angular, `build.sourcemap: true` in Vite.
+  Without it the limits still work.
+
+**A badge** of the first load, green, amber or red by the same verdict as the report, with the
+change when there is a `--baseline`:
+
+```bash
+npx @bymaksym/loadline@1 dist/my-app --format badge > loadline.svg
+```
+
+Commit it from the pipeline of the main branch and show it in the README with
+`![first load](loadline.svg)`, or attach it to the pull request. It is a plain SVG: nothing fetched,
+no badge service.
+
+When you want the comment on every pull request with what it **adds** compared with `main`, use the
+full recipes below.
+
+### Everything it can do
+
 The command prints the same headline, table and signals as the page, and can fail the build.
 
 ```bash
@@ -126,8 +248,10 @@ for builds that write no `stats.json`. Write it on every run, passing or failing
 compares against yesterday rather than against the last green build.
 
 Output formats: `text` (default), `summary` for the whole report in a dozen lines, `json`,
-`markdown`, `sarif` for GitHub code scanning, and `pr-comment`, which carries an HTML marker so
-the next run edits its comment instead of adding another. `--lang en|es` — English unless it is
+`markdown`, `sarif` for GitHub code scanning, `pr-comment`, which carries an HTML marker so
+the next run edits its comment instead of adding another, and `agent` for a coding agent or a
+script: the five actions worth most, each with its file, import chain and saving, as `key=value`
+lines with no prose. `--lang en|es` — English unless it is
 asked for in Spanish, never read from the machine's locale, which is the same rule the page
 follows with its language button. `loadline --help` for the full list.
 
@@ -162,7 +286,7 @@ jobs:
 
             - run: |
                   baseline=$([ -f base/loadline-baseline.json ] && echo "--baseline base/loadline-baseline.json")
-                  npx @bymaksym/loadline dist/app/browser $baseline --export loadline-baseline.json --format pr-comment > comment.md
+                  npx @bymaksym/loadline@1 dist/app/browser $baseline --export loadline-baseline.json --format pr-comment > comment.md
 
             - if: github.event_name == 'pull_request'
               run: gh pr comment "$NUMBER" --body-file comment.md --edit-last --create-if-none
@@ -173,56 +297,100 @@ jobs:
               uses: actions/upload-artifact@v7
               with: { name: loadline-baseline, path: loadline-baseline.json }
 
-            - run: npx @bymaksym/loadline dist/app/browser --format sarif > loadline.sarif
+            - run: npx @bymaksym/loadline@1 dist/app/browser --format sarif > loadline.sarif
             - uses: github/codeql-action/upload-sarif@v4
               with: { sarif_file: loadline.sarif }
 ```
 
 To make the pull request fail on growth rather than only report it, add one more step after the
 comment, so the comment is posted whatever the verdict:
-`npx @bymaksym/loadline dist/app/browser $baseline --max-growth 20kB` (or `--max-growth-pct 5`).
-With a baseline it judges what this pull request added, not the size of the whole application.
+`[ -z "$baseline" ] || npx @bymaksym/loadline@1 dist/app/browser $baseline --max-growth 20kB` (or
+`--max-growth-pct 5`). It judges what this pull request added, not the size of the whole
+application — and it needs a baseline, which the first run on `main` does not have yet.
+
+The recipes pin the major version (`@1`): a new major can move a threshold, and a pipeline should
+change its verdict because the code changed, not because a tool updated overnight. In a job log,
+`--format summary` prints a dozen lines instead of the whole report.
+
+### GitLab CI
+
+The same idea: the default branch keeps its snapshot as an artifact, and each merge request
+downloads it, compares, and keeps one note up to date. Posting the note needs a project access
+token with the `api` scope, saved as a masked CI/CD variable called `LOADLINE_TOKEN` — the job's own
+token can read artifacts but cannot write notes. Without the variable the job still runs and fails
+on the gates; it only does not comment.
+
+```yaml
+# .gitlab-ci.yml
+loadline:
+    image: node:22
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    script:
+        - npm ci && npm run build
+        # The snapshot the default branch left on its last successful run of this job.
+        - >
+            curl --fail --silent --location --header "JOB-TOKEN: $CI_JOB_TOKEN" --output base.json
+            "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/raw/loadline-baseline.json?job=loadline"
+            || rm -f base.json
+        - baseline=$([ -f base.json ] && echo "--baseline base.json")
+        - npx @bymaksym/loadline@1 dist/app/browser $baseline --export loadline-baseline.json --format pr-comment > comment.md
+        # One note per merge request, edited on every push: found by the marker the comment carries.
+        - |
+            if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ] && [ -n "$LOADLINE_TOKEN" ]; then
+              notes="$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"
+              id=$(curl --silent --header "PRIVATE-TOKEN: $LOADLINE_TOKEN" "$notes?per_page=100" \
+                | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const n=JSON.parse(s).find(n=>n.body.includes("<!-- loadline-report -->"));process.stdout.write(n?String(n.id):"")})')
+              if [ -n "$id" ]; then method=PUT; url="$notes/$id"; else method=POST; url="$notes"; fi
+              curl --silent --request "$method" --header "PRIVATE-TOKEN: $LOADLINE_TOKEN" --data-urlencode "body@comment.md" "$url" > /dev/null
+            fi
+        # Fails the merge request on growth, after the note is posted. Growth needs a baseline,
+        # which the very first run of the default branch does not have yet.
+        - if [ -n "$baseline" ]; then npx @bymaksym/loadline@1 dist/app/browser $baseline --max-growth 20kB --format summary; fi
+    artifacts:
+        paths: [loadline-baseline.json]
+        expire_in: 30 days
+```
 
 ## Configuration
 
-A `loadline.json` in the working directory is read without any flag; `--config <file>` points at
-another one. Flags on the command line win over the file. The page writes this file, and the
-command reads it, so thresholds edited in the browser are the ones CI judges by.
+Everything is optional. A `loadline.json` next to your code sets the thresholds, makes CI fail, and
+records the signals the team has decided to live with. The page and the command both read it, so
+they judge the build the same way.
 
 ```json
 {
+    "$schema": "https://unpkg.com/@bymaksym/loadline/loadline.schema.json",
     "tool": "loadline",
     "version": 1,
-    "criteria": { "bootOk": 174080 },
-    "gates": { "maxBoot": "350kB", "failOn": "high", "failOnNewPackage": true },
-    "packages": ["@angular/core", "@angular/common", "rxjs"],
-    "accepted": [
-        {
-            "kind": "dupes",
-            "key": "date-fns",
-            "why": "two versions until the calendar library releases 4.x",
-            "who": "@maks",
-            "until": "2026-12-01",
-            "bytes": 14336
-        }
-    ]
+    "gates": { "maxBoot": "350kB", "screens": { "map": "900kB" }, "failOn": "high" },
+    "accepted": [{ "kind": "dupes", "key": "date-fns", "why": "until 4.x", "until": "2026-12-01" }]
 }
 ```
 
-`accepted` records a signal the team has decided to live with: it names a reason, a person and an
-expiry. The signal comes back when the date passes, or when the figure it was agreed at has grown.
-Everything accepted is listed under the report, so no signal disappears silently.
+With the `$schema` line your editor completes every key, explains it on hover and underlines a typo.
+Anything the command cannot use in the file is printed, never ignored. Flags win over the file.
 
-`--fail-on-new-package` catches the way bundles actually grow — one `npm install` at a time. With a
-`packages` list it fails on anything not on it; with a `--baseline` and no list, on anything that
-was not in the bootstrap last time.
+| I want to…                                       | Read                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Fail CI on size, growth, new packages, signals   | [Configuring Loadline](docs/CONFIG.md#fail-the-build-on-size)                   |
+| Give one heavy screen its own limit              | [One limit per screen](docs/CONFIG.md#one-limit-per-screen)                     |
+| Change what counts as good or bad                | [Thresholds](docs/CONFIG.md#change-the-thresholds)                              |
+| Live with a signal without hiding it forever     | [Accept a signal](docs/CONFIG.md#accept-a-signal)                               |
+| Never ship a package, or never in the first load | [Forbid something](docs/CONFIG.md#forbid-something)                             |
+| Share one file between many repositories         | [Share the configuration](docs/CONFIG.md#share-the-configuration)               |
+| Fix a build read wrong: entry, screens, page     | [When it reads your build wrong](docs/CONFIG.md#when-it-reads-your-build-wrong) |
+| See every key and its recommended value          | [Reference](docs/CONFIG-REFERENCE.md)                                           |
 
 ## Documentation
 
+- [Configuring Loadline](docs/CONFIG.md) — `loadline.json` by task, with examples, and the
+  [reference](docs/CONFIG-REFERENCE.md) of every key.
 - [How it works](docs/HOW-IT-WORKS.md) — the algorithm, what each signal means, the limits of the
   analysis, and [how the other tools compare](docs/HOW-IT-WORKS.md#7-what-the-other-tools-do).
-- [CONTRIBUTING.md](CONTRIBUTING.md) — what CI checks before you spend time on a change.
-- [SECURITY.md](SECURITY.md) — report vulnerabilities privately, never as an issue.
+- [CONTRIBUTING.md](.github/CONTRIBUTING.md) — what CI checks before you spend time on a change.
+- [SECURITY.md](.github/SECURITY.md) — report vulnerabilities privately, never as an issue.
 - [CHANGELOG.md](CHANGELOG.md) — what changed in each version.
 
 When opening an issue, the **Copy diagnostics** button at the end of the report writes about thirty

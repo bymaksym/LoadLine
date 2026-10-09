@@ -1,0 +1,8 @@
+@let t = i18n.ui();
+@if (noPage()) {
+    <form class="entry" (submit)="setEntry($event, entryInput.value)">
+        <label class="entry__label" for="entryInput">{{ t.entryLabel }}</label>
+        <input #entryInput class="field" id="entryInput" name="entry" placeholder="main.*.js" type="text" />
+        <button class="ctl" type="submit">{{ t.entryBtn }}</button>
+    </form>
+}

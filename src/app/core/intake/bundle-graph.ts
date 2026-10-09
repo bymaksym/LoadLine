@@ -22,10 +22,22 @@
  */
 
 import { type Metafile, type MetafileImport, type MetafileOutput } from '../analysis/metafile.types';
-import { bytesBySource, isSourceMap, segmentsOf, sourceAt, sourcePathOf } from '../analysis/sourcemap';
-import { type ChunkSplit, type Segment, type SourceMap } from '../analysis/sourcemap.types';
-import { baseName } from '../format/format.utils';
+import {
+    bytesBySource,
+    isSourceMap,
+    projectRootsOf,
+    segmentsOf,
+    sourceAt,
+    sourcePathOf,
+} from '../analysis/sourcemap/sourcemap';
+import { type ChunkSplit, type Segment, type SourceMap } from '../analysis/sourcemap/sourcemap.types';
+import { scriptsIn } from '../build-text/index-html';
+import { routeBefore, routeKeyPattern, type RouteRef, sapperRoutesIn } from '../build-text/route-table';
+import { builtByOf, stencilComponentsIn, toolsIn } from '../build-text/tool-marks';
+import { type BuildHints } from '../config/loadline-config.types';
+import { baseName, namedBy } from '../format/format.utils';
 import { type BundleFile, type BundleGraph } from './bundle-graph.types';
+import { lazyByName, mentionedBy, mentionKeysOf, offPageOf, reachOver } from './unreached';
 
 const JS_FILE = /\.m?js$/i;
 
@@ -39,8 +51,55 @@ const STATIC_IMPORT = /\b(?:import|export)\b(?:[^'"`;()]+\bfrom\s*)?['"]([^'"]+)
 /** `import("x")` in the three quotes a minifier may leave behind — Rolldown writes backticks. */
 const DYNAMIC_IMPORT = /\bimport\s*\(\s*(['"`])([^'"`]+)\1\s*\)/g;
 
-/** Vite's table of preloadable files, written once at the top of any chunk that needs one. */
-const MAP_DEPS_TABLE = /__vite__mapDeps\s*=[^[]*\[([^\]]*)\]/;
+/**
+ * The module formats that came before ES modules write their graph in plain sight too, as a list of
+ * strings: AMD's `define(["./a.js"], …)` and SystemJS's `System.register(["./a.js"], …)`, with an
+ * optional module name in front. Polymer's es5 and es6 builds are AMD, Stencil's and Vite's legacy
+ * copies SystemJS. Read as ES modules alone, Polymer's came out as a 2 kB bootstrap of nothing but
+ * the loader, zero screens and 1.1 MB "in no figure here". What these load lazily — `require([…])`
+ * under whatever name the minifier left, SystemJS's `module.import("./x.js")` — is the string
+ * fallback's and `DYNAMIC_IMPORT`'s job respectively.
+ */
+const DEPENDENCY_LIST = /\b(?:define|System\.register)\s*\(\s*(?:(['"])[^'"]*\1\s*,\s*)?\[([^\]]*)\]/g;
+
+/** `importScripts("a.js", "b.js")`: how a classic worker, a service worker above all, pulls in code. */
+const IMPORT_SCRIPTS = /\bimportScripts\s*\(([^)]*)\)/g;
+
+/**
+ * A service worker registered from the code: `navigator.serviceWorker.register("/sw.js")`, or
+ * Workbox's `new Workbox("/sw.js")`. Its file runs beside the page and never as part of a screen,
+ * so it and what it imports leave the figures; read as nothing at all, it was listed with the
+ * leftovers of an old build.
+ */
+const SERVICE_WORKER = /\b(?:serviceWorker\s*\.\s*register|new\s+Workbox)\s*\(\s*(['"`])([^'"`]+)\1/g;
+
+/**
+ * Any quoted string, for the last way a chunk gets named: by a string that is not an import at all.
+ * Loaders written before `import()` was usable — Stencil's, Polymer's `require([…])`, any hand-made
+ * one — build the file name at run time from an id (``import(`./${id}.entry.js`)``) and keep the ids
+ * as plain strings. Bounded, so a long string costs its length and no more; and the quotes are looked
+ * at rather than consumed, so a string holding the other kind of quote cannot put every string after
+ * it out of step.
+ */
+const STRING_LITERAL = /(?<=['"`])([^'"`\s\\]{4,300})(?=['"`])/g;
+
+/**
+ * `new Worker(new URL("x.js", import.meta.url))`, which is how Vite writes a worker — with a
+ * `""+` in front of the URL and its `.href` after it — and `SharedWorker` the same. The name is
+ * relative to the chunk holding it, whether or not it starts with `./`.
+ */
+const WORKER =
+    /\bnew\s+(?:Shared)?Worker\s*\(\s*(?:(?:""|''|``)\s*\+\s*)?new\s+URL\s*\(\s*(['"`])([^'"`]+)\1\s*,\s*import\.meta\.url/g;
+
+/**
+ * Vite's table of preloadable files, written once at the top of any chunk that needs one.
+ *
+ * Two shapes. Vite 5.1 onwards: `const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=[…])))`.
+ * Vite 5.0: a function at the end of the chunk that fills `__vite__mapDeps.viteFileDeps=[…]` on its
+ * first call. Reading only the first, Excalidraw (Vite 5.0) had every preload list dropped and its
+ * lazy features counted one round trip deeper than the browser takes them.
+ */
+const MAP_DEPS_TABLE = /__vite__mapDeps(?:\.viteFileDeps)?\s*=[^[]*\[([^\]]*)\]/;
 
 /** Each use of that table: the indices of the files that one dynamic import asks for. */
 const MAP_DEPS_CALL = /__vite__mapDeps\(\s*\[([^\]]*)\]\s*\)/g;
@@ -70,8 +129,15 @@ const QUOTED = /['"`]([^'"`]+)['"`]/g;
  * `react-scripts build` as a good build — one bootstrap, zero screens, "nothing stands out" — which
  * is the same failure Next.js produced before it was checked, from the same rule missing a shape.
  * `__webpack_require__` is no help as a fallback here: the minifier mangles it to one letter.
+ *
+ * ⚠️ Before webpack 5 the registry was called `webpackJsonp` — `window.webpackJsonp=…||[]` in
+ * webpack 4, `window["webpackJsonp"]=function` in webpack 3 — which is what Create React App 1 to
+ * 3 and Vue CLI shipped. Without it, a webpack 4 build of three lazy routes (`fixtures/webpack4-app`)
+ * came out as one bootstrap of 1 kB, zero screens, and its four other chunks not mentioned at all.
+ * A webpack build of a single chunk writes no registry and is still read: it has no graph to lose.
  */
-const LOADER_RUNTIME = /webpackChunk\w*\s*(?:\|\|)?=|__webpack_require__\s*\(|globalThis\.TURBOPACK|__next_f\.push/;
+const LOADER_RUNTIME =
+    /webpackChunk\w*\s*(?:\|\|)?=|webpackJsonp\w*["']?\]?\s*=|__webpack_require__\s*\(|globalThis\.TURBOPACK|__next_f\.push/;
 
 /** Where a chunk says its map is. Absent from a build that ships none, which is most of them. */
 const MAP_URL = /\/\/#\s*sourceMappingURL=(\S+)/;
@@ -140,18 +206,63 @@ interface ReadChunk {
     /** Chunks it only asks for when something happens, with the source file that asked. */
     dynamics: { target: string; from: string | null }[];
     /** Sets of files Vite fetches in one go, from the preload lists baked into those calls. */
-    groups: string[][];
+    groups: PreloadGroup[];
+    /** The routes whose key imports a chunk, read out of the route table: see `route-table.ts`. */
+    routes: { target: string; route: RouteRef }[];
+    /** Files of the folder this chunk names in a plain string: the last-resort edges, `mentionsIn`. */
+    mentions: string[];
+    /** Service workers it registers. */
+    registers: string[];
     /** Weight of each source inside this chunk, as the map named them. Empty without a map. */
     split: ChunkSplit;
     /** Sources in the order the map lists them, which is the order the bundler wrote them in. */
     sources: string[];
+    /** What this chunk says about the tool that wrote it: see `TOOL_MARKS`. */
+    tools: NonNullable<Metafile['builtBy']>;
 }
 
-/** Every file name of a preload list, resolved, or `null` when one of them is not a file here. */
-const groupOf = (names: readonly string[], exists: (path: string) => boolean): string[] | null => {
-    const paths = names.map(name => resolveFrom('', name));
-    return paths.length > 1 && paths.every(path => path !== '' && exists(path)) ? paths : null;
+/**
+ * One preload list: the files fetched together, and — when the call it sits in said so — the lazy
+ * import it belongs to.
+ */
+interface PreloadGroup {
+    files: string[];
+    /** The chunk the `import()` next to this list asks for. `null` when the list stood on its own. */
+    target: string | null;
+}
+
+/**
+ * One name of a preload list as a file of the folder, or `''` when it is none.
+ *
+ * Vite writes these relative to the root of the folder (`assets/x.js`) with the default `base`, and
+ * relative to the chunk holding the list (`./x.js`) with `base: './'` — and Nuxt always does the
+ * latter. Read only from the root, `./x.js` named a file that is not there, the whole list was
+ * dropped, and every screen of a Nuxt app, or of a Vite app built for a subfolder, Electron or
+ * Tauri, came out one round trip deeper than the browser takes it.
+ */
+const preloadPath = (chunk: string, name: string, exists: (path: string) => boolean): string => {
+    const fromRoot = resolveFrom('', name);
+    if (exists(fromRoot)) {
+        return fromRoot;
+    }
+    const fromChunk = resolveFrom(chunk, name);
+    return exists(fromChunk) ? fromChunk : '';
 };
+
+/** Every file name of a preload list, resolved, or `null` when one of them is not a file here. */
+const groupOf = (chunk: string, names: readonly string[], exists: (path: string) => boolean): string[] | null => {
+    const paths = names.map(name => preloadPath(chunk, name, exists));
+    return paths.length > 1 && paths.every(path => path !== '') ? paths : null;
+};
+
+/**
+ * The lazy import each preload call belongs to: the last `import()` written before it, and after the
+ * call before it. Vite writes the pair as one expression — `__vitePreload(() => import("./x.js"),
+ * __vite__mapDeps([4,5,3]))` — whatever `.then()` sits between them, so the nearest one back is the
+ * one it goes with.
+ */
+const importBefore = (imports: readonly { index: number; target: string }[], from: number, to: number) =>
+    imports.findLast(entry => entry.index > from && entry.index < to)?.target ?? null;
 
 /**
  * The preload lists of a chunk: the sets of files Vite asks for in one go.
@@ -161,17 +272,24 @@ const groupOf = (names: readonly string[], exists: (path: string) => boolean): s
  * this. Without reading these, every screen of a Vite application would be counted one round trip
  * deeper than it is.
  */
-const groupsIn = (code: string, exists: (path: string) => boolean): string[][] => {
-    const groups: string[][] = [];
+const groupsIn = (
+    chunk: string,
+    code: string,
+    imports: readonly { index: number; target: string }[],
+    exists: (path: string) => boolean,
+): PreloadGroup[] => {
+    const groups: PreloadGroup[] = [];
     const table = MAP_DEPS_TABLE.exec(code);
     const files = table ? [...(table[1] ?? '').matchAll(QUOTED)].map(match => match[1] ?? '') : [];
 
+    let previousCall = -1;
     for (const call of code.matchAll(MAP_DEPS_CALL)) {
         const names = (call[1] ?? '').split(',').map(index => files[Number(index.trim())] ?? '');
-        const group = groupOf(names, exists);
+        const group = groupOf(chunk, names, exists);
         if (group) {
-            groups.push(group);
+            groups.push({ files: group, target: importBefore(imports, previousCall, call.index) });
         }
+        previousCall = call.index;
     }
 
     for (const list of code.matchAll(PATH_LIST)) {
@@ -180,11 +298,12 @@ const groupsIn = (code: string, exists: (path: string) => boolean): string[][] =
         const group = inTable
             ? null
             : groupOf(
+                  chunk,
                   [...list[0].matchAll(QUOTED)].map(m => m[1] ?? ''),
                   exists,
               );
         if (group) {
-            groups.push(group);
+            groups.push({ files: group, target: null });
         }
     }
 
@@ -197,9 +316,16 @@ const readChunk = (
     code: string,
     segments: readonly Segment[][],
     exists: (path: string) => boolean,
+    root: string,
+    keys: ReadonlyMap<string, string[]>,
+    routeKeys: RegExp,
 ): Omit<ReadChunk, 'split' | 'sources'> => {
     const statics = new Set<string>();
     const dynamics: { target: string; from: string | null }[] = [];
+    const imports: { index: number; target: string }[] = [];
+    const routes: { target: string; route: RouteRef }[] = [];
+    const mentions = new Set<string>();
+    const registers = new Set<string>();
     const mapped = segments.length > 0;
     const starts = mapped ? lineStartsOf(code) : [];
 
@@ -210,10 +336,65 @@ const readChunk = (
         }
     }
 
+    // AMD and SystemJS dependencies, and a classic worker's `importScripts`: fetched before the
+    // module runs, so they travel with it like a static import. A dependency list names modules
+    // relative to the chunk, or to the root of the site; whichever of the two is a file wins.
+    const lists = [
+        ...[...code.matchAll(DEPENDENCY_LIST)].map(match => match[2] ?? ''),
+        ...[...code.matchAll(IMPORT_SCRIPTS)].map(match => match[1] ?? ''),
+    ];
+    for (const list of lists) {
+        for (const [, name = ''] of list.matchAll(QUOTED)) {
+            // An AMD module id usually leaves the extension off — Rollup's `amd` output and
+            // RequireJS both write `"./shared-1a2b3c4d"` — so the name with `.js` is tried too.
+            const relative = /^\.{0,2}\//.test(name) ? name : `./${name}`;
+            const target = [resolveFrom(chunk, relative), resolveFrom('', name)]
+                .flatMap(path => [path, `${path}.js`])
+                .find(path => path !== chunk && exists(path));
+            if (target) {
+                statics.add(target);
+            }
+        }
+    }
+
+    for (const match of code.matchAll(SERVICE_WORKER)) {
+        const name = match[2] ?? '';
+        const target = [resolveFrom('', name), resolveFrom(chunk, name)].find(path => exists(path));
+        if (target) {
+            registers.add(target);
+        }
+    }
+
+    for (const match of code.matchAll(STRING_LITERAL)) {
+        const target = mentionedBy(match[1] ?? '', keys);
+        if (target && target !== chunk) {
+            mentions.add(target);
+        }
+    }
+
+    for (const { id, tag } of stencilComponentsIn(code)) {
+        const target = resolveFrom(chunk, `./${id}.entry.js`);
+        if (exists(target)) {
+            routes.push({ target, route: { path: '', name: tag } });
+        }
+    }
+
+    for (const { specifier, route } of sapperRoutesIn(code)) {
+        const target = resolveFrom(chunk, specifier);
+        if (exists(target)) {
+            routes.push({ target, route });
+        }
+    }
+
     for (const match of code.matchAll(DYNAMIC_IMPORT)) {
         const target = resolveFrom(chunk, match[2] ?? '');
         if (target === chunk || !exists(target)) {
             continue;
+        }
+        imports.push({ index: match.index, target });
+        const route = routeBefore(code, match.index, routeKeys);
+        if (route) {
+            routes.push({ target, route });
         }
 
         // Which of the files inside this chunk wrote the import. The map answers it exactly, so
@@ -221,11 +402,36 @@ const readChunk = (
         // files. Without a map it stays open and the entry of the chunk answers for it later.
         const position = mapped ? positionOf(starts, match.index) : null;
         const from = position ? sourceAt(segments, position.line, position.column) : null;
-        dynamics.push({ target, from: from ? sourcePathOf(from) : null });
+        dynamics.push({ target, from: from ? sourcePathOf(from, root) : null });
     }
 
-    return { statics: [...statics], dynamics, groups: groupsIn(code, exists) };
+    // A worker is a chunk started on demand like any `import()`, written another way. Missed, its
+    // chunk read as unreachable — "possibly a service worker" — and its weight belonged nowhere.
+    for (const match of code.matchAll(WORKER)) {
+        const name = match[2] ?? '';
+        const target = resolveFrom(chunk, /^\.{0,2}\//.test(name) ? name : `./${name}`);
+        if (target === chunk || !exists(target)) {
+            continue;
+        }
+        const position = mapped ? positionOf(starts, match.index) : null;
+        const from = position ? sourceAt(segments, position.line, position.column) : null;
+        dynamics.push({ target, from: from ? sourcePathOf(from, root) : null });
+    }
+
+    const stencil = routes.some(entry => entry.route.path === '' && entry.target.endsWith('.entry.js'));
+    return {
+        statics: [...statics],
+        dynamics,
+        groups: groupsIn(chunk, code, imports, exists),
+        routes,
+        mentions: [...mentions],
+        registers: [...registers],
+        tools: toolsIn(code, stencil),
+    };
 };
+
+/** A template or a stylesheet: compiled into a module, never one a chunk can start at. */
+const NOT_A_MODULE = /\.(?:html?|css|scss|sass|less|styl)$/i;
 
 /**
  * Which source file a chunk starts at.
@@ -235,6 +441,11 @@ const readChunk = (
  * `orders.page-DgHWSolo.js` came from the source called `orders.page`. When neither settles it the
  * last source is taken, because a chunk is written dependencies first and the module it exists for
  * goes at the end.
+ *
+ * The last *module*: Angular names every chunk `chunk-<hash>.js` and lists a component's template
+ * after the component, so the last source of a lazy screen is `orders.page.html`. Taken as is, a
+ * real build named all eight of its screens after their templates, and its signals sent people to
+ * open an `.html` to change an import.
  */
 export const entrySourceOf = (chunk: string, sources: readonly string[]): string | null => {
     if (sources.length <= 1) {
@@ -244,7 +455,7 @@ export const entrySourceOf = (chunk: string, sources: readonly string[]): string
     const stem = baseName(chunk).replace(JS_FILE, '').replace(HASH, '');
     const named = sources.find(source => baseName(source).replace(/\.[^.]+$/, '') === stem);
 
-    return named ?? sources.at(-1) ?? null;
+    return named ?? sources.findLast(source => !NOT_A_MODULE.test(source)) ?? sources.at(-1) ?? null;
 };
 
 /** The map of a chunk, when the folder ships one next to it. */
@@ -254,7 +465,12 @@ const mapOf = async (
     byPath: ReadonlyMap<string, BundleFile>,
 ): Promise<SourceMap | null> => {
     const url = MAP_URL.exec(code)?.[1];
-    const named = url && !url.startsWith('data:') ? byPath.get(resolveFrom(chunk.path, url)) : undefined;
+    // A source map URL is relative to the chunk, as any URL in a script is: `vendor-1a2b.map` sits
+    // next to `assets/vendor-3c4d.js`. Read from the root of the folder, as a preload list is,
+    // Ember's maps — named with a hash of their own, so `${chunk}.map` misses them too — were not
+    // found, and the report said a folder holding three of them had none.
+    const relative = url && !/^(?:\.{0,2}\/|[a-z]+:)/i.test(url) ? `./${url}` : url;
+    const named = relative && !relative.startsWith('data:') ? byPath.get(resolveFrom(chunk.path, relative)) : undefined;
     const file = named ?? byPath.get(`${chunk.path}.map`);
     if (!file) {
         return null;
@@ -273,24 +489,33 @@ const mapOf = async (
 const readChunks = async (
     chunks: readonly BundleFile[],
     byPath: ReadonlyMap<string, BundleFile>,
+    routeKeys: RegExp,
 ): Promise<{ read: Map<string, ReadChunk>; splits: Map<string, ChunkSplit>; runtimes: Set<string> }> => {
     const read = new Map<string, ReadChunk>();
     const splits = new Map<string, ChunkSplit>();
     const runtimes = new Set<string>();
     const exists = (path: string): boolean => byPath.has(path);
 
+    // Every map first, because where the project starts is decided across all of them.
+    const loaded: { chunk: BundleFile; code: string; map: SourceMap | null }[] = [];
     for (const chunk of chunks) {
         const code = await chunk.text();
         if (LOADER_RUNTIME.test(code)) {
             runtimes.add(chunk.path);
         }
-        const map = await mapOf(chunk, code, byPath);
+        loaded.push({ chunk, code, map: await mapOf(chunk, code, byPath) });
+    }
+    const roots = projectRootsOf(loaded.map(({ map }) => map?.sources ?? []));
+    const keys = mentionKeysOf(chunks.map(chunk => chunk.path));
+
+    for (const [index, { chunk, code, map }] of loaded.entries()) {
         const segments = map ? segmentsOf(map) : [];
+        const root = roots[index] ?? '';
         const raw = map ? bytesBySource(map, code) : new Map<string, number>();
         const split: ChunkSplit = new Map();
 
         for (const [source, bytes] of raw) {
-            const path = sourcePathOf(source);
+            const path = sourcePathOf(source, root);
             split.set(path, (split.get(path) ?? 0) + bytes);
         }
         if (raw.size > 0) {
@@ -299,8 +524,12 @@ const readChunks = async (
             splits.set(baseName(chunk.path), raw);
         }
 
-        const sources = map ? map.sources.map(source => sourcePathOf(source)) : [];
-        read.set(chunk.path, { ...readChunk(chunk.path, code, segments, exists), split, sources });
+        const sources = map ? map.sources.map(source => sourcePathOf(source, root)) : [];
+        read.set(chunk.path, {
+            ...readChunk(chunk.path, code, segments, exists, root, keys, routeKeys),
+            split,
+            sources,
+        });
     }
 
     return { read, splits, runtimes };
@@ -309,15 +538,19 @@ const readChunks = async (
 /**
  * Which chunks the loader asks for in the same round trip, from the preload lists.
  *
- * A list only means something once it is tied to the import it belongs to, and what ties it is that
- * exactly one of its files is a chunk this same chunk lazily imports. When two of them are, the
- * list is left alone: counting a screen as arriving with something it does not would understate the
- * round trips, and that is the direction that flatters the build.
+ * A list only means something once it is tied to the import it belongs to. The call it sits in ties
+ * it when it was read next to one; otherwise what ties it is that exactly one of its files is a
+ * chunk this same chunk lazily imports. When two of them are and nothing says which, the list is
+ * left alone: counting a screen as arriving with something it does not would understate the round
+ * trips, and that is the direction that flatters the build.
  */
 const parallelOf = (read: ReadonlyMap<string, ReadChunk>): Map<string, string[]> => {
     const parallel = new Map<string, string[]>();
-    const targetOf = (group: readonly string[], lazy: ReadonlySet<string>): string | null => {
-        const inside = group.filter(path => lazy.has(path));
+    const targetOf = (group: PreloadGroup, lazy: ReadonlySet<string>): string | null => {
+        if (group.target !== null && lazy.has(group.target) && group.files.includes(group.target)) {
+            return group.target;
+        }
+        const inside = group.files.filter(path => lazy.has(path));
         return inside.length === 1 ? (inside[0] ?? null) : null;
     };
 
@@ -328,7 +561,7 @@ const parallelOf = (read: ReadonlyMap<string, ReadChunk>): Map<string, string[]>
             if (!target) {
                 continue;
             }
-            const rest = group.filter(path => path !== target);
+            const rest = group.files.filter(path => path !== target);
             parallel.set(target, [...new Set([...(parallel.get(target) ?? []), ...rest])]);
         }
     }
@@ -344,16 +577,34 @@ const parallelOf = (read: ReadonlyMap<string, ReadChunk>): Map<string, string[]>
  *                chunk from a shared one: a bundler writes the shared code of an application into
  *                its entry chunk, so the entry ends up imported by its own children and cannot be
  *                found by looking for a chunk that nobody imports.
+ * @param page    what else the page says about its scripts: the `nomodule` ones, and the service
+ *                workers it registers. Both are files of the build no screen downloads.
  */
 export const readBundleGraph = async (
     files: readonly BundleFile[],
     entries: ReadonlySet<string>,
+    page: {
+        legacy?: ReadonlySet<string>;
+        workers?: ReadonlySet<string>;
+        ignored?: ReadonlySet<string>;
+        /** The page itself, for what it says about the tool that wrote the build. */
+        html?: string | null;
+        /** The keys of a route table besides the ones every router uses: `build.routeKeys`. */
+        routeKeys?: readonly string[];
+    } = {},
 ): Promise<BundleGraph> => {
     const byPath = new Map(files.map(file => [file.path, file]));
     const chunks = files.filter(file => JS_FILE.test(file.path));
-    const { read, splits, runtimes } = await readChunks(chunks, byPath);
+    const { read, splits, runtimes } = await readChunks(chunks, byPath, routeKeyPattern(page.routeKeys));
 
-    const roots = chunks.filter(chunk => entries.has(baseName(chunk.path))).map(chunk => chunk.path);
+    const named = (names: ReadonlySet<string> | undefined): string[] =>
+        chunks.filter(chunk => names?.has(baseName(chunk.path))).map(chunk => chunk.path);
+    const ignored = page.ignored ?? new Set<string>();
+    const modernRoots = named(entries).filter(path => !ignored.has(path));
+    const legacyRoots = named(page.legacy).filter(path => !modernRoots.includes(path) && !ignored.has(path));
+    // A page that starts nothing but a `nomodule` script is a build for old browsers only, and then
+    // that copy is the one there is to read.
+    const roots = modernRoots.length > 0 ? modernRoots : legacyRoots;
     if (roots.length === 0) {
         throw new Error('NO_PAGE');
     }
@@ -361,17 +612,35 @@ export const readBundleGraph = async (
     const lazyTargets = new Set([...read.values()].flatMap(info => info.dynamics.map(entry => entry.target)));
 
     /**
-     * A folder whose entry carries a run-time loader and where nothing lazily imports anything is
-     * not an ES module bundle: it is webpack's or Turbopack's output, and its graph is a table of
-     * numbers this cannot read. Saying so is the whole point — pointed at a Next.js export, the
-     * report came out as one bootstrap of seven files, zero screens and "nothing stands out".
+     * A folder whose entry carries a run-time loader, where nothing lazily imports anything, and
+     * where other chunks register themselves with that loader is not an ES module bundle: it is
+     * webpack's or Turbopack's output, and its graph is a table of numbers this cannot read. Saying
+     * so is the whole point — pointed at a Next.js export, the report came out as one bootstrap of
+     * seven files, zero screens and "nothing stands out".
      *
-     * Both halves are required on purpose. The marker alone would refuse an ES module bundle that
-     * happens to carry one webpack-built dependency; no lazy edges alone is a perfectly ordinary
-     * application with every route eager, which is a build this reads correctly today.
+     * All three halves are required on purpose. The marker alone would refuse an ES module bundle
+     * that happens to carry one webpack-built dependency; no lazy edges alone is a perfectly
+     * ordinary application with every route eager. And the loader with nothing else carrying the
+     * marker is a loader with nothing to load: an Ember build ships ember-auto-import's webpack
+     * runtime inside `vendor.js` with no chunk for it, and was refused as a Next.js app.
      */
-    if (lazyTargets.size === 0 && roots.some(root => runtimes.has(root))) {
+    const loaded = [...runtimes].some(path => !roots.includes(path));
+    if (lazyTargets.size === 0 && roots.some(root => runtimes.has(root)) && loaded) {
         throw new Error('NOT_ESM_GRAPH');
+    }
+
+    const workerRoots = new Set([...named(page.workers), ...[...read.values()].flatMap(info => info.registers)]);
+    const byName = lazyByName(read, roots, new Set([...legacyRoots, ...workerRoots, ...ignored]));
+    for (const target of byName) {
+        lazyTargets.add(target);
+    }
+    const offPage = offPageOf(read, roots, roots === modernRoots ? legacyRoots : [], workerRoots);
+    // What `loadline.json` says no screen downloads, when nothing the application imports reaches it.
+    const reached = reachOver(read, roots);
+    for (const path of ignored) {
+        if (!reached.has(path)) {
+            offPage.set(path, 'ignored');
+        }
     }
     const entryChunks = new Set([...roots, ...lazyTargets]);
 
@@ -388,13 +657,17 @@ export const readBundleGraph = async (
     const inputOf = (path: string): { bytes: number; imports: MetafileImport[] } =>
         (inputs[path] ??= { bytes: 0, imports: [] });
 
-    for (const info of read.values()) {
+    // What no screen downloads stays out of the source graph too: the legacy copy carries every
+    // source of the modern one a second time, and counted, every file would weigh double.
+    const onPage = [...read].filter(([chunk]) => !offPage.has(chunk));
+
+    for (const [, info] of onPage) {
         for (const [source, bytes] of info.split) {
             inputOf(source).bytes += bytes;
         }
     }
 
-    for (const [chunk, info] of read) {
+    for (const [chunk, info] of onPage) {
         for (const { target, from } of info.dynamics) {
             const importer = from ?? sourceKeys.get(chunk);
             const imported = sourceKeys.get(target);
@@ -424,9 +697,53 @@ export const readBundleGraph = async (
         if (entryChunks.has(chunk.path)) {
             output.entryPoint = sourceKeys.get(chunk.path) ?? chunk.path;
         }
+        const away = offPage.get(chunk.path);
+        if (away) {
+            output.offPage = away;
+        }
 
         outputs[chunk.path] = output;
     }
 
-    return { meta: { inputs, outputs }, parallel: parallelOf(read), splits };
+    // Every route a chunk is the page of, once each: vue-router sends three routes to one `Home`.
+    const routes = new Map<string, RouteRef[]>();
+    const found = [...read.values()].flatMap(info => info.routes);
+    for (const { target, route } of found) {
+        const known = routes.get(target) ?? [];
+        if (known.every(other => !(other.path === route.path && other.name === route.name))) {
+            routes.set(target, [...known, route]);
+        }
+    }
+
+    const builtBy = builtByOf(
+        page.html ?? null,
+        [...read.values()].map(info => info.tools),
+    );
+    return { meta: { inputs, outputs, builtBy, readFrom: 'folder' }, parallel: parallelOf(read), splits, routes };
+};
+
+/**
+ * The graph of a folder, read with everything its page says: where execution starts, what only an
+ * old browser runs and which service workers it registers. The one way in for the page and the
+ * command alike, so the two never read a page differently.
+ */
+export const readFolderGraph = (
+    files: readonly BundleFile[],
+    html: string | null,
+    hints: BuildHints = {},
+): Promise<BundleGraph> => {
+    const scripts = html ? scriptsIn(html) : null;
+    const named = (patterns: readonly string[] = []) =>
+        files.filter(file => JS_FILE.test(file.path) && patterns.some(pattern => namedBy(pattern, file.path)));
+    return readBundleGraph(
+        files,
+        new Set([...(scripts?.entries ?? []), ...named(hints.entries).map(file => baseName(file.path))]),
+        {
+            legacy: new Set(scripts?.legacy),
+            workers: new Set(scripts?.workers),
+            ignored: new Set(named(hints.ignore).map(file => file.path)),
+            html,
+            ...(hints.routeKeys && { routeKeys: hints.routeKeys }),
+        },
+    );
 };

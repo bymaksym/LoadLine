@@ -52,9 +52,14 @@ export const composeFindings = (sources: FindingSources): Finding[] => {
      * nothing lazy at all, which has to say "everything is in the bootstrap" and stay a report — and
      * it is what caught this.
      */
+    //
+    // Nor when the folder had no source maps. The card vouches for the breakdown — "no package
+    // shipped twice" — and without maps there is no breakdown: a real build read that way printed
+    // it right above the note saying there was no breakdown by package.
+    const blind = extra.some(finding => finding.kind === 'noSourceMaps');
     const notes = [...base, ...fromMeasurement, ...extra]
         .filter(finding => !isProblem(finding))
-        .filter(finding => problems.length === 0 || finding.kind !== 'clean');
+        .filter(finding => (problems.length === 0 && !blind) || finding.kind !== 'clean');
 
     return [...problems, ...notes];
 };

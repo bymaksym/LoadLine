@@ -1,0 +1,44 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 6595,
+        "rawBytes": 14445,
+        "files": 2
+    },
+    "firstTrip": {
+        "total": 13752,
+        "files": 6
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 6,
+        "serviceWorker": 0,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "app-root: own 4016, shared 3141, total 13752",
+        "stencil-route-link: own 669, shared 3141, total 10405",
+        "stencil-router-prompt: own 352, shared 447, total 7394",
+        "stencil-route-title: own 293, shared 447, total 7335",
+        "stencil-router-redirect: own 279, shared 447, total 7321",
+        "app-home: own 577, shared 0, total 7172",
+        "app-profile: own 297, shared 0, total 6892",
+        "stencil-async-content: own 269, shared 0, total 6864",
+        "context-consumer: own 241, shared 0, total 6836"
+    ],
+    "deferred": [],
+    "shared": 2,
+    "workers": 0,
+    "onDemand": 3,
+    "data": 0,
+    "signals": [
+        "mid unreachable: 14 of your 30 chunks (33 kB) are in no figure here",
+        "mid unhashable: 14 files carry no hash in the name",
+        "info cascadeShape: The names are spread about: build/p-hcre1wyw.js carries the most, 8 of 30",
+        "info noSourceMaps: This folder carries no .map files, and that cuts the report short",
+        "info duplicateAssets: 154 B in a file the folder holds twice and the page downloads once at most",
+        "info situationMissing: 2 unanswered questions would change what this report says"
+    ]
+}

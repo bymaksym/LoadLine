@@ -9,20 +9,22 @@
 
 import { describe, expect, it } from 'vitest';
 import { analyze } from '../analysis/analysis';
-import { browserSide } from '../analysis/entries';
 import { type Metafile } from '../analysis/metafile.types';
+import { browserSide } from '../analysis/screens/entries';
 import { readAssets } from '../assets/assets';
+import { assetsIn } from '../build-text/index-html';
 import { RECOMMENDED } from '../criteria/criteria';
-import { assetsIn } from '../intake/index-html';
+import { summaryText } from '../export/summary';
 import { budgetAdvice, screenBudgetAdvice } from '../project/budget-advice';
 import { readAngularJson, repoPathOf } from '../project/project-context';
 import { scanBuild } from '../scan/scan';
+import { simulateDefer } from '../whatif/defer';
 import { rankActions } from './actions';
-import { buildAssetFindings } from './assets';
 import { type Finding } from './finding.types';
-import { plainText } from './finding-plain';
 import { buildFindings } from './findings';
-import { buildScanFindings } from './scan';
+import { buildAssetFindings } from './folder/assets';
+import { buildScanFindings } from './folder/scan';
+import { plainText } from './text/finding-plain';
 
 const pnpm = (spec: string, file: string): string => {
     const at = spec.lastIndexOf('@');
@@ -315,5 +317,95 @@ describe('files nothing names, when angular.json copies them', () => {
 
         expect(plainText(card?.fix ?? '')).toContain('bórralo del repositorio');
         expect(plainText(card?.body ?? '')).toContain('public/');
+    });
+});
+
+describe('a saving that cannot be measured is not a saving of zero', () => {
+    // A folder read without source maps: the bootstrap chunk weighs what it weighs, and nothing
+    // says what is inside it. That is the shape `bundle-graph.ts` writes for such a folder.
+    const opaque = analyze(
+        { inputs: {}, outputs: { 'index-A.js': { bytes: 40_000, entryPoint: 'index-A.js', imports: [] } } },
+        null,
+    );
+
+    it('answers a package it cannot see as unmeasurable, not as "0 B, nothing uses it"', () => {
+        const result = simulateDefer(opaque, '@microsoft/teams-js');
+        expect(result.measurable).toBe(false);
+        const paste = summaryText({
+            analysis: opaque,
+            findings: [],
+            comparison: null,
+            unit: 'raw',
+            name: 'dist',
+            firstTrip: null,
+            lang: 'en',
+            whatIf: [result],
+        });
+        expect(paste).toContain('No source maps');
+        expect(paste).toContain('cannot be measured');
+    });
+
+    it('names a broken gate in the summary, which a job log shows instead of the report', () => {
+        const paste = (gates?: string[]): string =>
+            summaryText({
+                analysis: opaque,
+                findings: [],
+                comparison: null,
+                unit: 'raw',
+                name: 'dist',
+                firstTrip: null,
+                lang: 'en',
+                ...(gates && { gates }),
+            });
+        expect(paste(['Bootstrap is 40 kB, over the 30 kB allowed.'])).toContain(
+            'Gates: 1 broken\n  x Bootstrap is 40 kB, over the 30 kB allowed.',
+        );
+        expect(paste([])).toContain('Gates: all passed');
+        expect(paste()).not.toContain('Gates');
+    });
+
+    it('still answers "not in this build" when every chunk could have shown it', () => {
+        expect(simulateDefer(analyze(APP, null), '@microsoft/teams-js').measurable).toBe(true);
+    });
+});
+
+describe('fonts on the server are not fonts on the wire', () => {
+    const files = [
+        { name: 'Roboto-Regular-A1.woff2', bytes: 20_000 },
+        { name: 'Roboto-Regular-A1.ttf', bytes: 60_000 },
+        { name: 'Roboto-Bold-B2.woff2', bytes: 21_000 },
+        { name: 'Roboto-Bold-B2.ttf', bytes: 62_000 },
+    ].map(file => ({ ...file, path: file.name }));
+    const assets = readAssets({
+        files,
+        html: '',
+        texts: new Map(),
+        inPage: new Set(),
+        preloaded: new Set(),
+        bootChunks: new Set(),
+    });
+
+    it('says the second format is stored rather than downloaded, and keeps the card informative', () => {
+        const card = buildAssetFindings(assets, 'es', RECOMMENDED.gzip).find(finding => finding.kind === 'fonts');
+        expect(card?.severity).toBe('info');
+        expect(plainText(card?.title ?? '')).toContain('servidor');
+        expect(plainText(card?.title ?? '')).not.toContain('viajan');
+    });
+});
+
+describe('the secrets card says what raises it', () => {
+    it('names the unexplained match when a public Firebase key shares the card', () => {
+        const KEY = `AIza${'x'.repeat(35)}`;
+        const texts = new Map([
+            ['main.js', `const c={apiKey:"${KEY}",authDomain:"a.firebaseapp.com",projectId:"a"};u=process.env.API_URL`],
+        ]);
+        const [card] = buildScanFindings(
+            scanBuild({ texts, modules: [], boot: new Set(), maps: [] }),
+            'en',
+            RECOMMENDED.gzip,
+        );
+        expect(card?.severity).toBe('mid');
+        expect(plainText(card?.title ?? '')).toContain('unsubstituted environment variable');
+        expect(plainText(card?.title ?? '')).toContain('Firebase key is not what raises it');
     });
 });

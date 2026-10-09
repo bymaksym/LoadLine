@@ -22,6 +22,17 @@ describe('unhashedName', () => {
         expect(unhashedName('favicon.ico')).toBe('favicon.ico');
         expect(unhashedName('app-v2.js')).toBe('app-v2.js');
     });
+
+    /**
+     * A hash before a second extension comes off, both extensions kept. Stencil's `p-…` is all hash:
+     * taken off, every chunk of the build would be `p.entry.js`, so those keep their content-hashed
+     * name, under which an unchanged chunk matches itself.
+     */
+    it('strips a hash before a second extension, unless it is the whole name', () => {
+        expect(unhashedName('widget.a1b2c3d4.entry.js')).toBe('widget.entry.js');
+        expect(unhashedName('p-w91mnxr1.entry.js')).toBe('p-w91mnxr1.entry.js');
+        expect(unhashedName('react.production.min.js')).toBe('react.production.min.js');
+    });
 });
 
 describe('updateCostOf · what somebody who had yesterday’s build downloads', () => {
@@ -209,7 +220,88 @@ describe('updateCostOf · a chunk whose whole name is the hash', () => {
     });
 });
 
+/**
+ * Angular calls every lazy chunk `chunk-XXXXXXXX.js`, so with the hash off they all share one name.
+ * Measured on the RealWorld app before this: a one-line edit reported 130 kB (100 %) re-downloaded
+ * and "1 file keeps its name", with a chunk of the same name and the same bytes in both builds
+ * listed as changed and named as where the edit landed.
+ */
+describe('updateCostOf · many chunks that share a name once the hash is off', () => {
+    const previous = weigh({
+        'main-AAAAAAAA.js': [2 * KB, 'src/main.ts'],
+        'chunk-ZZXAKVAV.js': [12 * KB, 'node_modules/marked/lib/marked.esm.js'],
+        'chunk-NR6GWUQS.js': [85 * KB, 'node_modules/@angular/core/fesm2022/core.mjs'],
+        'chunk-DUEUBENH.js': [8 * KB, 'src/app/features/article/article.component.ts'],
+    });
+    const current = weigh({
+        'main-BBBBBBBB.js': [2 * KB, 'src/main.ts'],
+        'chunk-ZZXAKVAV.js': [12 * KB, 'node_modules/marked/lib/marked.esm.js'],
+        'chunk-Q1Q1Q1Q1.js': [85 * KB, 'node_modules/@angular/core/fesm2022/core.mjs'],
+        'chunk-DUEUBENH.js': [8 * KB, 'src/app/features/article/article.component.ts'],
+    });
+
+    const cost = updateCostOf(current, previous);
+
+    it('keeps every file whose name did not change, however many share the name without the hash', () => {
+        expect(cost.reused).toBe(2);
+        expect(cost.changed.map(file => file.name)).not.toContain('chunk-ZZXAKVAV.js');
+    });
+
+    it('pairs the renamed ones by what they are built around', () => {
+        expect(cost.changed.map(file => file.name)).toEqual(['chunk-Q1Q1Q1Q1.js', 'main-BBBBBBBB.js']);
+        expect(cost.added).toEqual([]);
+        expect(cost.removed).toEqual([]);
+        expect(cost.bytes).toBe(87 * KB);
+    });
+
+    /** Twenty `chunk.js` and nothing else to go on: arrived and gone, never a guessed pairing. */
+    it('pairs nothing by a name several files share when nothing else tells them apart', () => {
+        const blind = updateCostOf(
+            weigh({ 'chunk-11111111.js': 5 * KB, 'chunk-22222222.js': 5 * KB }),
+            weigh({ 'chunk-AAAAAAAA.js': 5 * KB, 'chunk-BBBBBBBB.js': 5 * KB }),
+        );
+
+        expect(blind.changed).toEqual([]);
+        expect(blind.added).toHaveLength(2);
+        expect(blind.removed).toHaveLength(2);
+    });
+});
+
+describe('unhashedName · a name with a hash of its own in front of the build’s', () => {
+    it('takes off only the last one, which is the build’s', () => {
+        // Mermaid ships its chunks as `chunk-<hash>`, and Vite adds its own after.
+        expect(unhashedName('chunk-QN33PNHL-CkKTlLkk.js')).toBe('chunk-QN33PNHL.js');
+        expect(unhashedName('chunk-QZHKN3VN-CD9rwyT-.js')).toBe('chunk-QZHKN3VN.js');
+        expect(unhashedName('home.page-CcV956gU.js')).toBe('home.page.js');
+        expect(unhashedName('main.0123456789abcdef0123.js')).toBe('main.js');
+    });
+});
+
 describe('unstableChunks · what mixes the daily with the monthly', () => {
+    /**
+     * A gzip report: the chunk is 300 kB compressed and 1 MB on disk, 80 % of it dependencies. What
+     * is re-downloaded is the chunk, so the dependencies are given at its compressed size — not the
+     * raw 800 kB, which read as more than the whole first load.
+     */
+    it('gives the dependencies in the report’s unit, at the share they take of the chunk', () => {
+        const [worst] = unstableChunks(
+            [
+                {
+                    name: 'main-A1.js',
+                    bytes: 300 * KB,
+                    rawBytes: 1000 * KB,
+                    inBoot: true,
+                    vendorBytes: 800 * KB,
+                    ownBytes: 200 * KB,
+                },
+            ],
+            0.25,
+        );
+
+        expect(worst?.vendorBytes).toBe(240 * KB);
+        expect(worst?.estimated).toBe(true);
+    });
+
     const chunk = (name: string, vendorBytes: number, ownBytes: number, inBoot = false) => ({
         name,
         bytes: vendorBytes + ownBytes,
@@ -261,14 +353,34 @@ describe('unhashableFiles', () => {
                 { name: '_payload.json', path: 'settings/_payload.json', bytes: 69 },
             ],
             new Map(),
-            new Set(['_payload.json']),
+            new Set(['orders/_payload.json']),
         );
 
         expect(found.map(file => file.path)).toEqual(['orders/_payload.json', 'settings/_payload.json']);
         // The name is what every rule reads — the hash is written into it, and it is what the page
         // and the metafile key a file by — so it stays alongside rather than being replaced.
         expect(found.every(file => file.name === '_payload.json')).toBe(true);
-        expect(found.every(file => file.inPage)).toBe(true);
+        // Whether the page asks for it is the one thing read by path: by name, a page naming one
+        // `plugin.min.js` of TinyMCE asked for all 25.
+        expect(found.map(file => file.inPage)).toEqual([true, false]);
+    });
+
+    /**
+     * Stencil writes the hash before a second extension, and thirty of the thirty-four files a
+     * Stencil build was told carried none did carry one. A word in that place is still a word.
+     */
+    it('sees a hash before a second extension, and not a word there', () => {
+        const found = unhashableFiles(
+            [
+                { name: 'p-w91mnxr1.entry.js', bytes: 10 },
+                { name: 'p-o63olsly.system.entry.js', bytes: 10 },
+                { name: 'react.production.min.js', bytes: 10 },
+            ],
+            new Map(),
+            new Set(),
+        );
+
+        expect(found.map(file => file.name)).toEqual(['react.production.min.js']);
     });
 
     it('falls back to the name when there is no folder to have a path in', () => {

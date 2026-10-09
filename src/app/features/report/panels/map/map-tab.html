@@ -30,6 +30,7 @@
     <div class="map-bar__tools">
         <input
             class="field map-bar__search"
+            name="filter-map"
             type="search"
             [attr.aria-label]="t.mapSearch"
             [placeholder]="t.mapSearch"
@@ -126,7 +127,7 @@
                             <span class="map__cell-name">{{ cell.node.label }}</span>
                         }
                         @if (cell.sized) {
-                            <span class="map__cell-size">{{ cell.node.raw | bytes }}</span>
+                            <span class="map__cell-size">{{ figureOf(cell.node) }}</span>
                         }
                     </span>
                 }

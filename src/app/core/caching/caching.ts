@@ -8,6 +8,7 @@
  * the names carry hashes, which is the third figure here and the reason it is measured too.
  */
 
+import { SERVER_FILE } from '../assets/assets';
 import {
     type CachingReport,
     type ChangedFile,
@@ -52,12 +53,50 @@ const WRITTEN_PREFIX = /^[a-z]{3,}[.\-_]/;
 /** A version pinned in the query string: `app.js?v=3`. It defeats the cache on every deploy. */
 const VERSIONED_QUERY = /[?&]v(?:er|ersion)?=/i;
 
-/** The name with its content hash taken off, which is what makes two builds' files comparable. */
-export const unhashedName = (name: string): string => name.replace(/[.\-_][\w-]{8,}(\.[\da-z]+)$/, '$1');
+/**
+ * Rollup's and Vite's hash: exactly eight characters, the last thing before the extension. Read
+ * first because a name can carry a hash of its own in front of it — mermaid ships
+ * `chunk-QN33PNHL-CkKTlLkk.js` — and the general pattern below, which starts at the first separator
+ * it can, took both off and left `chunk.js`: every one of those chunks under a single name.
+ */
+const LAST_HASH = /[.\-_][\w-]{8}(\.[\da-z]+)$/;
+const ANY_HASH = /[.\-_][\w-]{8,}(\.[\da-z]+)$/;
+
+/**
+ * A hash with a second extension after it: `p-w91mnxr1.entry.js`, `p-o63olsly.system.entry.js`.
+ * Stencil writes every chunk that way, and thirty of the thirty-four files a Stencil build was told
+ * carried no hash did carry one. It has to hold a digit: `react.production.min.js` is the same shape
+ * with a word where the hash would be, and a word is what it is.
+ */
+const INNER_HASH = /[.\-_](?=[a-z]*\d)[\da-z]{8,}(?:\.[a-z]+){2,}$/i;
+
+/**
+ * The name with its content hash taken off, which is what makes two builds' files comparable.
+ *
+ * A hash before a second extension comes off too, keeping both extensions: `widget.a1b2c3d4.entry.js`
+ * is `widget.entry.js`. Not when what is left in front is one letter: Stencil's `p-w91mnxr1.entry.js`
+ * is all hash, and taking it off would give every chunk of the build the one name `p.entry.js`. Those
+ * keep their names, which is right for comparing: the hash is of the content, so a chunk that did not
+ * change is under the same name in both builds.
+ */
+export const unhashedName = (name: string): string => {
+    if (LAST_HASH.test(name)) {
+        return name.replace(LAST_HASH, '$1');
+    }
+    const inner = INNER_HASH.exec(name);
+    if (inner && inner.index > 1) {
+        const hashed = inner[0];
+        return `${name.slice(0, inner.index)}${hashed.slice(hashed.indexOf('.', 1))}`;
+    }
+    return name.replace(ANY_HASH, '$1');
+};
 
 /** A name that is nothing but a hash: `ChDGvcpR.js`. Taking the hash off it would leave `.js`. */
 const isBareHash = (name: string): boolean =>
     BARE_HASH.test(name) && MIXED_CASE.test(name) && !WRITTEN_PREFIX.test(name);
+
+/** Whether a file name carries a content hash, in any of the ways a bundler writes one. */
+export const carriesHash = (name: string): boolean => HASHED.test(name) || INNER_HASH.test(name) || isBareHash(name);
 
 /** One file of a build as this comparison needs it: what it weighs, and what it is made of. */
 export interface FileWeight {
@@ -90,21 +129,68 @@ export interface FileWeight {
  */
 const CONTENT_KEY = '\u{0}';
 
-const keysOf = (files: ReadonlyMap<string, FileWeight>): Map<string, string> => {
-    const perContent = new Map<string, number>();
+/** How a file is keyed by one rule, or `null` when that rule has nothing to say about it. */
+type KeyRule = (name: string, file: FileWeight) => string | null;
+
+/**
+ * The name with the hash off. A name that is nothing but the hash comes back as itself, which no
+ * file of the other build carries, so it simply pairs with nothing here and goes on to content.
+ */
+const byName: KeyRule = name => unhashedName(name);
+
+/** What the chunk is built around, for the names that say nothing — or that several files share. */
+const byContent: KeyRule = (_name, file) => (file.content ? `${CONTENT_KEY}${file.content}` : null);
+
+/** How many files of one side each key names. A pairing is only trusted when it names one on each. */
+const countKeys = (files: ReadonlyMap<string, FileWeight>, rule: KeyRule): Map<string, number> => {
+    const counts = new Map<string, number>();
     for (const [name, file] of files) {
-        if (file.content && isBareHash(name)) {
-            perContent.set(file.content, (perContent.get(file.content) ?? 0) + 1);
+        const key = rule(name, file);
+        if (key !== null) {
+            counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
+    }
+    return counts;
+};
+
+/**
+ * Pairs the files of the two builds that are the same file, and takes them out of both lists.
+ *
+ * A key only pairs when it names exactly one file on each side. Angular calls every lazy chunk
+ * `chunk-XXXXXXXX.js`, so with the hash off twenty files share the name `chunk.js`; letting the last
+ * of them stand for all twenty reported an unchanged, same-named file as re-downloaded and put the
+ * edit in a chunk the edit never touched. Twenty chunks under one name say nothing about which is
+ * which, and the next rule — what each is built around — usually does.
+ */
+const pairBy = (
+    current: Map<string, FileWeight>,
+    previous: Map<string, FileWeight>,
+    rule: KeyRule,
+): Map<string, string> => {
+    const currentCounts = countKeys(current, rule);
+    const previousCounts = countKeys(previous, rule);
+    const previousByKey = new Map<string, string>();
+    for (const [name, file] of previous) {
+        const key = rule(name, file);
+        if (key !== null) {
+            previousByKey.set(key, name);
         }
     }
 
-    const keys = new Map<string, string>();
-    for (const [name, file] of files) {
-        const byContent = !!file.content && isBareHash(name) && perContent.get(file.content) === 1;
-        keys.set(name, byContent ? `${CONTENT_KEY}${file.content ?? ''}` : unhashedName(name));
+    const pairs = new Map<string, string>();
+    for (const [name, file] of current) {
+        const key = rule(name, file);
+        const was = key === null ? undefined : previousByKey.get(key);
+        if (key !== null && was !== undefined && currentCounts.get(key) === 1 && previousCounts.get(key) === 1) {
+            pairs.set(name, was);
+        }
     }
 
-    return keys;
+    for (const [name, was] of pairs) {
+        current.delete(name);
+        previous.delete(was);
+    }
+    return pairs;
 };
 
 /**
@@ -161,40 +247,33 @@ export const updateCostOf = (
     previous: ReadonlyMap<string, FileWeight>,
     importers: ReadonlyMap<string, readonly string[]> | null = null,
 ): UpdateCost => {
-    const previousKeys = keysOf(previous);
-    const currentKeys = keysOf(current);
+    // Same name, same content, still in the browser's cache: nothing to download. This goes first
+    // and is not a key like the others — a name both builds carry is the same file whatever any
+    // rule below would have made of it.
+    const reused = [...current.keys()].filter(name => previous.has(name)).length;
+    const leftNow = new Map([...current].filter(([name]) => !previous.has(name)));
+    const leftBefore = new Map([...previous].filter(([name]) => !current.has(name)));
 
-    const before = new Map<string, { name: string; bytes: number }>();
-    for (const [name, file] of previous) {
-        before.set(previousKeys.get(name) ?? unhashedName(name), { name, bytes: file.bytes });
-    }
+    // Content is the fallback for the names that have nothing left underneath, and for the ones
+    // several files share — not a replacement for a name that survived the hash coming off.
+    const paired = new Set([
+        ...pairBy(leftNow, leftBefore, byName).keys(),
+        ...pairBy(leftNow, leftBefore, byContent).keys(),
+    ]);
 
+    let fresh = 0;
     const changed: ChangedFile[] = [];
     const added: ChangedFile[] = [];
-    const seen = new Set<string>();
-    let reused = 0;
-    let fresh = 0;
-
     for (const [name, file] of current) {
-        const bytes = file.bytes;
-        fresh += bytes;
-        const key = currentKeys.get(name) ?? unhashedName(name);
-        const was = before.get(key);
-        seen.add(key);
-
-        if (!was) {
-            added.push({ name, change: 'added', bytes });
-        } else if (was.name === name) {
-            // Same name, same content, still in the browser's cache. Nothing to download.
-            reused += 1;
-        } else {
-            changed.push({ name, change: 'changed', bytes });
+        fresh += file.bytes;
+        if (paired.has(name)) {
+            changed.push({ name, change: 'changed', bytes: file.bytes });
+        } else if (!previous.has(name)) {
+            added.push({ name, change: 'added', bytes: file.bytes });
         }
     }
 
-    const removed: ChangedFile[] = [...before]
-        .filter(([key]) => !seen.has(key))
-        .map(([, was]): ChangedFile => ({ name: was.name, change: 'removed', bytes: was.bytes }));
+    const removed = [...leftBefore].map(([name, was]): ChangedFile => ({ name, change: 'removed', bytes: was.bytes }));
 
     const bytes = [...changed, ...added].reduce((sum, file) => sum + file.bytes, 0);
     const byWeight = changed.toSorted((a, b) => b.bytes - a.bytes);
@@ -221,7 +300,13 @@ export const updateCostOf = (
  */
 export interface ChunkContents {
     name: string;
+    /** In the report's unit. */
     bytes: number;
+    /**
+     * On disk, uncompressed: the unit `vendorBytes` and `ownBytes` are in. Equal to `bytes` in a raw
+     * report, and then the split needs no converting. Absent means the same as `bytes`.
+     */
+    rawBytes?: number;
     inBoot: boolean;
     /** Raw minified bytes of `node_modules` inside it. */
     vendorBytes: number;
@@ -244,6 +329,7 @@ export const unstableChunks = (chunks: readonly ChunkContents[], minRatio: numbe
     chunks
         .map((chunk): UnstableChunk => {
             const total = chunk.vendorBytes + chunk.ownBytes;
+            const compressed = (chunk.rawBytes ?? chunk.bytes) !== chunk.bytes;
 
             return {
                 name: chunk.name,
@@ -251,7 +337,16 @@ export const unstableChunks = (chunks: readonly ChunkContents[], minRatio: numbe
                 vendorRatio: total > 0 ? chunk.vendorBytes / total : 0,
                 // Only when the chunk holds both. A chunk that is nothing but vendor code is the
                 // right answer, not the problem: its hash does not move when the project changes.
-                vendorBytes: chunk.ownBytes > 0 ? chunk.vendorBytes : 0,
+                // In the report's unit: what is re-downloaded is the chunk, and the chunk has a
+                // compressed size, which the split inside it — raw, always — does not. Given raw, a
+                // gzip report said "283 kB re-invalidated" over an 87 kB bootstrap.
+                vendorBytes:
+                    chunk.ownBytes === 0
+                        ? 0
+                        : compressed
+                          ? Math.round((chunk.vendorBytes / total) * chunk.bytes)
+                          : chunk.vendorBytes,
+                estimated: compressed,
                 inBoot: chunk.inBoot,
             };
         })
@@ -287,19 +382,20 @@ export const unhashableFiles = (
     inPage: ReadonlySet<string>,
 ): UnhashableFile[] =>
     files
-        .filter(file => !NEVER_HASHED.test(file.name))
+        .filter(file => !NEVER_HASHED.test(file.name) && !SERVER_FILE.test(file.name))
         .map((file): UnhashableFile | null => {
             // Every rule below reads the name, because that is what a hash is written into and what
             // the page, the metafile and the compressed copies all key a file by. Only what gets
             // printed is the path.
+            // Except whether the page asks for it, which goes by the path when there is one: 25
+            // `plugin.min.js` by name were all "asked for by the page" when it named one.
             const at = { name: file.name, path: file.path ?? file.name, bytes: file.bytes };
+            const asked = inPage.has(at.path);
             const reference = referencedAs.get(file.name) ?? file.name;
             if (VERSIONED_QUERY.test(reference)) {
-                return { ...at, reason: 'query', inPage: inPage.has(file.name) };
+                return { ...at, reason: 'query', inPage: asked };
             }
-            const bare = isBareHash(file.name);
-            const hashed = HASHED.test(file.name) || bare;
-            return hashed ? null : { ...at, reason: 'none', inPage: inPage.has(file.name) };
+            return carriesHash(file.name) ? null : { ...at, reason: 'none', inPage: asked };
         })
         .filter(file => file !== null)
         .toSorted((a, b) => Number(b.inPage) - Number(a.inPage) || b.bytes - a.bytes);

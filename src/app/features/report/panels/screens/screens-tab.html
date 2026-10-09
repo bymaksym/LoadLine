@@ -11,6 +11,7 @@
         <div class="toolbar__group">
             <input
                 class="field"
+                name="filter-screens"
                 type="search"
                 [attr.aria-label]="t.filterScreens"
                 [placeholder]="t.filterScreens"
@@ -52,7 +53,12 @@
             <div class="cols__menu">
                 @for (column of hideableColumns(); track column.key) {
                     <label class="cols__row">
-                        <input type="checkbox" [checked]="shows(column.key)" (change)="toggleColumn(column.key)" />
+                        <input
+                            type="checkbox"
+                            [checked]="shows(column.key)"
+                            [name]="'column-' + column.key"
+                            (change)="toggleColumn(column.key)"
+                        />
                         {{ column.label }}
                     </label>
                 }
@@ -148,7 +154,12 @@
                     [style.--screen-cols]="gridColumns()"
                     (click)="toggle(screen)"
                 >
-                    <span class="screen-row__name" [title]="screen.source">{{ screen.label }}</span>
+                    <span class="screen-row__name" [title]="screen.source"
+                        >{{ screen.label }}
+                        @if (routesOf(screen); as routes) {
+                            <span class="screen-row__routes">· {{ routes }}</span>
+                        }
+                    </span>
 
                     <!--
                     The bar is a picture of the three figures that follow it in the row, so it is
@@ -237,6 +248,8 @@
             <p class="empty empty--pad">{{ t.noMatch }}</p>
         }
     </div>
+
+    <app-screen-grid />
 } @else {
     <p class="empty">{{ t.noScreens }}</p>
 }

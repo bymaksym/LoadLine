@@ -60,7 +60,7 @@ export const ES: UiStrings = {
     compareVersionsNote:
         'Ninguna ruta de instalación traía la versión, así que no se han podido leer. Eso es un hueco en lo que dicen estos ficheros, no un hallazgo de que todo coincide: pnpm escribe la versión en la ruta, npm y yarn no.',
     compareRejected: files =>
-        `No es una compilación: ${files.join(', ')}. Cada fichero tiene que ser un stats.json (un metafile de esbuild).`,
+        `No es una compilación: ${files.join(', ')}. Cada fichero tiene que ser un stats.json (un metafile de esbuild o las stats de webpack).`,
     secCriteria: 'Criterios de valoración',
     secCriteriaSub: 'Con qué umbrales se dice «bien», «normal» o «mal», y cuándo salta cada señal. Se pueden cambiar.',
     howToCriteria:
@@ -277,7 +277,7 @@ export const ES: UiStrings = {
     unitImporters: 'ficheros',
     unitTrips: 'idas y vueltas',
     unitMs: 'ms',
-    treePin: 'Fijar este trozo arriba, para compararlo con otro',
+    treePin: 'Fijar este chunk arriba, para compararlo con otro',
     treeUnpin: 'Dejar de fijarlo arriba',
 
     tagline: 'peso por pantalla',
@@ -289,14 +289,14 @@ export const ES: UiStrings = {
     searchKeys: 'Ctrl K',
     homeAria: 'Loadline: cambiar lo cargado',
     buildChipHelp: 'Cambiar lo que está cargado',
-    intakeRequired: 'obligatorio',
+    intakeRequired: 'obligatorio · uno de los dos',
     intakeOptional: 'Opcional · cada uno añade detalle, ahora o más tarde',
     intakeBack: 'Volver al informe',
     contextRawNote: 'Cifras en crudo: bytes en disco, no lo que viaja',
     contextAddDetail: 'Añadir detalle:',
     contextAddDist: 'carpeta browser/ → cifras comprimidas',
     contextAddBaseline: 'línea base → comparar',
-    contextAddContext: 'angular.json + pipeline → presupuestos',
+    contextAddContext: 'package.json + angular.json → nombre, presupuestos',
     heroCaptionBoot: boot => `${boot} que el bundler marca como inicial`,
     heroCaptionExtra: (extra, chunks, ratio) =>
         `${extra} en ${chunks === 1 ? 'un chunk marcado' : `${chunks} chunks marcados`} como lazy que cargan igualmente al menos el ${pct(ratio)} de las pantallas.`,
@@ -333,10 +333,11 @@ export const ES: UiStrings = {
     keyHelp: 'Esta lista',
     keyTabs: 'Entre pestañas, con una pestaña enfocada',
 
-    drop1Title: 'Suelta aquí tu stats.json',
+    drop1Title: 'Suelta aquí tu carpeta de build o su stats.json',
     drop1Body:
-        'Lo genera tu bundler con <code>ng build --stats-json</code> (Angular) o como <code>metafile</code> de esbuild. Se procesa en tu navegador: no sale de tu equipo.',
+        'La carpeta de build basta para cualquier cosa que emita módulos ES —Vite, Rollup, SvelteKit, Nuxt, Astro, esbuild—, porque sus chunks llevan el grafo de importaciones. Angular escribe un <code>stats.json</code> con <code>ng build --stats-json</code>, esbuild un <code>metafile</code> y webpack sus stats con <code>--json</code> —Angular 16 o anterior, Create React App, Vue CLI—, y cualquiera de ellos es más exacto que la carpeta sola. Se procesa en tu navegador: no sale de tu equipo.',
     drop1Btn: 'Elegir stats.json',
+    drop1FolderBtn: 'Elegir carpeta de build',
     sampleBtn: 'Ver un ejemplo',
     sampleLoaded: outputs => `Compilación de ejemplo · ${outputs} salidas · no es tu proyecto`,
     sampleRemove: 'Cerrar el ejemplo',
@@ -355,7 +356,8 @@ export const ES: UiStrings = {
     statsIdle: 'Sin cargar',
     distIdle: 'Sin cargar · cifras en crudo',
     statsLoaded: (name, outputs) => `${name} · ${outputs} salidas`,
-    statsFromFolder: (name, outputs) => `${name} · ${outputs} trozos · grafo leído de la carpeta`,
+    statsFromFolder: (name, outputs, opaque) =>
+        `${name} · ${outputs} chunks · grafo leído de la carpeta${opaque ? ' · sin source maps: no se puede medir qué hay dentro de cada chunk, ni por tanto ningún ahorro' : ''}`,
     statsError: message => `No se ha podido leer: ${message}`,
     distNoFiles: 'Esa carpeta no tiene ficheros de build',
     distNoApi: 'Tu navegador no puede comprimir aquí; se mantienen las cifras en crudo',
@@ -364,26 +366,57 @@ export const ES: UiStrings = {
     distLoaded: files => `${files} ficheros · cifras comprimidas`,
     distLoadedMaps: (files, maps) => `${files} ficheros · cifras comprimidas · ${maps} source maps leídos`,
     distLoadedBrotli: 'brotli real de los .br',
+    distTextUnread:
+        'recuperada sin el texto de los chunks: vuelve a soltar la carpeta para buscar en ella secretos y restos',
     distLoadedIndex: 'index.html leído',
     splitExact: 'reparto de los source maps',
     splitApprox: 'reparto del metafile',
     serverIgnored: n => `${n === 1 ? '1 salida de servidor' : `${n} salidas de servidor`} fuera del análisis`,
     serverIgnoredHelp:
-        'El build trae también el bundle de servidor (renderizado en servidor). Nadie lo descarga y suele ser el más grande de los dos, así que se analiza solo la parte de navegador.',
+        'Salidas del build que no están en la carpeta del navegador: casi siempre el bundle de servidor (renderizado en servidor), que nadie descarga y suele ser el más grande de los dos, así que se analiza solo la parte de navegador. También puede ser un fichero que se renombró después de compilarlo, como los polyfills es5 de Angular 8, que nadie descarga con ese nombre.',
+    offPageIgnored: ({ legacy, serviceWorker, server, ignored }) =>
+        `${[
+            legacy > 0 && `${legacy === 1 ? '1 fichero' : `${legacy} ficheros`} para navegadores sin módulos ES`,
+            serviceWorker > 0 &&
+                (serviceWorker === 1 ? 'el service worker' : `${serviceWorker} ficheros del service worker`),
+            server > 0 && `${server === 1 ? '1 fichero' : `${server} ficheros`} que solo corre el servidor`,
+            ignored > 0 && `${ignored === 1 ? '1 fichero' : `${ignored} ficheros`} que loadline.json ignora`,
+        ]
+            .filter(Boolean)
+            .join(' y ')} fuera del análisis`,
+    offPageIgnoredHelp:
+        'Solo un navegador que no ejecuta módulos ES descarga la copia nomodule, un service worker corre al lado de la página y no como parte de una pantalla, los ficheros de FastBoot corren en el servidor, y build.ignore en loadline.json nombra lo que el equipo dice que ninguna pantalla descarga. Nada de eso está en las cifras de aquí, así que todas son lo que descarga un navegador actual.',
     notScreensLabel: 'No cuentan como pantallas:',
-    notScreenKind: { block: 'bloque lazy dentro de una pantalla', grouper: 'agrupa rutas', data: 'datos' },
+    notScreenKind: {
+        block: 'bloque lazy dentro de una pantalla',
+        grouper: 'agrupa rutas',
+        data: 'datos',
+        package: 'paquete bajo demanda',
+        worker: 'web worker',
+        onDemand: 'no lo abre ninguna ruta',
+    },
     blocksHelp:
         'Un @defer de Angular, o un lazy() dentro de un componente, produce un chunk lazy igual que una ruta. No es una pantalla: nadie entra en él, se carga cuando se dispara dentro de la pantalla que lo contiene. Contarlo como pantalla subiría el número de pantallas y bajaría la mediana con algo que nadie abre. Lo que el grafo no puede decir es CUÁNDO se dispara: un bloque detrás de un botón son bytes que nadie paga hasta pulsarlo, mientras que uno que se importa al montar la pantalla baja con la primera pintura, y entonces la pantalla pesa más de lo que dice su fila. Aquí los dos son idénticos. La pestaña Medido es la que lo resuelve.',
     groupersHelp:
         'Un fichero que no aporta prácticamente nada propio a su chunk y solo tiene importaciones dinámicas está agrupando rutas, se llame como se llame. Lo que carga son las pantallas; él no es una. Eso se mide, no se lee del nombre del fichero, así que vale también en un proyecto que no nombre sus ficheros como Angular.',
     dataHelp:
         'Un fichero de idioma, una tabla de países, un diccionario: un import() de un .json produce un chunk lazy igual que una ruta. Nadie navega a uno, y una aplicación que carga cincuenta idiomas bajo demanda saldría con cincuenta pantallas. Lo que hay que decidir con estos no es si son pantalla, sino si esos datos tienen que viajar dentro del bundle.',
+    packagesHelp:
+        'Un paquete con un import() propio: una librería de diagramas, una de fórmulas matemáticas. Nadie navega a él, y cuándo se pide es lo que el grafo no puede decir, así que no entra en el total de ninguna pantalla.',
+    workersHelp:
+        'Código que arranca con new Worker(): se ejecuta fuera de la página, en un chunk propio, cuando la página lo arranca. No es una pantalla ni entra en ningún total.',
+    onDemandHelp:
+        'El código trae una tabla de rutas y ninguna de sus rutas importa este chunk: es un componente, una pestaña o un fichero de idioma que se carga dentro de una página, no un sitio al que se navega. Si aun así es una ruta, cuéntalo como pantalla.',
+    noRouteTable:
+        'No se ha encontrado una tabla de rutas en el código, así que cada chunk que se carga en diferido cuenta como pantalla: alguna puede ser una pestaña o un componente dentro de una página y no un sitio al que se navega.',
+    routeCss: (count, list) =>
+        `Las pantallas también cargan ${count === 1 ? 'una hoja de estilos propia' : `${count} hojas de estilos propias`} (${list}), que sus totales no cuentan: estas cifras son JavaScript.`,
     markScreen: 'Contar como pantalla',
     markScreenHelp:
-        'Mete esta entrada en la tabla como pantalla propia. Distinguir una pantalla de un trozo de pantalla se hace en parte leyendo nombres de fichero, y no hay juego de nombres que valga para todos los proyectos: esta es la salida que no obliga a Loadline a aprenderse el tuyo.',
+        'Mete esta entrada en la tabla como pantalla propia. Distinguir una pantalla de un chunk de pantalla se hace en parte leyendo nombres de fichero, y no hay juego de nombres que valga para todos los proyectos: esta es la salida que no obliga a Loadline a aprenderse el tuyo.',
     markBlock: 'No es una pantalla',
     markBlockHelp:
-        'Saca esta fila de la tabla: es un trozo de otra pantalla, no un sitio al que se navegue. Pasa a la lista de entradas que no son pantallas, arriba.',
+        'Saca esta fila de la tabla: es un chunk de otra pantalla, no un sitio al que se navegue. Pasa a la lista de entradas que no son pantallas, arriba.',
     marksNote: n => `${n === 1 ? '1 entrada reclasificada' : `${n} entradas reclasificadas`} a mano.`,
     marksReset: 'Volver a las reglas',
     splitHelp:
@@ -396,14 +429,13 @@ export const ES: UiStrings = {
 
     drop3Title: 'La medición anterior',
     drop3Body:
-        'El <code>stats.json</code> del build anterior, un análisis exportado desde Loadline, o la carpeta <code>browser/</code> anterior entera (con su <code>stats.json</code>) para comparar cifras comprimidas. Cada pantalla enseña cuánto ha cambiado y salta una señal si algo ha crecido o ha entrado en el bootstrap.',
+        'El <code>stats.json</code> del build anterior, un análisis exportado desde Loadline, o la carpeta <code>browser/</code> anterior entera —con su <code>stats.json</code> o sin él, igual que se lee el build en pantalla— para comparar cifras comprimidas. Cada pantalla enseña cuánto ha cambiado y salta una señal si algo ha crecido o ha entrado en el bootstrap.',
     drop3Btn: 'Elegir línea base',
     drop3BtnDist: 'Elegir carpeta anterior',
-    baselineNoStats: 'La carpeta no contiene ningún stats.json.',
     baselineWorking: 'Comprimiendo la carpeta anterior…',
     drop4Title: 'El contexto del proyecto',
     drop4Body:
-        '<code>angular.json</code>, <code>package.json</code> y el fichero del pipeline (<code>.gitlab-ci.yml</code> o el workflow de GitHub). Con ellos se comprueba dónde está el budget de tamaño y si la configuración que compila el pipeline lo aplica.',
+        '<code>package.json</code> da el nombre del proyecto y lo que pide directamente, que es lo que distingue un paquete que elegiste de uno que vino con otro. En un proyecto Angular, <code>angular.json</code> y el fichero del pipeline (<code>.gitlab-ci.yml</code> o el workflow de GitHub) dicen además dónde está el budget de tamaño y si la configuración que compila el pipeline lo aplica.',
     drop4Btn: 'Elegir ficheros',
     baselineIdle: 'Sin cargar · sin comparación',
     baselineLoaded: (name, mode, screens) => `${name} · ${mode} · ${screens} pantallas`,
@@ -416,6 +448,9 @@ export const ES: UiStrings = {
     contextLoaded: files => files.join(' · '),
     contextIgnored: files => `No reconocido: ${files.join(', ')}`,
     contextShort: n => (n === 1 ? 'contexto: 1 fichero' : `contexto: ${n} ficheros`),
+    configExtends: names => `loadline.json hereda de ${names}, que la página no puede leer`,
+    configExtendsHelp:
+        'La página no tiene un disco en el que seguir "extends", así que aplica solo lo que dice este fichero. Ejecuta npx @bymaksym/loadline --print-config y suelta aquí lo que escribe: es el fichero con todo lo que hereda ya unido.',
     contextRemove: 'Quitar contexto',
     restorePrompt: (name, date) => `Este navegador guarda la última medición: ${name} · ${date}`,
     restoreBtn: 'Restaurar',
@@ -519,6 +554,8 @@ export const ES: UiStrings = {
         `+ ${size} de CSS que la página pide${files > 1 ? ` en ${files} hojas` : ''} · ${total} antes de pintar`,
     bootSplitRaw: total =>
         `Paquetes y código tuyo se reparten en bytes en crudo, ${total} en total: un fichero comprimido no se puede dividir por lo que lleva dentro.`,
+    bootSplitUnknown:
+        'Cuánto es de paquetes y cuánto es código tuyo no se sabe: la carpeta no trae source maps, así que un chunk es un peso sin nada con nombre dentro. Construye con source maps, o añade el stats.json, para ver el reparto.',
     tileBootSub: files => `lo que el bundler marca como inicial · ${files === 1 ? '1 fichero' : `${files} ficheros`}`,
     tileScreens: 'Pantallas lazy',
     tileScreensTypical: 'la típica cuesta',
@@ -621,7 +658,7 @@ export const ES: UiStrings = {
     legOwn: 'Propio de esta pantalla',
     screensCaveat: 'Calculado recorriendo el grafo de importaciones, no medido.',
     filterBoot: 'Filtrar paquetes',
-    filterShared: 'Filtrar trozos',
+    filterShared: 'Filtrar chunks',
     filterScreens: 'Filtrar pantallas por nombre…',
     sortByColumn: 'Ordenar por esta columna; otra vez, al revés',
     shownCount: (shown, total) => (shown === total ? `${total} pantallas` : `${shown} de ${total} pantallas`),
@@ -960,6 +997,8 @@ export const ES: UiStrings = {
     helpBootOfBoot: 'del bootstrap',
     helpBootLazyOnly: max =>
         `Lo importan ${max} ficheros tuyos como mucho y al menos uno está en una pantalla lazy, así que se pueden mirar uno a uno. Si al abrirlos resulta que todos son lazy, este paquete se descarga en el bootstrap para gente que quizá no llegue nunca a esa pantalla.`,
+    helpImportsUnknown:
+        'No se sabe: una carpeta de build dice qué lleva cada chunk, no qué archivo importa a cuál. El stats.json lo dice.',
     helpImportersNone:
         'Ningún fichero tuyo lo importa directamente: lo importa otro paquete. No se quita desde tu código, sino desde el paquete que lo trae.',
     bootChain: 'Cómo entra en el bootstrap',
@@ -976,7 +1015,7 @@ export const ES: UiStrings = {
     treeOwn: 'De una pantalla',
     treeScreens: n => (n === 1 ? '1 pantalla' : `${n} pantallas`),
     filterTree: 'Filtrar por chunk, paquete o carpeta…',
-    treeCrumbs: (n, total, line) => `${n} trozos por debajo de ${line} · ${total} entre todos`,
+    treeCrumbs: (n, total, line) => `${n} chunks por debajo de ${line} · ${total} entre todos`,
     treeNoMatch: 'Nada coincide con el filtro.',
     shapeTitle: 'Cómo está repartido',
     treeShare: (share, zone) =>
@@ -1049,20 +1088,62 @@ export const ES: UiStrings = {
     noShared: 'Ningún chunk lazy lo comparten dos pantallas.',
     footer: 'Todo se calcula en tu navegador a partir del metafile: nada se sube a ningún sitio. Las cifras en crudo son bytes en disco; las comprimidas se calculan con gzip sobre los ficheros reales, que es lo que paga quien usa la aplicación. El navegador no sabe comprimir en brotli, así que esa cifra solo sale si la carpeta trae los .js.br ya comprimidos; si no los trae, cuenta con que en brotli sea entre un 15 % y un 20 % menos que el gzip que ves. Pulsa ? para ver los atajos de teclado.',
 
+    // --- three views drawn from figures the report already has ---
+    diffTitle: 'Qué ha cambiado en el bootstrap',
+    diffSub: (before, after, diff, baseline) =>
+        `${before} → ${after} (${diff}) frente a ${baseline}. Cada área es lo que pesa ahora esa parte; su color, cómo se ha movido.`,
+    diffChange: { new: 'nuevo', grew: 'creció', shrank: 'bajó', same: 'sin cambios', gone: 'ya no está' },
+    diffOwn: 'tu código',
+    diffGone: 'Ya no están en el bootstrap',
+    diffEstimated:
+        'Los cambios son pesos en crudo a la proporción en que se comprime el bootstrap: el tamaño correcto, no el exacto, y por eso el ≈.',
+    diffPackagesOnly:
+        'Solo paquetes: la línea base se exportó antes de que se guardaran las carpetas de tu propio código, así que se dibujan sin cambio.',
+    diffTile: (name, size, change) => `${name}, ${size}, ${change}`,
+    gridTitle: 'Pantallas × paquetes',
+    gridSub:
+        'Lo que descarga cada pantalla de cada paquete. Una columna llena de arriba abajo es algo que pagan todas las pantallas, lo usen o no.',
+    gridBoot: 'En el bootstrap',
+    gridLazy: 'Con la pantalla',
+    gridOwn: 'tu código',
+    gridRest: 'el resto',
+    gridTotal: 'Total de la pantalla',
+    gridCell: (screen, size, what) => `${screen} lleva ${size} de ${what}, en crudo, dentro de sus chunks`,
+    gridScale: { less: 'menos', more: 'más' },
+    gridRaw: 'Bytes minificados en crudo dentro de los chunks; el total va en la unidad del informe.',
+    tripsTitle: 'Cómo carga, viaje a viaje',
+    tripsNote:
+        'Una estimación, no una medición: las idas y vueltas del informe sobre un eje de tiempo, con un perfil de conexión estándar. Cada hueco es una ida y vuelta esperando antes del primer byte.',
+    tripsProfile: { slow4g: '4G lento', fast4g: '4G', cable: 'cable' },
+    tripsBoot: 'primera carga',
+    tripsScreen: 'esta pantalla',
+    tripLabel: index => `viaje ${index}`,
+    tripsWait: 'esperando',
+    tripsParse: 'parseo',
+    tripsTotal: (time, trips) => `≈ ${time} hasta tenerlo todo, en ${trips} ${trips === 1 ? 'viaje' : 'viajes'}`,
+    tripsAssumed:
+        'Sin index.html la primera carga se dibuja como un solo viaje: el grafo por sí solo no sabe cuáles de sus chunks nombra la página.',
+    tripBar: (index, wait, transfer, size, files) =>
+        `Viaje ${index}: ${wait} esperando, ${transfer} transfiriendo ${size} en ${files} ${files === 1 ? 'fichero' : 'ficheros'}`,
+
     errNoEntries: 'El fichero no parece un metafile de esbuild: no hay puntos de entrada.',
     errNoMain: 'No se ha podido identificar el punto de entrada principal.',
     errNoOutputs: 'El JSON tiene forma de metafile pero no trae la clave "outputs".',
     errNotMetafile: 'El JSON no es un metafile de ninguno de los formatos que se reconocen.',
     errExpected:
-        'Se espera el stats.json que escribe `ng build --stats-json` (un objeto con "outputs" e "inputs"), o la carpeta browser/ entera, que Loadline lee sola.',
+        'Se espera la carpeta de build, la que tiene el index.html —basta para cualquier cosa que emita módulos ES: Vite, Rollup, SvelteKit, Nuxt, Astro—, o un fichero de stats: el metafile que escribe Angular 17 o posterior con `ng build --stats-json` (un objeto con "outputs" e "inputs"), o el stats.json de webpack (`webpack --json`).',
     errNotEsmGraph:
-        'los trozos de esta carpeta son salida de webpack o de Turbopack, no módulos ES: sus importaciones son números que resuelve el cargador en tiempo de ejecución, así que no hay grafo dentro de los ficheros que leer. Eso es Next.js, Create React App y Angular 16 o anterior. Para ese formato está Statoscope, que lo hace mejor.',
+        'Los chunks de esta carpeta son salida de webpack o de Turbopack, no módulos ES: sus importaciones son números que resuelve el cargador en tiempo de ejecución, así que no hay grafo dentro de los ficheros que leer. El fichero de stats del build lo tiene, y Loadline lo lee: `ng build --stats-json` en Angular 16 o anterior, `webpack --json > stats.json`, `react-scripts build --stats` en Create React App, `vue-cli-service build --report-json` en Vue CLI. Ponlo en la carpeta, o suéltalo con ella, y las cifras siguen comprimidas. Next.js con Turbopack no escribe ese fichero.',
+    entryLabel: 'El script por el que arranca la aplicación, con * para el hash:',
+    entryBtn: 'Leer la carpeta con él',
     errNoPage:
-        'La carpeta no trae un index.html que nombre el script por el que arranca la aplicación, y sin él no hay forma de distinguir el trozo de entrada de uno compartido: el compilador escribe el código común dentro del trozo de entrada, así que la entrada acaba importada por sus propios hijos. Añade la página a la carpeta, o carga el stats.json del build.',
+        'Ningún index.html de la carpeta nombra un script de la carpeta por el que arranque la aplicación —ni <script src>, ni import(), ni un nombre de fichero en un script inline—, y sin él no hay forma de distinguir el chunk de entrada de uno compartido: el compilador escribe el código común dentro del chunk de entrada, así que la entrada acaba importada por sus propios hijos. Añade la página a la carpeta, carga el stats.json del build, o nombra el script por el que arranca: --entry "main.*.js" en el comando, el campo bajo este mensaje en la página, o { "build": { "entries": ["main.*.js"] } } en loadline.json.',
+    errFolderUnreadable:
+        'El navegador no ha dejado a esta página leer la carpeta que se ha soltado en ella. Chrome lo hace con una página abierta desde el disco (file://): la carpeta llega, y lo que falla es ver qué hay dentro. Elige la misma carpeta con «Elegir carpeta de build», que eso sí lo permite, o escribe la página con el build dentro: npx @bymaksym/loadline <carpeta> --html loadline.html --open.',
     errWebpackStats:
-        'no es un metafile de esbuild, sino un stats.json de webpack. Con Angular 17 en adelante lo genera el builder application (`ng build --stats-json`); si el proyecto sigue con el builder browser, esa es la razón. Loadline no lee el formato de webpack a propósito: para eso está Statoscope, que hace ese trabajo mejor.',
+        'Es un stats.json de webpack sin ningún chunk que escriba un script, así que no hay nada que analizar: se escribió con `chunks` o `assets` desactivados. Vuelve a generarlo con los valores por defecto —`webpack --json > stats.json`, `ng build --stats-json`—, que traen los chunks, los módulos y por qué está cada módulo.',
     errViteManifest:
-        'no es un metafile de esbuild, sino el manifest.json de Vite. No hace falta: suelta la carpeta compilada y Loadline lee el grafo de los propios trozos, que es donde Vite lo escribe de verdad.',
+        'No es un metafile de esbuild, sino el manifest.json de Vite. No hace falta: suelta la carpeta compilada y Loadline lee el grafo de los propios chunks, que es donde Vite lo escribe de verdad.',
     errVisualizer:
-        'no es un metafile de esbuild, sino la salida de rollup-plugin-visualizer. Loadline lee el metafile de esbuild, que es otra cosa.',
+        'No es un metafile de esbuild, sino la salida de rollup-plugin-visualizer. Loadline lee el metafile de esbuild, que es otra cosa.',
 };

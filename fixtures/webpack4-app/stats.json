@@ -1,0 +1,1494 @@
+{
+  "errors": [],
+  "warnings": [],
+  "version": "4.47.0",
+  "hash": "61220787ec19f770b1e9",
+  "time": 2517,
+  "builtAt": 1791548673831,
+  "publicPath": "",
+  "outputPath": "C:\\fixture\\webpack4-app\\dist",
+  "assetsByChunkName": {
+    "main": [
+      "main.e32fbe6a.js",
+      "main.e32fbe6a.js.map"
+    ]
+  },
+  "assets": [
+    {
+      "name": "1.ea43e1c8.js",
+      "size": 413,
+      "chunks": [
+        1
+      ],
+      "chunkNames": [],
+      "info": {
+        "immutable": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "1.ea43e1c8.js.map",
+      "size": 813,
+      "chunks": [
+        1
+      ],
+      "chunkNames": [],
+      "info": {
+        "development": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "2.226e89b4.js",
+      "size": 404,
+      "chunks": [
+        2
+      ],
+      "chunkNames": [],
+      "info": {
+        "immutable": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "2.226e89b4.js.map",
+      "size": 800,
+      "chunks": [
+        2
+      ],
+      "chunkNames": [],
+      "info": {
+        "development": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "3.0e8d1426.js",
+      "size": 286,
+      "chunks": [
+        3
+      ],
+      "chunkNames": [],
+      "info": {
+        "immutable": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "3.0e8d1426.js.map",
+      "size": 412,
+      "chunks": [
+        3
+      ],
+      "chunkNames": [],
+      "info": {
+        "development": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "4.a89b3a7a.js",
+      "size": 332,
+      "chunks": [
+        4
+      ],
+      "chunkNames": [],
+      "info": {
+        "immutable": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "4.a89b3a7a.js.map",
+      "size": 608,
+      "chunks": [
+        4
+      ],
+      "chunkNames": [],
+      "info": {
+        "development": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "index.html",
+      "size": 214,
+      "chunks": [],
+      "chunkNames": [],
+      "info": {},
+      "emitted": true
+    },
+    {
+      "name": "main.e32fbe6a.js",
+      "size": 2718,
+      "chunks": [
+        0
+      ],
+      "chunkNames": [
+        "main"
+      ],
+      "info": {
+        "immutable": true
+      },
+      "emitted": true
+    },
+    {
+      "name": "main.e32fbe6a.js.map",
+      "size": 12766,
+      "chunks": [
+        0
+      ],
+      "chunkNames": [
+        "main"
+      ],
+      "info": {
+        "development": true
+      },
+      "emitted": true
+    }
+  ],
+  "filteredAssets": 0,
+  "entrypoints": {
+    "main": {
+      "chunks": [
+        0
+      ],
+      "assets": [
+        "main.e32fbe6a.js",
+        "main.e32fbe6a.js.map"
+      ],
+      "children": {},
+      "childAssets": {}
+    }
+  },
+  "namedChunkGroups": {
+    "main": {
+      "chunks": [
+        0
+      ],
+      "assets": [
+        "main.e32fbe6a.js",
+        "main.e32fbe6a.js.map"
+      ],
+      "children": {},
+      "childAssets": {}
+    }
+  },
+  "chunks": [
+    {
+      "id": 0,
+      "rendered": true,
+      "initial": true,
+      "entry": true,
+      "size": 917,
+      "names": [
+        "main"
+      ],
+      "files": [
+        "main.e32fbe6a.js",
+        "main.e32fbe6a.js.map"
+      ],
+      "hash": "9d45968a06cc101b28f5",
+      "siblings": [],
+      "parents": [],
+      "children": [
+        1,
+        2,
+        4
+      ],
+      "childrenByOrder": {},
+      "modules": [
+        {
+          "id": 0,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\shared.js",
+          "name": "./src/shared.js",
+          "index": 1,
+          "index2": 0,
+          "size": 296,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            0
+          ],
+          "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "issuerId": 1,
+          "issuerName": "./src/main.js",
+          "issuerPath": [
+            {
+              "id": 1,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "name": "./src/main.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": 1,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "module": "./src/main.js",
+              "moduleName": "./src/main.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./shared.js",
+              "loc": "5:0-36"
+            },
+            {
+              "moduleId": 1,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "module": "./src/main.js",
+              "moduleName": "./src/main.js",
+              "type": "harmony import specifier",
+              "userRequest": "./shared.js",
+              "loc": "16:4-9"
+            },
+            {
+              "moduleId": 2,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+              "module": "./src/home.page.js",
+              "moduleName": "./src/home.page.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./shared.js",
+              "loc": "1:0-36"
+            },
+            {
+              "moduleId": 2,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+              "module": "./src/home.page.js",
+              "moduleName": "./src/home.page.js",
+              "type": "harmony import specifier",
+              "userRequest": "./shared.js",
+              "loc": "5:51-56"
+            },
+            {
+              "moduleId": 5,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\table.js",
+              "module": "./src/table.js",
+              "moduleName": "./src/table.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./shared.js",
+              "loc": "1:0-36"
+            },
+            {
+              "moduleId": 5,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\table.js",
+              "module": "./src/table.js",
+              "moduleName": "./src/table.js",
+              "type": "harmony import specifier",
+              "userRequest": "./shared.js",
+              "loc": "7:66-71"
+            },
+            {
+              "moduleId": 6,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\chart.widget.js",
+              "module": "./src/chart.widget.js",
+              "moduleName": "./src/chart.widget.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./shared.js",
+              "loc": "1:0-36"
+            },
+            {
+              "moduleId": 6,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\chart.widget.js",
+              "module": "./src/chart.widget.js",
+              "moduleName": "./src/chart.widget.js",
+              "type": "harmony import specifier",
+              "userRequest": "./shared.js",
+              "loc": "4:57-62"
+            }
+          ],
+          "usedExports": [
+            "money",
+            "mount"
+          ],
+          "providedExports": [
+            "mount",
+            "money"
+          ],
+          "optimizationBailout": [],
+          "depth": 1,
+          "source": "/** Imported statically by every screen, so it ends up in a chunk they all pull in. */\nexport const mount = (host, html) => {\n    if (host) {\n        host.innerHTML = html;\n    }\n};\n\nexport const money = value => new Intl.NumberFormat('en', { style: 'currency', currency: 'EUR' }).format(value);\n"
+        },
+        {
+          "id": 1,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "name": "./src/main.js",
+          "index": 0,
+          "index2": 1,
+          "size": 621,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            0
+          ],
+          "issuer": null,
+          "issuerId": null,
+          "issuerName": null,
+          "issuerPath": null,
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": null,
+              "moduleIdentifier": null,
+              "module": null,
+              "moduleName": null,
+              "type": "single entry",
+              "userRequest": "./src/main.js",
+              "loc": "main"
+            }
+          ],
+          "usedExports": true,
+          "providedExports": [],
+          "optimizationBailout": [
+            "ModuleConcatenation bailout: Module is an entry point"
+          ],
+          "depth": 0,
+          "source": "/**\n * The router. Every screen is behind a dynamic import, which is the only thing that has to be true\n * for a build to be worth reading: it is what puts a boundary in the graph.\n */\nimport { mount } from './shared.js';\n\nconst routes = {\n    '#/home': () => import('./home.page.js'),\n    '#/orders': () => import('./orders.page.js'),\n    '#/settings': () => import('./settings.page.js'),\n};\n\nconst go = async () => {\n    const load = routes[location.hash] || routes['#/home'];\n    const screen = await load();\n    mount(document.querySelector('#outlet'), screen.render());\n};\n\naddEventListener('hashchange', go);\ngo();\n"
+        }
+      ],
+      "filteredModules": 0,
+      "origins": [
+        {
+          "module": "",
+          "moduleIdentifier": "",
+          "moduleName": "",
+          "loc": "main",
+          "request": "./src/main.js",
+          "reasons": []
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "rendered": true,
+      "initial": false,
+      "entry": false,
+      "size": 452,
+      "names": [],
+      "files": [
+        "1.ea43e1c8.js",
+        "1.ea43e1c8.js.map"
+      ],
+      "hash": "b92a06a7a8cb3f1d04eb",
+      "siblings": [],
+      "parents": [
+        0
+      ],
+      "children": [],
+      "childrenByOrder": {},
+      "modules": [
+        {
+          "id": 3,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+          "name": "./src/orders.page.js",
+          "index": 3,
+          "index2": 4,
+          "size": 112,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            1
+          ],
+          "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "issuerId": 1,
+          "issuerName": "./src/main.js",
+          "issuerPath": [
+            {
+              "id": 1,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "name": "./src/main.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": 1,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "module": "./src/main.js",
+              "moduleName": "./src/main.js",
+              "type": "import()",
+              "userRequest": "./orders.page.js",
+              "loc": "9:22-48"
+            }
+          ],
+          "usedExports": true,
+          "providedExports": [
+            "render"
+          ],
+          "optimizationBailout": [
+            "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/main.js (referenced with import())"
+          ],
+          "depth": 1,
+          "source": "import { table } from './table.js';\n\nexport const render = () => `<h1>Orders</h1>${table([12.5, 99, 1234.5])}`;\n"
+        },
+        {
+          "id": 5,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\table.js",
+          "name": "./src/table.js",
+          "index": 4,
+          "index2": 3,
+          "size": 340,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            1,
+            2
+          ],
+          "issuer": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+          "issuerId": 3,
+          "issuerName": "./src/orders.page.js",
+          "issuerPath": [
+            {
+              "id": 1,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "name": "./src/main.js"
+            },
+            {
+              "id": 3,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+              "name": "./src/orders.page.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": 3,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+              "module": "./src/orders.page.js",
+              "moduleName": "./src/orders.page.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./table.js",
+              "loc": "1:0-35"
+            },
+            {
+              "moduleId": 3,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+              "module": "./src/orders.page.js",
+              "moduleName": "./src/orders.page.js",
+              "type": "harmony import specifier",
+              "userRequest": "./table.js",
+              "loc": "3:46-51"
+            },
+            {
+              "moduleId": 4,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+              "module": "./src/settings.page.js",
+              "moduleName": "./src/settings.page.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./table.js",
+              "loc": "1:0-35"
+            },
+            {
+              "moduleId": 4,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+              "module": "./src/settings.page.js",
+              "moduleName": "./src/settings.page.js",
+              "type": "harmony import specifier",
+              "userRequest": "./table.js",
+              "loc": "3:48-53"
+            }
+          ],
+          "usedExports": [
+            "table"
+          ],
+          "providedExports": [
+            "table"
+          ],
+          "optimizationBailout": [],
+          "depth": 2,
+          "source": "import { money } from './shared.js';\n\n/**\n * Imported statically by two screens and by nothing the bootstrap pulls in, which is what makes the\n * bundler give it a chunk of its own: the shared chunk the whole report is about.\n */\nexport const table = rows => `<table>${rows.map(row => `<tr><td>${money(row)}</td></tr>`).join('')}</table>`;\n"
+        }
+      ],
+      "filteredModules": 0,
+      "origins": [
+        {
+          "moduleId": 1,
+          "module": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "moduleName": "./src/main.js",
+          "loc": "9:22-48",
+          "request": "./orders.page.js",
+          "reasons": []
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "rendered": true,
+      "initial": false,
+      "entry": false,
+      "size": 442,
+      "names": [],
+      "files": [
+        "2.226e89b4.js",
+        "2.226e89b4.js.map"
+      ],
+      "hash": "a060bd56247a50984ef0",
+      "siblings": [],
+      "parents": [
+        0
+      ],
+      "children": [],
+      "childrenByOrder": {},
+      "modules": [
+        {
+          "id": 4,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+          "name": "./src/settings.page.js",
+          "index": 5,
+          "index2": 5,
+          "size": 102,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            2
+          ],
+          "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "issuerId": 1,
+          "issuerName": "./src/main.js",
+          "issuerPath": [
+            {
+              "id": 1,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "name": "./src/main.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": 1,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "module": "./src/main.js",
+              "moduleName": "./src/main.js",
+              "type": "import()",
+              "userRequest": "./settings.page.js",
+              "loc": "10:24-52"
+            }
+          ],
+          "usedExports": true,
+          "providedExports": [
+            "render"
+          ],
+          "optimizationBailout": [
+            "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/main.js (referenced with import())"
+          ],
+          "depth": 1,
+          "source": "import { table } from './table.js';\n\nexport const render = () => `<h1>Settings</h1>${table([1, 2])}`;\n"
+        },
+        {
+          "id": 5,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\table.js",
+          "name": "./src/table.js",
+          "index": 4,
+          "index2": 3,
+          "size": 340,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            1,
+            2
+          ],
+          "issuer": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+          "issuerId": 3,
+          "issuerName": "./src/orders.page.js",
+          "issuerPath": [
+            {
+              "id": 1,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "name": "./src/main.js"
+            },
+            {
+              "id": 3,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+              "name": "./src/orders.page.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": 3,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+              "module": "./src/orders.page.js",
+              "moduleName": "./src/orders.page.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./table.js",
+              "loc": "1:0-35"
+            },
+            {
+              "moduleId": 3,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+              "module": "./src/orders.page.js",
+              "moduleName": "./src/orders.page.js",
+              "type": "harmony import specifier",
+              "userRequest": "./table.js",
+              "loc": "3:46-51"
+            },
+            {
+              "moduleId": 4,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+              "module": "./src/settings.page.js",
+              "moduleName": "./src/settings.page.js",
+              "type": "harmony side effect evaluation",
+              "userRequest": "./table.js",
+              "loc": "1:0-35"
+            },
+            {
+              "moduleId": 4,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+              "module": "./src/settings.page.js",
+              "moduleName": "./src/settings.page.js",
+              "type": "harmony import specifier",
+              "userRequest": "./table.js",
+              "loc": "3:48-53"
+            }
+          ],
+          "usedExports": [
+            "table"
+          ],
+          "providedExports": [
+            "table"
+          ],
+          "optimizationBailout": [],
+          "depth": 2,
+          "source": "import { money } from './shared.js';\n\n/**\n * Imported statically by two screens and by nothing the bootstrap pulls in, which is what makes the\n * bundler give it a chunk of its own: the shared chunk the whole report is about.\n */\nexport const table = rows => `<table>${rows.map(row => `<tr><td>${money(row)}</td></tr>`).join('')}</table>`;\n"
+        }
+      ],
+      "filteredModules": 0,
+      "origins": [
+        {
+          "moduleId": 1,
+          "module": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "moduleName": "./src/main.js",
+          "loc": "10:24-52",
+          "request": "./settings.page.js",
+          "reasons": []
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "rendered": true,
+      "initial": false,
+      "entry": false,
+      "size": 209,
+      "names": [],
+      "files": [
+        "3.0e8d1426.js",
+        "3.0e8d1426.js.map"
+      ],
+      "hash": "ca3ac633daa06cda5d8a",
+      "siblings": [],
+      "parents": [
+        4
+      ],
+      "children": [],
+      "childrenByOrder": {},
+      "modules": [
+        {
+          "id": 6,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\chart.widget.js",
+          "name": "./src/chart.widget.js",
+          "index": 6,
+          "index2": 6,
+          "size": 209,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            3
+          ],
+          "issuer": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "issuerId": 2,
+          "issuerName": "./src/home.page.js",
+          "issuerPath": [
+            {
+              "id": 1,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "name": "./src/main.js"
+            },
+            {
+              "id": 2,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+              "name": "./src/home.page.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": 2,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+              "module": "./src/home.page.js",
+              "moduleName": "./src/home.page.js",
+              "type": "import()",
+              "userRequest": "./chart.widget.js",
+              "loc": "5:9-36"
+            }
+          ],
+          "usedExports": true,
+          "providedExports": [
+            "draw"
+          ],
+          "optimizationBailout": [
+            "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/home.page.js (referenced with import())"
+          ],
+          "depth": 2,
+          "source": "import { money } from './shared.js';\n\n/** Deferred from inside a screen. Nobody navigates to it. */\nexport const draw = () => `<svg role=\"img\" aria-label=\"${money(42)}\"><rect width=\"10\" height=\"10\" /></svg>`;\n"
+        }
+      ],
+      "filteredModules": 0,
+      "origins": [
+        {
+          "moduleId": 2,
+          "module": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "moduleName": "./src/home.page.js",
+          "loc": "5:9-36",
+          "request": "./chart.widget.js",
+          "reasons": []
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "rendered": true,
+      "initial": false,
+      "entry": false,
+      "size": 318,
+      "names": [],
+      "files": [
+        "4.a89b3a7a.js",
+        "4.a89b3a7a.js.map"
+      ],
+      "hash": "afdf0af4c9bdcc3b3958",
+      "siblings": [],
+      "parents": [
+        0
+      ],
+      "children": [
+        3
+      ],
+      "childrenByOrder": {},
+      "modules": [
+        {
+          "id": 2,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "name": "./src/home.page.js",
+          "index": 2,
+          "index2": 2,
+          "size": 318,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            4
+          ],
+          "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "issuerId": 1,
+          "issuerName": "./src/main.js",
+          "issuerPath": [
+            {
+              "id": 1,
+              "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "name": "./src/main.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": 1,
+              "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+              "module": "./src/main.js",
+              "moduleName": "./src/main.js",
+              "type": "import()",
+              "userRequest": "./home.page.js",
+              "loc": "8:20-44"
+            }
+          ],
+          "usedExports": true,
+          "providedExports": [
+            "render"
+          ],
+          "optimizationBailout": [
+            "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/main.js (referenced with import())"
+          ],
+          "depth": 1,
+          "source": "import { mount } from './shared.js';\n\n/** A screen that defers a piece of itself: the chart is a block, not a fourth screen. */\nexport const render = () => {\n    void import('./chart.widget.js').then(chart => mount(document.querySelector('#chart'), chart.draw()));\n    return '<h1>Home</h1><div id=\"chart\"></div>';\n};\n"
+        }
+      ],
+      "filteredModules": 0,
+      "origins": [
+        {
+          "moduleId": 1,
+          "module": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "moduleName": "./src/main.js",
+          "loc": "8:20-44",
+          "request": "./home.page.js",
+          "reasons": []
+        }
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": 0,
+      "identifier": "C:\\fixture\\webpack4-app\\src\\shared.js",
+      "name": "./src/shared.js",
+      "index": 1,
+      "index2": 0,
+      "size": 296,
+      "cacheable": true,
+      "built": true,
+      "optional": false,
+      "prefetched": false,
+      "chunks": [
+        0
+      ],
+      "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+      "issuerId": 1,
+      "issuerName": "./src/main.js",
+      "issuerPath": [
+        {
+          "id": 1,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "name": "./src/main.js"
+        }
+      ],
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "assets": [],
+      "reasons": [
+        {
+          "moduleId": 1,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "module": "./src/main.js",
+          "moduleName": "./src/main.js",
+          "type": "harmony side effect evaluation",
+          "userRequest": "./shared.js",
+          "loc": "5:0-36"
+        },
+        {
+          "moduleId": 1,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "module": "./src/main.js",
+          "moduleName": "./src/main.js",
+          "type": "harmony import specifier",
+          "userRequest": "./shared.js",
+          "loc": "16:4-9"
+        },
+        {
+          "moduleId": 2,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "module": "./src/home.page.js",
+          "moduleName": "./src/home.page.js",
+          "type": "harmony side effect evaluation",
+          "userRequest": "./shared.js",
+          "loc": "1:0-36"
+        },
+        {
+          "moduleId": 2,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "module": "./src/home.page.js",
+          "moduleName": "./src/home.page.js",
+          "type": "harmony import specifier",
+          "userRequest": "./shared.js",
+          "loc": "5:51-56"
+        },
+        {
+          "moduleId": 5,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\table.js",
+          "module": "./src/table.js",
+          "moduleName": "./src/table.js",
+          "type": "harmony side effect evaluation",
+          "userRequest": "./shared.js",
+          "loc": "1:0-36"
+        },
+        {
+          "moduleId": 5,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\table.js",
+          "module": "./src/table.js",
+          "moduleName": "./src/table.js",
+          "type": "harmony import specifier",
+          "userRequest": "./shared.js",
+          "loc": "7:66-71"
+        },
+        {
+          "moduleId": 6,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\chart.widget.js",
+          "module": "./src/chart.widget.js",
+          "moduleName": "./src/chart.widget.js",
+          "type": "harmony side effect evaluation",
+          "userRequest": "./shared.js",
+          "loc": "1:0-36"
+        },
+        {
+          "moduleId": 6,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\chart.widget.js",
+          "module": "./src/chart.widget.js",
+          "moduleName": "./src/chart.widget.js",
+          "type": "harmony import specifier",
+          "userRequest": "./shared.js",
+          "loc": "4:57-62"
+        }
+      ],
+      "usedExports": [
+        "money",
+        "mount"
+      ],
+      "providedExports": [
+        "mount",
+        "money"
+      ],
+      "optimizationBailout": [],
+      "depth": 1,
+      "source": "/** Imported statically by every screen, so it ends up in a chunk they all pull in. */\nexport const mount = (host, html) => {\n    if (host) {\n        host.innerHTML = html;\n    }\n};\n\nexport const money = value => new Intl.NumberFormat('en', { style: 'currency', currency: 'EUR' }).format(value);\n"
+    },
+    {
+      "id": 1,
+      "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+      "name": "./src/main.js",
+      "index": 0,
+      "index2": 1,
+      "size": 621,
+      "cacheable": true,
+      "built": true,
+      "optional": false,
+      "prefetched": false,
+      "chunks": [
+        0
+      ],
+      "issuer": null,
+      "issuerId": null,
+      "issuerName": null,
+      "issuerPath": null,
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "assets": [],
+      "reasons": [
+        {
+          "moduleId": null,
+          "moduleIdentifier": null,
+          "module": null,
+          "moduleName": null,
+          "type": "single entry",
+          "userRequest": "./src/main.js",
+          "loc": "main"
+        }
+      ],
+      "usedExports": true,
+      "providedExports": [],
+      "optimizationBailout": [
+        "ModuleConcatenation bailout: Module is an entry point"
+      ],
+      "depth": 0,
+      "source": "/**\n * The router. Every screen is behind a dynamic import, which is the only thing that has to be true\n * for a build to be worth reading: it is what puts a boundary in the graph.\n */\nimport { mount } from './shared.js';\n\nconst routes = {\n    '#/home': () => import('./home.page.js'),\n    '#/orders': () => import('./orders.page.js'),\n    '#/settings': () => import('./settings.page.js'),\n};\n\nconst go = async () => {\n    const load = routes[location.hash] || routes['#/home'];\n    const screen = await load();\n    mount(document.querySelector('#outlet'), screen.render());\n};\n\naddEventListener('hashchange', go);\ngo();\n"
+    },
+    {
+      "id": 2,
+      "identifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+      "name": "./src/home.page.js",
+      "index": 2,
+      "index2": 2,
+      "size": 318,
+      "cacheable": true,
+      "built": true,
+      "optional": false,
+      "prefetched": false,
+      "chunks": [
+        4
+      ],
+      "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+      "issuerId": 1,
+      "issuerName": "./src/main.js",
+      "issuerPath": [
+        {
+          "id": 1,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "name": "./src/main.js"
+        }
+      ],
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "assets": [],
+      "reasons": [
+        {
+          "moduleId": 1,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "module": "./src/main.js",
+          "moduleName": "./src/main.js",
+          "type": "import()",
+          "userRequest": "./home.page.js",
+          "loc": "8:20-44"
+        }
+      ],
+      "usedExports": true,
+      "providedExports": [
+        "render"
+      ],
+      "optimizationBailout": [
+        "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/main.js (referenced with import())"
+      ],
+      "depth": 1,
+      "source": "import { mount } from './shared.js';\n\n/** A screen that defers a piece of itself: the chart is a block, not a fourth screen. */\nexport const render = () => {\n    void import('./chart.widget.js').then(chart => mount(document.querySelector('#chart'), chart.draw()));\n    return '<h1>Home</h1><div id=\"chart\"></div>';\n};\n"
+    },
+    {
+      "id": 3,
+      "identifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+      "name": "./src/orders.page.js",
+      "index": 3,
+      "index2": 4,
+      "size": 112,
+      "cacheable": true,
+      "built": true,
+      "optional": false,
+      "prefetched": false,
+      "chunks": [
+        1
+      ],
+      "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+      "issuerId": 1,
+      "issuerName": "./src/main.js",
+      "issuerPath": [
+        {
+          "id": 1,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "name": "./src/main.js"
+        }
+      ],
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "assets": [],
+      "reasons": [
+        {
+          "moduleId": 1,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "module": "./src/main.js",
+          "moduleName": "./src/main.js",
+          "type": "import()",
+          "userRequest": "./orders.page.js",
+          "loc": "9:22-48"
+        }
+      ],
+      "usedExports": true,
+      "providedExports": [
+        "render"
+      ],
+      "optimizationBailout": [
+        "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/main.js (referenced with import())"
+      ],
+      "depth": 1,
+      "source": "import { table } from './table.js';\n\nexport const render = () => `<h1>Orders</h1>${table([12.5, 99, 1234.5])}`;\n"
+    },
+    {
+      "id": 4,
+      "identifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+      "name": "./src/settings.page.js",
+      "index": 5,
+      "index2": 5,
+      "size": 102,
+      "cacheable": true,
+      "built": true,
+      "optional": false,
+      "prefetched": false,
+      "chunks": [
+        2
+      ],
+      "issuer": "C:\\fixture\\webpack4-app\\src\\main.js",
+      "issuerId": 1,
+      "issuerName": "./src/main.js",
+      "issuerPath": [
+        {
+          "id": 1,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "name": "./src/main.js"
+        }
+      ],
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "assets": [],
+      "reasons": [
+        {
+          "moduleId": 1,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "module": "./src/main.js",
+          "moduleName": "./src/main.js",
+          "type": "import()",
+          "userRequest": "./settings.page.js",
+          "loc": "10:24-52"
+        }
+      ],
+      "usedExports": true,
+      "providedExports": [
+        "render"
+      ],
+      "optimizationBailout": [
+        "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/main.js (referenced with import())"
+      ],
+      "depth": 1,
+      "source": "import { table } from './table.js';\n\nexport const render = () => `<h1>Settings</h1>${table([1, 2])}`;\n"
+    },
+    {
+      "id": 5,
+      "identifier": "C:\\fixture\\webpack4-app\\src\\table.js",
+      "name": "./src/table.js",
+      "index": 4,
+      "index2": 3,
+      "size": 340,
+      "cacheable": true,
+      "built": true,
+      "optional": false,
+      "prefetched": false,
+      "chunks": [
+        1,
+        2
+      ],
+      "issuer": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+      "issuerId": 3,
+      "issuerName": "./src/orders.page.js",
+      "issuerPath": [
+        {
+          "id": 1,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "name": "./src/main.js"
+        },
+        {
+          "id": 3,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+          "name": "./src/orders.page.js"
+        }
+      ],
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "assets": [],
+      "reasons": [
+        {
+          "moduleId": 3,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+          "module": "./src/orders.page.js",
+          "moduleName": "./src/orders.page.js",
+          "type": "harmony side effect evaluation",
+          "userRequest": "./table.js",
+          "loc": "1:0-35"
+        },
+        {
+          "moduleId": 3,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\orders.page.js",
+          "module": "./src/orders.page.js",
+          "moduleName": "./src/orders.page.js",
+          "type": "harmony import specifier",
+          "userRequest": "./table.js",
+          "loc": "3:46-51"
+        },
+        {
+          "moduleId": 4,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+          "module": "./src/settings.page.js",
+          "moduleName": "./src/settings.page.js",
+          "type": "harmony side effect evaluation",
+          "userRequest": "./table.js",
+          "loc": "1:0-35"
+        },
+        {
+          "moduleId": 4,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\settings.page.js",
+          "module": "./src/settings.page.js",
+          "moduleName": "./src/settings.page.js",
+          "type": "harmony import specifier",
+          "userRequest": "./table.js",
+          "loc": "3:48-53"
+        }
+      ],
+      "usedExports": [
+        "table"
+      ],
+      "providedExports": [
+        "table"
+      ],
+      "optimizationBailout": [],
+      "depth": 2,
+      "source": "import { money } from './shared.js';\n\n/**\n * Imported statically by two screens and by nothing the bootstrap pulls in, which is what makes the\n * bundler give it a chunk of its own: the shared chunk the whole report is about.\n */\nexport const table = rows => `<table>${rows.map(row => `<tr><td>${money(row)}</td></tr>`).join('')}</table>`;\n"
+    },
+    {
+      "id": 6,
+      "identifier": "C:\\fixture\\webpack4-app\\src\\chart.widget.js",
+      "name": "./src/chart.widget.js",
+      "index": 6,
+      "index2": 6,
+      "size": 209,
+      "cacheable": true,
+      "built": true,
+      "optional": false,
+      "prefetched": false,
+      "chunks": [
+        3
+      ],
+      "issuer": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+      "issuerId": 2,
+      "issuerName": "./src/home.page.js",
+      "issuerPath": [
+        {
+          "id": 1,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\main.js",
+          "name": "./src/main.js"
+        },
+        {
+          "id": 2,
+          "identifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "name": "./src/home.page.js"
+        }
+      ],
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "assets": [],
+      "reasons": [
+        {
+          "moduleId": 2,
+          "moduleIdentifier": "C:\\fixture\\webpack4-app\\src\\home.page.js",
+          "module": "./src/home.page.js",
+          "moduleName": "./src/home.page.js",
+          "type": "import()",
+          "userRequest": "./chart.widget.js",
+          "loc": "5:9-36"
+        }
+      ],
+      "usedExports": true,
+      "providedExports": [
+        "draw"
+      ],
+      "optimizationBailout": [
+        "ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/home.page.js (referenced with import())"
+      ],
+      "depth": 2,
+      "source": "import { money } from './shared.js';\n\n/** Deferred from inside a screen. Nobody navigates to it. */\nexport const draw = () => `<svg role=\"img\" aria-label=\"${money(42)}\"><rect width=\"10\" height=\"10\" /></svg>`;\n"
+    }
+  ],
+  "filteredModules": 0,
+  "logging": {
+    "webpack.buildChunkGraph.visitModules": {
+      "entries": [],
+      "filteredEntries": 8,
+      "debug": false
+    }
+  },
+  "children": [
+    {
+      "errors": [],
+      "warnings": [],
+      "publicPath": "",
+      "outputPath": "C:\\fixture\\webpack4-app\\dist",
+      "assetsByChunkName": {
+        "HtmlWebpackPlugin_0": "__child-HtmlWebpackPlugin_0"
+      },
+      "assets": [
+        {
+          "name": "__child-HtmlWebpackPlugin_0",
+          "size": 4215,
+          "chunks": [
+            0
+          ],
+          "chunkNames": [
+            "HtmlWebpackPlugin_0"
+          ],
+          "info": {},
+          "emitted": false
+        }
+      ],
+      "filteredAssets": 0,
+      "entrypoints": {
+        "HtmlWebpackPlugin_0": {
+          "chunks": [
+            0
+          ],
+          "assets": [
+            "__child-HtmlWebpackPlugin_0"
+          ],
+          "children": {},
+          "childAssets": {}
+        }
+      },
+      "namedChunkGroups": {
+        "HtmlWebpackPlugin_0": {
+          "chunks": [
+            0
+          ],
+          "assets": [
+            "__child-HtmlWebpackPlugin_0"
+          ],
+          "children": {},
+          "childAssets": {}
+        }
+      },
+      "chunks": [
+        {
+          "id": 0,
+          "rendered": true,
+          "initial": true,
+          "entry": true,
+          "size": 538,
+          "names": [
+            "HtmlWebpackPlugin_0"
+          ],
+          "files": [
+            "__child-HtmlWebpackPlugin_0"
+          ],
+          "hash": "5849f03c4faf32ce8041",
+          "siblings": [],
+          "parents": [],
+          "children": [],
+          "childrenByOrder": {},
+          "modules": [
+            {
+              "id": 0,
+              "identifier": "C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\lib\\loader.js!C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\default_index.ejs",
+              "name": "./node_modules/html-webpack-plugin/lib/loader.js!./node_modules/html-webpack-plugin/default_index.ejs",
+              "index": 0,
+              "index2": 0,
+              "size": 538,
+              "cacheable": true,
+              "built": true,
+              "optional": false,
+              "prefetched": false,
+              "chunks": [
+                0
+              ],
+              "issuer": null,
+              "issuerId": null,
+              "issuerName": null,
+              "issuerPath": null,
+              "failed": false,
+              "errors": 0,
+              "warnings": 0,
+              "assets": [],
+              "reasons": [
+                {
+                  "moduleId": null,
+                  "moduleIdentifier": null,
+                  "module": null,
+                  "moduleName": null,
+                  "type": "single entry",
+                  "userRequest": "C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\lib\\loader.js!C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\default_index.ejs",
+                  "loc": "HtmlWebpackPlugin_0"
+                }
+              ],
+              "usedExports": true,
+              "providedExports": null,
+              "optimizationBailout": [
+                "ModuleConcatenation bailout: Module is not an ECMAScript module"
+              ],
+              "depth": 0,
+              "source": "var _ = __non_webpack_require__(\"C:\\\\fixture\\\\webpack4-app\\\\node_modules\\\\lodash\\\\lodash.js\");module.exports = function (templateParams) { with(templateParams) {return (function(data) {\nvar __t, __p = '';\n__p += '<!DOCTYPE html>\\n<html>\\n  <head>\\n    <meta charset=\"utf-8\">\\n    <title>' +\n((__t = ( htmlWebpackPlugin.options.title )) == null ? '' : __t) +\n'</title>\\n  </head>\\n  <body>\\n  </body>\\n</html>';\nreturn __p\n})();}}"
+            }
+          ],
+          "filteredModules": 0,
+          "origins": [
+            {
+              "module": "",
+              "moduleIdentifier": "",
+              "moduleName": "",
+              "loc": "HtmlWebpackPlugin_0",
+              "request": "C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\lib\\loader.js!C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\default_index.ejs",
+              "reasons": []
+            }
+          ]
+        }
+      ],
+      "modules": [
+        {
+          "id": 0,
+          "identifier": "C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\lib\\loader.js!C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\default_index.ejs",
+          "name": "./node_modules/html-webpack-plugin/lib/loader.js!./node_modules/html-webpack-plugin/default_index.ejs",
+          "index": 0,
+          "index2": 0,
+          "size": 538,
+          "cacheable": true,
+          "built": true,
+          "optional": false,
+          "prefetched": false,
+          "chunks": [
+            0
+          ],
+          "issuer": null,
+          "issuerId": null,
+          "issuerName": null,
+          "issuerPath": null,
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "assets": [],
+          "reasons": [
+            {
+              "moduleId": null,
+              "moduleIdentifier": null,
+              "module": null,
+              "moduleName": null,
+              "type": "single entry",
+              "userRequest": "C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\lib\\loader.js!C:\\fixture\\webpack4-app\\node_modules\\html-webpack-plugin\\default_index.ejs",
+              "loc": "HtmlWebpackPlugin_0"
+            }
+          ],
+          "usedExports": true,
+          "providedExports": null,
+          "optimizationBailout": [
+            "ModuleConcatenation bailout: Module is not an ECMAScript module"
+          ],
+          "depth": 0,
+          "source": "var _ = __non_webpack_require__(\"C:\\\\fixture\\\\webpack4-app\\\\node_modules\\\\lodash\\\\lodash.js\");module.exports = function (templateParams) { with(templateParams) {return (function(data) {\nvar __t, __p = '';\n__p += '<!DOCTYPE html>\\n<html>\\n  <head>\\n    <meta charset=\"utf-8\">\\n    <title>' +\n((__t = ( htmlWebpackPlugin.options.title )) == null ? '' : __t) +\n'</title>\\n  </head>\\n  <body>\\n  </body>\\n</html>';\nreturn __p\n})();}}"
+        }
+      ],
+      "filteredModules": 0,
+      "logging": {
+        "webpack.buildChunkGraph.visitModules": {
+          "entries": [],
+          "filteredEntries": 2,
+          "debug": false
+        }
+      },
+      "children": [],
+      "name": "HtmlWebpackCompiler"
+    }
+  ]
+}

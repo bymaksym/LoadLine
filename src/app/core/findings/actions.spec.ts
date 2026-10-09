@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { type Analysis } from '../analysis/analysis.types';
-import { type GraphInsights } from '../analysis/insights.types';
+import { type GraphInsights } from '../analysis/graph/insights.types';
 import { formatSaving, rankActions, remainingInUnit, savingInUnit, totalSaving, unitScale } from './actions';
 import { type Finding, type FindingKind } from './finding.types';
 

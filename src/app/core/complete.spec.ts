@@ -17,11 +17,11 @@
 import { describe, expect, it } from 'vitest';
 import { analyze } from './analysis/analysis';
 import { type Metafile, type MetafileImport } from './analysis/metafile.types';
-import { buildSearchIndex, countMatches, queryIndex } from './analysis/search';
+import { buildSearchIndex, countMatches, queryIndex } from './analysis/views/search';
+import { announcedIn } from './build-text/index-html';
 import { diagnosticsOf } from './diagnostics/diagnostics';
-import { plainText } from './findings/finding-plain';
 import { buildFindings } from './findings/findings';
-import { announcedIn } from './intake/index-html';
+import { plainText } from './findings/text/finding-plain';
 import { SAMPLE_PAGE, SAMPLE_STATS } from './sample/sample-build';
 
 /**

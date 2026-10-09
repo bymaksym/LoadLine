@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { type ChunkInfo } from '@core/analysis/analysis.types';
-import { filesOfChunk } from '@core/analysis/path-tree';
-import { type PathItem } from '@core/analysis/path-tree.types';
+import { filesOfChunk } from '@core/analysis/views/path-tree';
+import { type PathItem } from '@core/analysis/views/path-tree.types';
 import { type Verdict } from '@core/criteria/criteria.types';
 import { elidePath, formatBytes } from '@core/format/format.utils';
 import { effectiveBootBytes, worthOfShared } from '@core/worth/worth';

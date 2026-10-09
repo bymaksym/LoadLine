@@ -1,8 +1,8 @@
 import { afterNextRender, Component, computed, type ElementRef, inject, signal, viewChild } from '@angular/core';
 import { type Zone } from '@core/analysis/analysis.types';
-import { type BlastRadius, blastRadiusOf } from '@core/analysis/blast';
-import { queryIndex } from '@core/analysis/search';
-import { type SearchResult } from '@core/analysis/search.types';
+import { type BlastRadius, blastRadiusOf } from '@core/analysis/graph/blast';
+import { queryIndex } from '@core/analysis/views/search';
+import { type SearchResult } from '@core/analysis/views/search.types';
 import { baseName, chainSteps, projectFolderOf } from '@core/format/format.utils';
 import { pct } from '@core/i18n/ui-strings';
 import { ChainComponent } from '@shared/chain/chain';

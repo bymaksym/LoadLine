@@ -1,0 +1,48 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 8515,
+        "rawBytes": 22115,
+        "files": 3
+    },
+    "firstTrip": {
+        "total": 9099,
+        "files": 6
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 1,
+        "serviceWorker": 1,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "/article/[slug]: own 12187, shared 1099, total 21801",
+        "/[p]: own 393, shared 6527, total 15435",
+        "/: own 298, shared 6527, total 15340",
+        "/profile/[user]: own 655, shared 6031, total 15201",
+        "/profile/[user]/[view]: own 655, shared 6031, total 15201",
+        "/editor/[slug]: own 468, shared 3221, total 12204",
+        "/editor: own 343, shared 3221, total 12079",
+        "/settings: own 2180, shared 917, total 11612",
+        "/register: own 1514, shared 917, total 10946",
+        "/login: own 1453, shared 917, total 10885",
+        "/profile: own 238, shared 0, total 8753"
+    ],
+    "deferred": [],
+    "shared": 7,
+    "workers": 0,
+    "onDemand": 0,
+    "data": 0,
+    "signals": [
+        "mid bootWaves: The first load takes 2 round trips before anything is painted",
+        "mid assetOrigin: The render-blocking stylesheets come from 3 hosts that are not the page's own",
+        "info cascadeShape: client/chunk.ea3ca6d4.js names 12 chunks and is imported by 15: touching any leaf moves the whole build",
+        "info noSourceMaps: This folder carries no .map files, and that cuts the report short",
+        "info duplicateAssets: 204 B in a file that ships twice under different names",
+        "info unhashable: 3 files carry no hash in the name",
+        "info devLeftovers: One development marker in the build, author unknown",
+        "info situationMissing: 4 unanswered questions would change what this report says"
+    ]
+}

@@ -241,8 +241,11 @@ export const readPackageJson = (json: unknown): PackageContext | null => {
         name: typeof pkg.name === 'string' && pkg.name.trim() ? pkg.name.trim() : null,
         scripts,
         // What the project asks for by name. It is what tells a dependency you chose from one that
-        // came along with something else, which changes the fix and not the weight.
-        dependencies: Object.keys({ ...pkg.dependencies }),
+        // came along with something else, which changes the fix and not the weight. Both lists:
+        // a bundled application keeps what it ships in `devDependencies` as often as not — Vite
+        // and Nuxt scaffold it that way — and reading `dependencies` alone called `nuxt` itself
+        // "a package you never asked for".
+        dependencies: Object.keys(deps),
         zoneDependency: 'zone.js' in deps,
         angularVersion: typeof angularVersion === 'string' ? angularVersion.replace(/^[\^~>=<\s]+/, '') : null,
     };
@@ -250,13 +253,15 @@ export const readPackageJson = (json: unknown): PackageContext | null => {
 
 /**
  * Is the project zoneless? `angular.json` decides when it lists the polyfills; otherwise the
- * absence of `zone.js` in `package.json` does. `null` when neither file is loaded.
+ * absence of `zone.js` in `package.json` does — of an Angular project. `null` when neither file is
+ * loaded, and for a `package.json` with no `@angular/core`: a Svelte, React or Nuxt app has no
+ * zone.js either, and was told its change detection runs on signals.
  */
 export const isZoneless = (context: ProjectContext): boolean | null => {
     if (context.angular?.zonePolyfill !== null && context.angular?.zonePolyfill !== undefined) {
         return !context.angular.zonePolyfill;
     }
-    return context.pkg ? !context.pkg.zoneDependency : null;
+    return context.pkg?.angularVersion ? !context.pkg.zoneDependency : null;
 };
 
 // --- Pipeline ---------------------------------------------------------------------------------
@@ -463,6 +468,13 @@ const jobOf = (lines: string[], index: number): string | null => {
 };
 
 /**
+ * What an `echo` or a `printf` prints: text, never a command. This project's own pipeline tells
+ * whoever broke it to "Run `pnpm build`" from an `echo`, and that message was read as a step
+ * building the default configuration.
+ */
+const PRINTED = /\b(?:echo|printf)\s+(?:"[^"]*"|'[^']*'|[^&|;]*)/g;
+
+/**
  * Every build command found in a pipeline file, with the configuration it resolves to.
  * Comments are dropped first: a commented-out `ng build` is not a build.
  */
@@ -483,6 +495,7 @@ export const readPipeline = (fileName: string, text: string, scripts: Record<str
         const command = line
             .replace(/^\s*-\s*/, '')
             .replace(/^\s*(?:run|script|before_script|after_script|commands?|steps?|bash|pwsh):\s*/, '')
+            .replaceAll(PRINTED, '')
             .trim();
         if (!command || /^[\w-]+:$/.test(command)) {
             continue;

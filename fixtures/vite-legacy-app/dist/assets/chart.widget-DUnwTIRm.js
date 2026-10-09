@@ -1,0 +1,1 @@
+import{n as e}from"./index-zmN3oZ5D.js";var t=()=>`<svg role="img" aria-label="${e(42)}"><rect width="10" height="10" /></svg>`;export{t as draw};

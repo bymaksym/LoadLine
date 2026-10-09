@@ -7,8 +7,8 @@ import { type Snapshot } from '../baseline/baseline.types';
 import { RECOMMENDED } from '../criteria/criteria';
 import { readAngularJson, readPackageJson, readPipeline } from '../project/project-context';
 import { FINDING_KINDS } from './finding.types';
-import { TEXT } from './finding-text';
 import { buildComparisonFindings, buildContextFindings, buildFindings } from './findings';
+import { TEXT } from './text/finding-text';
 
 const KB = 1024;
 const c = RECOMMENDED.raw;
@@ -282,6 +282,8 @@ describe('buildComparisonFindings', () => {
 
         expect(findings.map(f => f.chip)).toEqual(['screen has grown']);
         expect(findings[0]?.target).toEqual({ tab: 'screens', key: 'src/b.page.ts' });
+        // Neither snapshot broke the screens down, so the text claims no cause.
+        expect(findings[0]?.body).not.toContain('where it comes from');
     });
 
     it('flags bootstrap growth on its own and ignores small movements', () => {
@@ -334,6 +336,7 @@ describe('buildContextFindings', () => {
     });
     const pkg = readPackageJson({
         scripts: { 'build:pre': 'ng build -c preproduction', 'build:dev': 'ng build -c development' },
+        dependencies: { '@angular/core': '^22.0.0' },
     });
     const ci =
         'stages: [build]\nbuild:pre:\n  script:\n    - pnpm run build:pre\nbuild:dev:\n  script:\n    - pnpm run build:dev\n';
@@ -458,7 +461,11 @@ describe('the list of signal kinds', () => {
             'packageBarrelRow',
             'ownBarrelRow',
             'secretBenign',
+            'secretNames',
+            'leftoverNames',
             'secretOwner',
+            'bootCauseChange',
+            'bootCauseOwn',
         ]);
         const written = Object.keys(TEXT.en).filter(key => !parts.has(key));
 

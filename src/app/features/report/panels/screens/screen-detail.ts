@@ -1,9 +1,9 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { type ChunkInfo, type ScreenCost } from '@core/analysis/analysis.types';
-import { filesOfChunk } from '@core/analysis/path-tree';
-import { type PathItem } from '@core/analysis/path-tree.types';
-import { granularityOf } from '@core/analysis/shape';
-import { whyHere } from '@core/analysis/why-here';
+import { whyHere } from '@core/analysis/graph/why-here';
+import { granularityOf } from '@core/analysis/screens/shape';
+import { filesOfChunk } from '@core/analysis/views/path-tree';
+import { type PathItem } from '@core/analysis/views/path-tree.types';
 import { formatBytes } from '@core/format/format.utils';
 import { copyText } from '@shared/clipboard.utils';
 import { ExplainComponent } from '@shared/explain/explain';
@@ -12,6 +12,7 @@ import { BytesPipe } from '@shared/pipes/bytes.pipe';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
+import { ScreenTripsComponent } from './screen-trips';
 
 /**
  * What one screen is made of, under its row: where it comes from, why it is in the build, the three
@@ -25,7 +26,7 @@ import { ReportNav } from '@state/report-nav.service';
     selector: 'app-screen-detail',
     templateUrl: './screen-detail.html',
     styleUrl: './screen-detail.scss',
-    imports: [BytesPipe, PathTreeComponent, ExplainComponent],
+    imports: [BytesPipe, PathTreeComponent, ExplainComponent, ScreenTripsComponent],
     /*
      * The same block an expanded table row opens (`tr.detail`), so the parts inside it — the
      * origin line, the chain, the three-way split — are named `detail__…` here as they are there.

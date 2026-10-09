@@ -18,18 +18,27 @@ would otherwise be fifty identical marks.
                         <app-explain [text]="item.help" />
                     }
                 </span>
-                <span aria-hidden="true">·</span>
-                <button
-                    class="link-btn"
-                    type="button"
-                    [title]="t.markScreenHelp"
-                    (click)="store.markAs(item.source, 'screen')"
-                >
-                    {{ t.markScreen }}
-                </button>
+                @if (item.markable) {
+                    <span aria-hidden="true">·</span>
+                    <button
+                        class="link-btn"
+                        type="button"
+                        [title]="t.markScreenHelp"
+                        (click)="store.markAs(item.source, 'screen')"
+                    >
+                        {{ t.markScreen }}
+                    </button>
+                }
             </span>
         }
     </div>
+}
+
+@if (untabled()) {
+    <p class="marks">{{ t.noRouteTable }}</p>
+}
+@if (routeCss(); as css) {
+    <p class="marks">{{ css }}</p>
 }
 
 @if (marked(); as marks) {

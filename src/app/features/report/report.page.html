@@ -171,16 +171,26 @@
                 ·
                 <button class="link-btn" type="button" (click)="nav.go('criteria')">{{ t.criteriaEdit }}</button>
             </span>
-            <span aria-hidden="true">·</span>
-            <span>
-                {{ store.splitSource() === 'sourcemap' ? t.splitExact : t.splitApprox }}
-                <app-explain [text]="t.splitHelp" />
-            </span>
+            <!-- A graph read from a folder without maps has no metafile and no split to name. -->
+            @if (store.splitSource() === 'sourcemap' || !store.derived()) {
+                <span aria-hidden="true">·</span>
+                <span>
+                    {{ store.splitSource() === 'sourcemap' ? t.splitExact : t.splitApprox }}
+                    <app-explain [text]="t.splitHelp" />
+                </span>
+            }
             @if (analysis.serverOutputs > 0) {
                 <span aria-hidden="true">·</span>
                 <span>
                     {{ t.serverIgnored(analysis.serverOutputs) }}
                     <app-explain [text]="t.serverIgnoredHelp" />
+                </span>
+            }
+            @if (offPageCount() > 0) {
+                <span aria-hidden="true">·</span>
+                <span>
+                    {{ t.offPageIgnored(analysis.offPage) }}
+                    <app-explain [text]="t.offPageIgnoredHelp" />
                 </span>
             }
         </p>

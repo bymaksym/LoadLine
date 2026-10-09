@@ -35,6 +35,11 @@
    rounded corner without becoming a scroll container, which would unpin the header from the page.
 */
 .screens {
+    /*
+       And positioned: where it scrolls sideways, below, it has to hold the `.sr-only` labels of its
+       cells, or they are placed against the page and widen it past a phone's width.
+    */
+    position: relative;
     overflow: clip;
 }
 
@@ -167,6 +172,12 @@
         font-weight: 600;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* The routes that open the screen, after its name: a hint, so lighter than the name. */
+    &__routes {
+        font-weight: 400;
+        color: var(--muted);
     }
 
     &__num {

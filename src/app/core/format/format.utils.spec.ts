@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     baseName,
     chainSteps,
+    chunkLabel,
     elidePath,
     formatBytes,
     formatDelta,
@@ -9,7 +10,26 @@ import {
     projectFolderOf,
     screenLabel,
     shortName,
+    uniqueLabels,
 } from './format.utils';
+
+describe('chunkLabel', () => {
+    it('names a screen known only by its chunk the way the bundler named the chunk', () => {
+        // Real names: Vite 8 (Rolldown), Rollup 2, esbuild.
+        expect(chunkLabel('assets/Article-BZRh73np.js')).toBe('Article');
+        expect(chunkLabel('assets/index--QDPRcGB.js')).toBe('index');
+        expect(chunkLabel('Profile-f07d7d5d.js')).toBe('Profile');
+        expect(chunkLabel('orders.page-DgHWSolo.js')).toBe('orders.page');
+        // Sapper (Rollup 1): the hash after a dot.
+        expect(chunkLabel('client/[slug].df9e6d95.js')).toBe('[slug]');
+        expect(chunkLabel('client/chunk.ea3ca6d4.js')).toBe('chunk.ea3ca6d4');
+    });
+
+    it('leaves a name that is only a hash, and Angular’s chunk-, as they are: they name nothing', () => {
+        expect(chunkLabel('assets/0fPdmq0U.js')).toBe('0fPdmq0U');
+        expect(chunkLabel('chunk-AHP6GCD5.js')).toBe('chunk-AHP6GCD5');
+    });
+});
 
 describe('formatBytes', () => {
     it('stays in kB up to the megabyte, so a column of figures compares at a glance', () => {
@@ -37,6 +57,21 @@ describe('packageOf', () => {
     it('skips the extra segment pnpm puts in the path', () => {
         expect(packageOf('node_modules/.pnpm/rxjs@7.8.0/node_modules/rxjs/index.js')).toBe('rxjs');
         expect(shortName('node_modules/.pnpm/rxjs@7.8.0/node_modules/rxjs/index.js')).toBe('rxjs/index.js');
+    });
+
+    it('reads the Bazel output folder Angular’s own source maps point to as the Angular package', () => {
+        // Real paths, from the source maps of an Angular 22 build installed with pnpm.
+        const forms = 'node_modules/.pnpm/k8-fastbuild-ST-fdfa778d11ba/bin/packages/forms/src/validators.ts';
+        expect(packageOf(forms)).toBe('@angular/forms');
+        expect(shortName(forms)).toBe('@angular/forms/src/validators.ts');
+        expect(
+            packageOf('node_modules/.pnpm/k8-fastbuild-ST-fdfa778d11ba/bin/packages/common/http/src/params.ts'),
+        ).toBe('@angular/common');
+        expect(
+            packageOf('node_modules/.pnpm/darwin_arm64-fastbuild-ST-fdfa778d11ba/bin/src/material/core/ripple.ts'),
+        ).toBe('@angular/material');
+        // npm hoists the same folder straight under node_modules.
+        expect(packageOf('node_modules/k8-opt/bin/packages/router/src/router.ts')).toBe('@angular/router');
     });
 
     it('returns null for project code, which is what tells the two apart', () => {
@@ -78,6 +113,32 @@ describe('projectFolderOf', () => {
     it('a file with nowhere to go keeps what it has', () => {
         expect(projectFolderOf('main.ts')).toBe('main.ts');
         expect(projectFolderOf('src/main.ts')).toBe('src');
+    });
+});
+
+/**
+ * Nuxt's file-system routes, as nuxt/movies has them: alone, two screens were `index` and two were
+ * `[id]`, and the gates said "Screen index downloads 191 kB" about two different screens.
+ */
+describe('screenLabel · file-system routes', () => {
+    it('names a route by its folder, as the router does', () => {
+        expect(screenLabel('app/pages/person/[id].vue')).toBe('person/[id]');
+        expect(screenLabel('app/pages/[type]/index.vue')).toBe('[type]');
+        expect(screenLabel('app/pages/index.vue')).toBe('index');
+        expect(screenLabel('app/pages/genre/[no]/movie.vue')).toBe('genre/[no]/movie');
+        // The `index` under a parameter is the path too, as its siblings are (Sapper's RealWorld).
+        expect(screenLabel('src/routes/profile/[user]/index.svelte')).toBe('profile/[user]');
+        expect(screenLabel('src/routes/profile/[user]/[view].svelte')).toBe('profile/[user]/[view]');
+    });
+
+    it('tells two routes ending in the same name apart by the folders above them', () => {
+        const labelled = uniqueLabels([
+            { label: 'orders', source: 'src/pages/orders.vue' },
+            { label: 'orders', source: 'src/pages/admin/orders.vue' },
+            { label: 'home', source: 'src/pages/home.vue' },
+        ]);
+
+        expect(labelled.map(entry => entry.label)).toEqual(['orders', 'admin/orders', 'home']);
     });
 });
 

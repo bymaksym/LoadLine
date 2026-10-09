@@ -15,6 +15,7 @@ import { PanelHeaderComponent } from '../panel-header/panel-header';
 import { revealOnFocus } from '../reveal-on-focus.utils';
 import { NotScreensComponent } from './not-screens';
 import { ScreenDetailComponent } from './screen-detail';
+import { ScreenGridComponent } from './screen-grid';
 
 type SortKey = 'total' | 'shared' | 'own' | 'waves' | 'name' | 'delta';
 
@@ -56,6 +57,7 @@ interface DeltaCell {
         NotScreensComponent,
         SortHeaderComponent,
         ScreenDetailComponent,
+        ScreenGridComponent,
         ExplainComponent,
     ],
 })
@@ -279,6 +281,15 @@ export class ScreensTabComponent {
             this.verdictFilter.set('all');
             this.expanded.set(key);
         });
+    }
+
+    /**
+     * The routes that open a screen, when they say something its name does not: `global-feed,
+     * my-feed, tag` after `Home`. `null` without a route table, or when the name already is one.
+     */
+    protected routesOf(screen: ScreenCost): string | null {
+        const other = (screen.routes ?? []).filter(route => route !== screen.label);
+        return other.length > 0 ? other.join(', ') : null;
     }
 
     protected totalVerdict(screen: ScreenCost): Verdict {

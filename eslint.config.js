@@ -92,7 +92,6 @@ module.exports = defineConfig([
             '@angular-eslint/use-lifecycle-interface': 'error',
 
             // TypeScript best practices
-            '@typescript-eslint/consistent-indexed-object-style': 'off',
             // Inline `import type` for type-only imports (inline avoids clashing with import-x/no-duplicates)
             '@typescript-eslint/consistent-type-imports': [
                 'error',
@@ -206,6 +205,8 @@ module.exports = defineConfig([
             'require-await': 'error',
 
             // Unused imports
+            // `@typescript-eslint/no-unused-vars` above already reports them, with the `_` convention
+            // configured; this one would report the same variable a second time.
             'unused-imports/no-unused-vars': 'off',
             'unused-imports/no-unused-imports': 'error',
 
@@ -243,18 +244,32 @@ module.exports = defineConfig([
             '@eslint-community/eslint-comments/disable-enable-pair': ['error', { allowWholeFile: true }],
 
             // Unicorn
+            // `null` is "known to be absent" all through the report, and the JSON contract relies on it:
+            // `JSON.stringify` drops a field set to `undefined`, so "no baseline" would vanish from the
+            // output instead of saying so. 817 uses on 08/10/2026.
             'unicorn/no-null': 'off',
             'unicorn/consistent-function-scoping': 'off', // Angular: helpers next to the component that uses them
-            'unicorn/prefer-https': 'off',
+            // Class fields initialise in the order they are written, and a `computed()` that reads an
+            // `inject()`ed service has to come after it. Ordering by visibility fights that order.
             'unicorn/consistent-class-member-order': 'off',
+            // Six places, each choosing between two complete values on purpose: pushed inside a
+            // template literal or a call, the ternary hides which of the two results is chosen.
             'unicorn/prefer-minimal-ternary': 'off',
+            // Its four hits turn a result into a value, or a failure into a fallback, inside one
+            // expression; with `await` each becomes a statement or a try/catch around a single call.
             'unicorn/prefer-await': 'off',
+            // 87 hits on names that already read as predicates (`anyGate`, `open`, `takesValue`):
+            // an `is`/`has` prefix adds a word and no meaning.
             'unicorn/consistent-boolean-name': 'off',
+            // Its four hits read records parsed from a metafile, keyed by path, whose values are
+            // objects and never falsy: `inputs[path]` is the existence check, and a correct one.
             'unicorn/no-computed-property-existence-check': 'off',
-            'unicorn/no-top-level-side-effects': 'off',
-            'unicorn/no-optional-chaining-on-undeclared-variable': 'off',
+            // It asks for `Iterator#toArray()`, which Node has only from 22 and browsers only since
+            // 2025 (not "widely available"): the same trap as `prefer-set-methods` below, for the
+            // command on Node 20.19 and for the page.
             'unicorn/prefer-iterator-to-array': 'off',
-            'unicorn/class-reference-in-static-methods': 'off',
+            // 168 hits, and the names it wants are not clearer: `args.ts` → `arguments.ts`, `parseArgs`
+            // → `parseArguments` across a CLI where `args` is the word every reader expects.
             'unicorn/name-replacements': 'off',
             'unicorn/no-array-reduce': 'off', // `reduce` is idiomatic for building maps/totals; very opinionated rule
             'unicorn/no-non-function-verb-prefix': 'off', // false positives with signals (`store`, `filter`)
@@ -270,7 +285,23 @@ module.exports = defineConfig([
             // 20.19. Following it would pass every check here and break `npx` for that floor with
             // "difference is not a function". Measured on 02/10/2026 with Node 20.19.0.
             'unicorn/prefer-set-methods': 'off',
-            '@angular-eslint/no-input-rename': 'off',
+            // The same trap again, and with an autofix: it rewrites `new Promise()` into
+            // `Promise.withResolvers()`, which Node has only from 22. The rule below forbids that call
+            // in the code the command runs, and every tsconfig stops at `ES2023`, whose lib has no
+            // `withResolvers`: left on, the day it fires its fix breaks the build it was meant to tidy.
+            'unicorn/prefer-promise-with-resolvers': 'off',
+            // New in unicorn 77 (08/10/2026): it wants every `/** */` written without the `*` at the
+            // start of each line. 927 hits, and the asterisks are the JSDoc this whole project is
+            // written in — the form TypeScript, Prettier and every editor expect.
+            'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
+            // Widened in unicorn 77 to read `x || y` and `x ?? y` on a parameter as a missing default.
+            // A default replaces only `undefined`: four of its five hits here catch `''` from a
+            // `<select>` or an empty cell, or the `null` a lock file gives, and would stop doing so.
+            'unicorn/prefer-default-parameters': 'off',
+            // New in unicorn 77. Its five hits are ternaries inside a `flatMap` whose two branches are
+            // both lists — `cond ? [a, b] : [a]`, "one or two". Unwrapping one of them leaves a ternary
+            // that returns a list on one side and a single value on the other.
+            'unicorn/no-unnecessary-array-flat-map': 'off',
         },
     },
     // The rules that need types (unawaited promises, uncalled signals, non-exhaustive switches) live
@@ -452,7 +483,7 @@ module.exports = defineConfig([
         // words would only force it to be split by the alphabet, which helps nobody. The signals'
         // text is the same thing in a different place: both languages of one signal have to be
         // read side by side, and splitting the file by signal would scatter exactly that.
-        files: ['src/app/core/i18n/en.ts', 'src/app/core/i18n/es.ts', 'src/app/core/findings/finding-text.ts'],
+        files: ['src/app/core/i18n/en.ts', 'src/app/core/i18n/es.ts', 'src/app/core/findings/text/finding-text.ts'],
         rules: {
             'max-lines': 'off',
         },
@@ -505,9 +536,28 @@ module.exports = defineConfig([
         // and loading a build `loadline --html` wrote went to `app.ts` rather than here.
         // Lowered to 865 the same day: the signals from the folder were written out twice, once per
         // list of findings, and are one private method now (857 lines after it).
+        // Raised to 875 on 09/10/2026 (five real apps): the report named by the build's own page
+        // title and folder when no context file was loaded, the gzip figure for a file shipped
+        // without its `.br`, and the unit scale handed to the scan and dependency signals. The
+        // name itself is worked out in `core/project/project-name.ts`; what is here is reading it.
+        // Raised to 880 the same day (open items of that round): the route table read with the
+        // graph, kept with the session and handed to the analysis, and the weight of each file by
+        // its path for the files that share a name. The preload lists and the routes share one
+        // signal, so it is the hand-over that grew and not the state.
+        // Raised to 890 on 09/10/2026 (five pre-2020 apps): build.screens of a dropped loadline.json
+        // merged under the clicks of the session, and build.page handed to the page finder.
+        // Raised to 900 on 09/10/2026 (extends and forbidden): the folder read again when a
+        // loadline.json dropped after it changes build.entries, ignore or page, and the forbidden
+        // signals listed beside the context ones. The rules are in core/findings/forbidden.ts.
+        // Raised to 910 on 09/10/2026 (webpack stats, ownership): every door a stats file comes in
+        // by — the file, the baseline, the previous folder, the last session — translates webpack's,
+        // and build.own and build.dependencies of a dropped file are handed to the analysis; then
+        // 915 the same day, for the weights of the folder handed to the caching report.
+        // Raised to 925 on 09/10/2026: one door for a folder, which reads the stats file inside it
+        // however the folder came in, and the drop of a folder the browser would not list.
         files: ['src/app/state/report.store.ts'],
         rules: {
-            'max-lines': ['error', { max: 865, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 925, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -524,9 +574,52 @@ module.exports = defineConfig([
         // file grew by the bookkeeping they need and by nothing else.
         // Raised to 570 on 10/09/2026 (CHECKLIST §2.5): the width of each round trip, which is the
         // half of the shape a depth figure hides. One line per screen and one for the first load.
+        // Raised to 590 on 09/10/2026 (five real apps): screens reached through a lazy route file
+        // pay for it, packages and workers loaded on demand get lists of their own, and two screens
+        // named alike are told apart. The walks are in `route-files.ts` and `entries.ts`; what grew
+        // here is handing them what they need and taking back what they found.
+        // Raised to 595 on 09/10/2026 (open items of that round): the route table read out of the
+        // code, which names the screens of a build without maps and sets apart the lazy chunks no
+        // route opens. Reading it is in `route-table.ts` and judging it in `route-files.ts`.
+        // Raised to 600 on 09/10/2026 (five pre-2020 apps): the files no screen downloads — the
+        // nomodule copy, a service worker — counted and handed on, the duplicate copies taken only
+        // from chunks the application reaches, and screens without maps told apart by their hash.
+        // Raised to 610 on 09/10/2026 (folders split): no code added. The files it imports moved one
+        // folder down, and the longer paths broke one import into eight lines.
+        // Raised to 615 on 09/10/2026 (webpack stats, the tool): what webpack says travels together
+        // stands in for a folder's preload lists, and the tool that wrote the build is handed on
+        // for the advice. Reading both is in `intake/webpack-stats.ts` and `tool.ts`.
         files: ['src/app/core/analysis/analysis.ts'],
         rules: {
-            'max-lines': ['error', { max: 570, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 615, skipBlankLines: true, skipComments: true }],
+        },
+    },
+    {
+        // Reading a build folder into a graph: one walk, with the source maps read on the way. It sat
+        // at 400 when the folders were split on 09/10/2026, and the move broke one import into eight
+        // lines; capped at 410 so the next thing it grows by is a decision, not a rounding.
+        // Raised to 435 on 09/10/2026 (the tool, Stencil, route keys): the page handed to the walk
+        // and what each chunk says about the tool that wrote it, Stencil's components read as its
+        // route table, and the keys of `build.routeKeys` handed down to where the table is read.
+        // The markers themselves are in `build-text/tool-marks.ts`.
+        // Raised to 445 on 09/10/2026: Sapper's manifest read as its route table, the routes of
+        // each page resolved to their chunks. The reading is in `build-text/route-table.ts`.
+        files: ['src/app/core/intake/bundle-graph.ts'],
+        rules: {
+            'max-lines': ['error', { max: 445, skipBlankLines: true, skipComments: true }],
+        },
+    },
+    {
+        // The command's own words, in two languages side by side. Raised to 425 on 09/10/2026 (five
+        // pre-2020 apps): what was left out because no screen downloads it, and which other builds
+        // a project folder held when the newest was taken. Strings, not logic.
+        // Raised to 430 on 09/10/2026: the line that names a signal gates.failOnSignals failed on,
+        // in both languages.
+        // Raised to 440 on 09/10/2026 (round details): the scripts inline in the page as part of the
+        // first trip, and FastBoot's files among what no screen downloads, in both languages.
+        files: ['cli/text/text.ts'],
+        rules: {
+            'max-lines': ['error', { max: 440, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -540,9 +633,11 @@ module.exports = defineConfig([
         // the baseline. Eight of the ten lines are the card; the other two are what hands the
         // savings to the signals that name one, so the ranked list has something to sort by. The
         // eight new signals of IDEAS §A live in `graph.ts`, not here.
+        // Raised to 465 on 09/10/2026 (round details): the signal about what nothing reaches is told
+        // whether the graph came from a folder, where no stats.json holds a server side.
         files: ['src/app/core/findings/findings.ts'],
         rules: {
-            'max-lines': ['error', { max: 460, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 465, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -577,7 +672,17 @@ module.exports = defineConfig([
             // the front page's required/optional split and the line that replaced the load bar, the
             // lead figure's caption, the provenance legend at the foot, and the column headers and
             // empty states of the tabs that became tables. Nine strings of the old layout went.
-            'max-lines': ['error', { max: 670, skipBlankLines: true, skipComments: true }],
+            // Raised to 690 on 08/10/2026: three views drawn from figures the report already had — the
+            // bootstrap map coloured by the comparison, screens × packages, one screen trip by trip.
+            // Labels and their accessible sentences, not rewordings.
+            // Raised to 695 on 09/10/2026: the lazy entries the screens tab had no words for —
+            // packages and workers on demand, chunks no route opens — the build with no route
+            // table, and the CSS of the routes that no total counts. Five strings, all new.
+            // Raised to 700 on 09/10/2026 (five pre-2020 apps): the line that says which files of
+            // the folder no screen downloads — the nomodule copy, the service worker, build.ignore.
+            // Raised to 705 on 09/10/2026 (round details): the field that takes the entry script
+            // when the page names none this reads, its label and its button.
+            'max-lines': ['error', { max: 705, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -585,7 +690,7 @@ module.exports = defineConfig([
         // the small table and wrap helpers they share. Raised to 420 on 03/10/2026: savings and
         // the --what-if table are now in the report's unit, with the note that says when they are
         // an estimate — a figure that changed meaning, not a rewording.
-        files: ['cli/render-text.ts'],
+        files: ['cli/render/render-text.ts'],
         rules: {
             'max-lines': ['error', { max: 420, skipBlankLines: true, skipComments: true }],
         },
@@ -597,9 +702,12 @@ module.exports = defineConfig([
         // Raised to 530 on 05/09/2026 for two shapes found in real framework builds: a second
         // entry chunk the page also starts, and a duplicated copy installed outside node_modules.
         // Raised to 560 the same day for a third: a folder still holding the previous build.
+        // Raised to 590 on 08/10/2026 for two more out of an Angular 22 build installed with pnpm:
+        // a directory name carrying its peer suffix or cut short, and Angular's own source maps
+        // pointing outside the installed package.
         files: ['src/app/core/analysis/analysis.spec.ts'],
         rules: {
-            'max-lines': ['error', { max: 560, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 590, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -617,7 +725,7 @@ module.exports = defineConfig([
     },
     {
         // Node scripts: console output IS their interface.
-        files: ['scripts/**/*.mjs'],
+        files: ['scripts/**/*.mjs', 'tooling/**/*.mjs'],
         rules: {
             'no-console': 'off',
         },

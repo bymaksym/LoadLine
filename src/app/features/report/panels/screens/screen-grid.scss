@@ -1,0 +1,235 @@
+:host {
+    display: block;
+}
+
+.screen-grid {
+    margin-top: var(--space-12);
+
+    /*
+       The card scrolls sideways when the grid is wider than it, and is the container the caption
+       measures itself against so that it stays in view while the columns scroll under it.
+    */
+    &__card {
+        container-type: inline-size;
+    }
+
+    /*
+       Cells apart by a hairline of the card's own colour: a heatmap reads as tiles, and a ruled
+       table full of colour reads as a spreadsheet somebody painted.
+    */
+    &__table {
+        border-spacing: 2px;
+        border-collapse: separate;
+
+        td,
+        th {
+            border-bottom: none;
+        }
+    }
+
+    &__caption {
+        caption-side: top;
+        padding: var(--space-8) var(--space-7) var(--space-6);
+        text-align: left;
+    }
+
+    /* Pinned to the left edge: on a phone the table scrolls, the sentence about it does not. */
+    &__heading {
+        position: sticky;
+        left: var(--space-7);
+
+        display: grid;
+        gap: var(--space-2);
+
+        max-width: min(46rem, 100cqi - 2 * var(--space-7));
+    }
+
+    &__title {
+        font-size: var(--fs-2);
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    &__sub {
+        font-size: var(--fs-small);
+        color: var(--muted);
+    }
+
+    &__corner,
+    &__total-head {
+        vertical-align: bottom;
+    }
+
+    &__corner {
+        position: sticky;
+        z-index: 1;
+        left: 0;
+        background: var(--surface);
+    }
+
+    /* "In the bootstrap" / "Loaded with the screen", over the columns they gather. */
+    &__group {
+        padding: var(--space-4) var(--space-2) var(--space-2);
+        box-shadow: inset 0 -1px var(--line);
+
+        &--split {
+            box-shadow:
+                inset 0 -1px var(--line),
+                -2px 0 var(--line-strong);
+        }
+    }
+
+    /*
+       Package names turned on their side, so a column is as narrow as its figure and a dozen of
+       them fit on a laptop. Long names are cut, and the header's title carries the whole one.
+    */
+    &__col {
+        padding: var(--space-4) 0 var(--space-2);
+
+        text-align: center;
+        text-transform: none;
+        letter-spacing: 0;
+        vertical-align: bottom;
+
+        &--split {
+            box-shadow: -2px 0 var(--line-strong);
+        }
+    }
+
+    &__name {
+        rotate: 180deg;
+
+        overflow: hidden;
+        display: inline-block;
+
+        max-height: 9rem;
+
+        writing-mode: vertical-rl;
+        font-family: var(--font-data);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* The screen, pinned while the columns scroll past it. */
+    &__screen {
+        position: sticky;
+        z-index: 1;
+        left: 0;
+
+        overflow: hidden;
+
+        max-width: 14rem;
+        padding: var(--space-2) var(--space-6) var(--space-2) 0;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-small);
+        font-weight: 600;
+        color: var(--ink);
+        text-overflow: ellipsis;
+        text-transform: none;
+        letter-spacing: 0;
+        vertical-align: middle;
+
+        background: var(--surface);
+    }
+
+    &__total {
+        padding: var(--space-2) var(--space-7) var(--space-2) var(--space-6);
+        vertical-align: middle;
+    }
+
+    &__cell {
+        width: 2.75rem;
+        min-width: 2.75rem;
+        height: 1.75rem;
+        padding: 0 var(--space-2);
+        border-radius: 2px;
+
+        color: var(--ink);
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+
+        &--split {
+            box-shadow: -2px 0 var(--line-strong);
+        }
+    }
+
+    &__value {
+        font-family: var(--font-data);
+        font-size: var(--fs-label);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /*
+       Six steps of one hue, from the card's colour to the accent and past it toward the ink. The
+       first four keep the ink as text and the last two take the card's colour: every step holds
+       4.5:1 for its figure in both themes (lowest: 4.9:1, the fourth step in dark). In dark the
+       accent is light, so the scale climbs toward light there — more is brighter, in both.
+    */
+    &__cell--s1,
+    &__swatch--s1 {
+        background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+    }
+
+    &__cell--s2,
+    &__swatch--s2 {
+        background: color-mix(in oklab, var(--accent) 24%, var(--surface));
+    }
+
+    &__cell--s3,
+    &__swatch--s3 {
+        background: color-mix(in oklab, var(--accent) 38%, var(--surface));
+    }
+
+    &__cell--s4,
+    &__swatch--s4 {
+        background: color-mix(in oklab, var(--accent) 54%, var(--surface));
+    }
+
+    &__cell--s5,
+    &__swatch--s5 {
+        color: var(--surface);
+        background: color-mix(in oklab, var(--accent) 90%, var(--surface));
+    }
+
+    &__cell--s6,
+    &__swatch--s6 {
+        color: var(--surface);
+        background: color-mix(in oklab, var(--accent) 70%, var(--ink));
+    }
+
+    /* Nothing downloaded: no colour, so a gap in a column is seen as a gap. */
+    &__cell--empty {
+        background: transparent;
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3) var(--space-9);
+        align-items: center;
+
+        margin-top: var(--space-5);
+
+        font-size: var(--fs-small);
+        color: var(--muted);
+    }
+
+    &__scale {
+        display: inline-flex;
+        gap: var(--space-2);
+        align-items: center;
+    }
+
+    &__swatch {
+        width: 14px;
+        height: 10px;
+        border-radius: 2px;
+    }
+
+    /* Why the cells and the total are in different units: it wraps as a line of its own. */
+    &__note {
+        max-width: 74ch;
+    }
+}

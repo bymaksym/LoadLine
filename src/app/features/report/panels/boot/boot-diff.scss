@@ -1,0 +1,224 @@
+:host {
+    display: block;
+}
+
+/* What changed in the bootstrap: a heading, the change in one line, the legend, the map and what left. */
+.boot-diff {
+    display: grid;
+    gap: var(--space-6);
+    margin-bottom: var(--space-6);
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-body);
+        font-weight: 600;
+    }
+
+    &__sub {
+        max-width: 80ch;
+        margin: 0;
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
+
+    /* The five words with their swatches, wrapping on a narrow screen without parting a swatch from its word. */
+    &__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-8);
+
+        margin: 0;
+        padding: 0;
+
+        font-size: var(--fs-note);
+        color: var(--muted);
+        list-style: none;
+    }
+
+    &__entry {
+        display: inline-flex;
+        gap: var(--space-3);
+        align-items: center;
+    }
+
+    /*
+       The look of each change, on its swatch and on its rectangle. Colour is never alone: a grown
+       part says "+", a smaller one "−", a new one has a dashed edge and the word, and a part that
+       left has no rectangle at all and is listed apart.
+    */
+    &__key,
+    &__tile {
+        border: 1px solid var(--surface);
+        background: var(--surface-sunk);
+
+        &[data-change='grew'] {
+            border-color: var(--crit);
+            background: var(--crit-soft);
+        }
+
+        &[data-change='new'] {
+            border: 2px dashed var(--crit);
+            background: var(--crit-soft);
+        }
+
+        &[data-change='shrank'] {
+            border-color: var(--ok);
+            background: var(--ok-soft);
+        }
+
+        &[data-change='gone'] {
+            border: 1px dashed var(--ok);
+            background: var(--surface);
+        }
+    }
+
+    &__key {
+        flex: none;
+
+        box-sizing: border-box;
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+
+        &[data-change='same'] {
+            border-color: var(--line-strong);
+        }
+    }
+
+    /* The map and what left, side by side when there is room and stacked when there is not. */
+    &__layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+        gap: var(--space-7);
+        align-items: start;
+
+        &--alone {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        @media (width <= 900px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    &__map {
+        position: relative;
+
+        overflow: hidden;
+
+        min-height: 240px;
+        margin: 0;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+
+        list-style: none;
+
+        background: var(--surface);
+    }
+
+    /* One rectangle: what it weighs now is its area, how it moved its colour and its mark. */
+    &__tile {
+        position: absolute;
+
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        align-items: flex-start;
+
+        box-sizing: border-box;
+        /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the treemap lays its tiles out in px from code; the label inset stays in px so it does not grow with the font inside a tile that does not */
+        padding: 3px 5px;
+
+        color: var(--ink);
+    }
+
+    &__name,
+    &__size {
+        overflow: hidden;
+
+        max-width: 100%;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__name {
+        font-weight: 600;
+    }
+
+    &__mark {
+        margin-right: var(--space-1);
+    }
+
+    /* "your code", after a folder's name: in the interface's font, so it does not read as part of it. */
+    &__own {
+        margin-left: var(--space-2);
+
+        font-family: var(--font-ui);
+        font-size: var(--fs-label);
+        font-weight: 400;
+        color: var(--muted);
+    }
+
+    &__size {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+    }
+
+    &__delta {
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    /* What left the bootstrap: a name and the weight it took with it. */
+    &__gone {
+        min-width: 0;
+    }
+
+    &__gone-title {
+        margin: 0 0 var(--space-4);
+        font-size: var(--fs-note);
+        font-weight: 600;
+    }
+
+    &__gone-list {
+        display: grid;
+        gap: var(--space-3);
+
+        margin: 0;
+        padding: 0;
+
+        list-style: none;
+    }
+
+    &__gone-item {
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+    }
+
+    &__gone-name {
+        overflow-wrap: anywhere;
+    }
+
+    &__gone-size {
+        margin-left: auto;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    &__note {
+        margin: 0;
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
+}

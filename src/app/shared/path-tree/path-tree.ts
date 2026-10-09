@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { buildPathTree } from '@core/analysis/path-tree';
-import { type PathItem } from '@core/analysis/path-tree.types';
+import { buildPathTree } from '@core/analysis/views/path-tree';
+import { type PathItem } from '@core/analysis/views/path-tree.types';
 import { formatBytes } from '@core/format/format.utils';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';

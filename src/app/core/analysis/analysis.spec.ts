@@ -361,6 +361,49 @@ describe('analyze · duplicate packages', () => {
 
         expect(analyze(shaken, null).duplicates).toEqual([]);
     });
+
+    /** One bootstrap chunk holding every file given, each imported straight from `main.ts`. */
+    const bootOf = (paths: string[]): Metafile => ({
+        inputs: {
+            'src/main.ts': {
+                bytes: 100,
+                format: 'esm',
+                imports: paths.map(path => ({ path, kind: 'import-statement' as const })),
+            },
+            ...Object.fromEntries(paths.map(path => [path, { bytes: 200, format: 'esm' as const }])),
+        },
+        outputs: {
+            'dist/main.js': {
+                bytes: 100 + 200 * paths.length,
+                entryPoint: 'src/main.ts',
+                inputs: Object.fromEntries(
+                    ['src/main.ts', ...paths].map(path => [
+                        path,
+                        { bytesInOutput: path === 'src/main.ts' ? 100 : 200 },
+                    ]),
+                ),
+            },
+        },
+    });
+
+    it('reads the version pnpm wrote before its peer suffix, and none out of a name it cut short', () => {
+        // Real directory names, from an Angular 22 build installed with pnpm.
+        const build = bootOf([
+            'node_modules/.pnpm/@angular+material@22.1.6_2ffb4168e4900973d89e82e63392cbb5/node_modules/@angular/material/fesm2022/slider.mjs',
+            'node_modules/.pnpm/@angular+material@2_49839d027ab9cb794a33a6120b97830c/node_modules/@angular/material/fesm2022/core.mjs',
+        ]);
+
+        expect(analyze(build, null).duplicates[0]?.copies.map(copy => copy.version)).toEqual(['22.1.6', null]);
+    });
+
+    it('does not read the folder Angular’s own source maps point to as a second copy', () => {
+        const build = bootOf([
+            'node_modules/.pnpm/@angular+material@22.1.6_2ffb4168e4900973d89e82e63392cbb5/node_modules/@angular/material/fesm2022/slider.mjs',
+            'node_modules/.pnpm/darwin_arm64-fastbuild-ST-fdfa778d11ba/bin/src/material/core/ripple.ts',
+        ]);
+
+        expect(analyze(build, null).duplicates).toEqual([]);
+    });
 });
 
 /**

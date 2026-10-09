@@ -1,0 +1,211 @@
+/*
+ * The waterfall of one screen's load. Every row is the same three columns — what the trip is, the
+ * bar on the shared axis, what it carries — so the bars line up and a gap in one row reads against
+ * the others. The axis under them uses the same columns for the same reason.
+ */
+.trips {
+    display: grid;
+    gap: var(--space-4);
+    max-width: 62rem;
+}
+
+.trips__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Named like the other lines of the detail: a label, so it does not read as part of the answer. */
+.trips__title {
+    margin: 0;
+
+    font-family: var(--font-ui);
+    font-size: var(--fs-label);
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.trips__profiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.trips__note {
+    margin: 0;
+    font-size: var(--fs-note);
+    color: var(--muted);
+}
+
+/* The one figure the block exists to show. */
+.trips__total {
+    margin: 0;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+}
+
+.trips__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-8);
+
+    margin: 0;
+
+    font-size: var(--fs-note);
+    color: var(--muted);
+}
+
+/* A swatch and its word as one piece, so a narrow screen never wraps one from the other. */
+.trips__key {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.trips__swatch {
+    display: inline-block;
+
+    width: 14px;
+    height: 8px;
+    margin-right: var(--space-2);
+    border-radius: 2px;
+
+    vertical-align: middle;
+
+    &--wait {
+        border: 1px solid var(--line-strong);
+        background: repeating-linear-gradient(135deg, var(--line-strong) 0 1px, var(--surface) 1px 4px);
+    }
+
+    /* Hollow: parsing is the device working, not the network, and the solid fills are network. */
+    &--parse {
+        border: 1px solid var(--ink);
+        background: var(--surface);
+    }
+}
+
+.trips__rows {
+    display: grid;
+    gap: var(--space-3);
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.trips__row,
+.trips__axis {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr) 10rem;
+    gap: var(--space-6);
+    align-items: center;
+}
+
+.trips__label {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    align-items: center;
+
+    font-size: var(--fs-note);
+    color: var(--ink);
+}
+
+/* The axis itself: a thin line the segments sit on, all of it the whole load. */
+.trips__track {
+    position: relative;
+    height: 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.trips__seg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+
+    /* A trip of a few kilobytes is a sliver on slow 4G: it still has to be seen. */
+    min-width: 2px;
+
+    /* The round trip before the first byte: light and hatched, a wait and not a weight. */
+    &--wait {
+        border: 1px solid var(--line-strong);
+        background: repeating-linear-gradient(135deg, var(--line-strong) 0 1px, var(--surface) 1px 4px);
+    }
+
+    &--transfer {
+        display: flex;
+    }
+
+    &--parse {
+        border: 1px solid var(--ink);
+        border-radius: 2px;
+        background: var(--surface);
+    }
+}
+
+/* A part of the transfer, in the colour of whom its bytes belong to. */
+.trips__part {
+    height: 100%;
+
+    &[data-zone='boot'] {
+        background: var(--seg-boot);
+    }
+
+    &[data-zone='shared'] {
+        background: var(--seg-shared);
+    }
+
+    &[data-zone='own'] {
+        background: var(--seg-own);
+    }
+}
+
+.trips__figure {
+    font-family: var(--font-data);
+    font-size: var(--fs-note);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.trips__ticks {
+    display: flex;
+    grid-column: 2;
+    justify-content: space-between;
+
+    font-family: var(--font-data);
+    font-size: var(--fs-label);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+/* A phone: the label and the figures on one line, the bar under them across the whole width. */
+@media (width < 600px) {
+    .trips__row,
+    .trips__axis {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-2) var(--space-4);
+    }
+
+    .trips__figure {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .trips__track {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .trips__ticks {
+        grid-column: 1 / -1;
+    }
+}

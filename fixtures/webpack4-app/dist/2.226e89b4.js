@@ -1,0 +1,2 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[2],{4:function(t,n,e){"use strict";e.r(n),e.d(n,"render",(function(){return c}));var r=e(5);const c=()=>"<h1>Settings</h1>"+Object(r.a)([1,2])},5:function(t,n,e){"use strict";e.d(n,"a",(function(){return c}));var r=e(0);const c=t=>`<table>${t.map(t=>`<tr><td>${Object(r.a)(t)}</td></tr>`).join("")}</table>`}}]);
+//# sourceMappingURL=2.226e89b4.js.map

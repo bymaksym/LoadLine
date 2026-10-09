@@ -1,0 +1,88 @@
+@let t = i18n.ui();
+
+@if (grid(); as grid) {
+    <section class="screen-grid">
+        <!--
+        A real table and not a picture of one: every cell has its row and its column to be read
+        against, and the figure is in the cell for whoever cannot tell the shades apart.
+        -->
+        <div class="card card--scroll screen-grid__card">
+            <table class="screen-grid__table">
+                <caption class="screen-grid__caption">
+                    <span class="screen-grid__heading">
+                        <span class="screen-grid__title">{{ t.gridTitle }}</span>
+                        <span class="screen-grid__sub">{{ t.gridSub }}</span>
+                    </span>
+                </caption>
+                <colgroup></colgroup>
+                @if (grid.boot) {
+                    <colgroup [attr.span]="grid.boot"></colgroup>
+                }
+                @if (grid.lazy) {
+                    <colgroup [attr.span]="grid.lazy"></colgroup>
+                }
+                <colgroup></colgroup>
+                <thead>
+                    <tr>
+                        <th class="screen-grid__corner" rowspan="2" scope="col">{{ t.colScreen }}</th>
+                        @if (grid.boot) {
+                            <th class="screen-grid__group" scope="colgroup" [attr.colspan]="grid.boot">
+                                {{ t.gridBoot }}
+                            </th>
+                        }
+                        @if (grid.lazy) {
+                            <th
+                                class="screen-grid__group"
+                                scope="colgroup"
+                                [attr.colspan]="grid.lazy"
+                                [class.screen-grid__group--split]="grid.boot > 0"
+                            >
+                                {{ t.gridLazy }}
+                            </th>
+                        }
+                        <th class="num screen-grid__total-head" rowspan="2" scope="col">{{ t.gridTotal }}</th>
+                    </tr>
+                    <tr>
+                        @for (column of grid.columns; track $index) {
+                            <th class="screen-grid__col" scope="col" [class.screen-grid__col--split]="column.split">
+                                <span class="screen-grid__name" [title]="column.name">{{ column.name }}</span>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (row of grid.rows; track row.source) {
+                        <tr>
+                            <th class="screen-grid__screen" scope="row" [title]="row.source">{{ row.label }}</th>
+                            @for (cell of row.cells; track $index) {
+                                <td
+                                    class="screen-grid__cell"
+                                    [class]="'screen-grid__cell--' + cell.step"
+                                    [class.screen-grid__cell--split]="cell.split"
+                                    [title]="cell.label"
+                                >
+                                    @if (cell.short) {
+                                        <span aria-hidden="true" class="screen-grid__value">{{ cell.short }}</span>
+                                        <span class="sr-only">{{ cell.label }}</span>
+                                    }
+                                </td>
+                            }
+                            <td class="num screen-grid__total">{{ row.total }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="screen-grid__foot">
+            <span class="screen-grid__scale">
+                {{ t.gridScale.less }}
+                @for (step of steps; track step) {
+                    <i aria-hidden="true" class="screen-grid__swatch" [class]="'screen-grid__swatch--' + step"></i>
+                }
+                {{ t.gridScale.more }}
+            </span>
+            <span class="screen-grid__note">{{ t.gridRaw }}</span>
+        </div>
+    </section>
+}

@@ -33,8 +33,11 @@ each carries the shape its lines are marked with below.
         </div>
     }
 
-    <!-- What doing all of it is worth, beside the filters rather than under the last line. -->
-    @if (total && total.counted > 0) {
+    <!--
+    What doing all of it is worth, beside the filters rather than under the last line. Not at zero:
+    "fixing it would take 0 B off" above the table only said that nothing in it was measured.
+    -->
+    @if (total && total.counted > 0 && total.bytes > 0) {
         <p class="signals__total" [title]="estimated() ? t.actionsTotalNoteEstimated : t.actionsTotalNote">
             {{ t.actionsTotal(total.counted) }}
             <strong class="signals__figure">{{ savingText(total.bytes) }}</strong>

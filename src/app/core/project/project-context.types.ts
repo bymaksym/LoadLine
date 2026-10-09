@@ -51,8 +51,8 @@ export interface PackageContext {
     name: string | null;
     scripts: Record<string, string>;
     /**
-     * The names in `dependencies`: what the project asks for directly. Everything else in the
-     * bundle came along with one of these, which changes what fixing it takes.
+     * The names in `dependencies` and `devDependencies`: what the project asks for directly.
+     * Everything else in the bundle came along with one of these, which changes what fixing it takes.
      */
     dependencies: string[];
     /** `zone.js` declared as a dependency. */

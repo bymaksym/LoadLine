@@ -1,0 +1,1209 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://unpkg.com/@bymaksym/loadline/loadline.schema.json",
+    "title": "loadline.json",
+    "description": "Loadline configuration: thresholds, gates and accepted signals, committed next to the code so the page and the command judge the build the same way. Read from the working directory, or from --config <file>. Guide: https://github.com/bymaksym/LoadLine/blob/main/docs/CONFIG.md",
+    "type": "object",
+    "required": [
+        "tool",
+        "version"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {
+            "description": "Where your editor finds this schema.",
+            "type": "string"
+        },
+        "tool": {
+            "description": "Always \"loadline\": it tells this file apart from any other JSON.",
+            "const": "loadline"
+        },
+        "version": {
+            "description": "Always 1.",
+            "const": 1
+        },
+        "extends": {
+            "description": "Other loadline.json files this one builds on: a path (\"./base.loadline.json\") or a package (\"@acme/loadline-config\", which reads its loadline.json), from the folder of this file. Objects join key by key, lists add up, and this file wins. \"situation\" is not inherited. The command follows it; the page cannot, and says so. `loadline --print-config` shows the result.",
+            "anyOf": [
+                {
+                    "type": "string",
+                    "minLength": 1
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "minItems": 1
+                }
+            ],
+            "examples": [
+                "@acme/loadline-config",
+                "./base.loadline.json"
+            ]
+        },
+        "mode": {
+            "description": "The unit the sizes in \"criteria\" are written in. A gzip threshold checked against raw bytes is not the same threshold.",
+            "enum": [
+                "gzip",
+                "brotli",
+                "raw"
+            ]
+        },
+        "criteria": {
+            "description": "Thresholds that colour the figures and decide when a signal fires. They never fail a build — gates do. Anything left out keeps its recommended value. Every rated figure has two: up to the first (…Ok) it is good, up to the second (…Bad) fair, above that bad.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "bootOk": {
+                    "description": "Bootstrap (declared and effective): good up to this. What downloads before anything is painted. It weighs most on the time until the app responds. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"170kB\" in gzip, \"145kB\" in brotli, \"500kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "bootBad": {
+                    "description": "Bootstrap: bad above this. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"350kB\" in gzip, \"300kB\" in brotli, \"1MB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "screenOk": {
+                    "description": "Total per screen: good up to this. Bootstrap + shared + own: what someone landing directly on a screen downloads. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"300kB\" in gzip, \"255kB\" in brotli, \"1MB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "screenBad": {
+                    "description": "Total per screen: bad above this. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"600kB\" in gzip, \"510kB\" in brotli, \"2MB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "ownOk": {
+                    "description": "A screen’s own code: good up to this. Chunks only that screen loads. Above this it is usually a heavy library that deserves a lazy block. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"50kB\" in gzip, \"42kB\" in brotli, \"150kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "ownBad": {
+                    "description": "A screen’s own code: bad above this. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"150kB\" in gzip, \"128kB\" in brotli, \"450kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "sharedRatio": {
+                    "description": "Coverage to count as effective bootstrap. If at least this share of screens loads a lazy chunk, it downloads on practically every visit and is added to the effective bootstrap. A share: \"25%\", or the fraction 0.25. Recommended: \"60%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "wideRatio": {
+                    "description": "Coverage for “widely shared”. Below the previous threshold but above this one, the chunk is labelled widely shared. A share: \"25%\", or the fraction 0.25. Recommended: \"30%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "sharedMinBytes": {
+                    "description": "Minimum size of a near-global chunk to be a signal. A near-global chunk smaller than this raises no signal: the difference would fall within the variation between two builds. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"17kB\" in gzip, \"14kB\" in brotli, \"50kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "dominantRatio": {
+                    "description": "Share of a chunk that makes it “that thing, basically”. When one package or folder is at least this much of a shared chunk, the chunk is described as that thing and the advice points at it. A share: \"25%\", or the fraction 0.25. Recommended: \"50%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "bootPackageMinBytes": {
+                    "description": "Minimum size of a bootstrap package to be a signal. Bootstrap packages smaller than this are not examined for the “bootstrap for a lazy screen” signal. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"25kB\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "bootPackageMaxImporters": {
+                    "description": "Maximum importing files to count as “single screen”. If more of your files than this import the package, it works as shared groundwork and is not flagged. A number of importing files. Recommended: 4.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "ownFolderMinBytes": {
+                    "description": "Minimum weight of your folders held in the bootstrap. Folders of yours held in the bootstrap by a lazy screen, added up. Below this the coupling is real but not worth a line. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"12kB\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "bigOwnFileBytes": {
+                    "description": "From this size, an own file in the bootstrap is named. A file of yours inside the bootstrap above this size is listed one by one. It is usually a table of constants that comes in whole. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"20kB\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "heavyScreenFactor": {
+                    "description": "Expensive screen: times the median own code. A screen is expensive if its own code is this many times the median of all screens… A factor: 3 means three times. Recommended: 6.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "heavyScreenMinBytes": {
+                    "description": "Expensive screen: minimum own code. …and also exceeds this size. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"34kB\" in gzip, \"29kB\" in brotli, \"100kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "heavyScreenMinScreens": {
+                    "description": "Screens needed before comparing against the median. With fewer screens than this there is no meaningful median own code, so no screen is called expensive. A number of screens. Recommended: 4.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "screenFilesMax": {
+                    "description": "Files per screen from which the split is worth a look. How many files a screen needs before the split is worth looking at. It is context rather than a gate: under multiplexing a count cannot separate sixty well-sized files from sixty crumbs, and what does separate them is the granularity threshold below. It costs real seconds under HTTP/1.1, and a pasted measurement is what says whether that is happening. A number of files. Recommended: 30.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "screenWavesMax": {
+                    "description": "Round trips a screen takes before it is worth a line. How many sequential round trips a screen takes before it is worth a line. The one threshold here with a first principle behind it: every round trip is at least one latency, no compression touches it, and multiplexing does not either — what limits it is sequential discovery, not transport. So it holds the same under HTTP/1.1, HTTP/2 and HTTP/3, and the figure to read is this number times your latency. A number of round trips. Recommended: 3.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "tinyChunkBytes": {
+                    "description": "Under this, a file is mostly the cost of asking for it. Headers, a cache entry and the module wrapper are comparable to the content below this size. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"1kB\" in gzip, \"1kB\" in brotli, \"3kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "minTinyChunks": {
+                    "description": "How many of those have to arrive together. A handful of tiny files arriving together is the shape of a split that went further than it helps. Two or three mean nothing. A number of chunks. Recommended: 5.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "minLocales": {
+                    "description": "Languages of a library before it counts as “all of them”. Below this many language files, the library was not shipped whole: it is the one or two somebody registered. A number of languages. Recommended: 3.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "shippedMinBytes": {
+                    "description": "Minimum weight for what ships without being screen code. Languages of a library and data embedded as code are only reported from this weight up. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"10kB\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "barrelMinBytes": {
+                    "description": "Exclusive weight from which a barrel file is a signal. Exclusive, not total: a barrel in front of code that also arrives through five other imports costs nothing, and only what has no other way in is counted here. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"20kB\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "paidTwiceMinBytes": {
+                    "description": "From this size, a module in two chunks is named. The same module copied into two chunks. One copy was going to be downloaded anyway; this weighs the rest. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"10kB\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "crumbMaxBytes": {
+                    "description": "Under this a chunk is a crumb. Chunks under this are counted apart in the Tree tab and in each screen’s shape. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"5kB\" in gzip, \"5kB\" in brotli, \"15kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "manyCrumbs": {
+                    "description": "Crumbs in a zone before it is a pattern. Fewer crumbs than this in one zone is not a pattern, it is two files. A number of chunks. Recommended: 3.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "concentratedRatio": {
+                    "description": "Share of a zone in one chunk that makes the zone that chunk. When the largest chunk of a zone is at least this much of it, the zone is really that chunk and the tab says so. A share: \"25%\", or the fraction 0.25. Recommended: \"60%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "heavyInZoneRatio": {
+                    "description": "Share of its zone from which a row is marked. A chunk holding at least this much of its zone is marked as where that weight is. A share: \"25%\", or the fraction 0.25. Recommended: \"25%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "heavyShareRatio": {
+                    "description": "Share of a download that counts as “most of it”. How much of a download the largest files have to cover before they are described as most of it. A share: \"25%\", or the fraction 0.25. Recommended: \"80%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "grouperMaxBytes": {
+                    "description": "What a file that only groups routes may weigh. A file that only lists routes compiles to paths and arrow functions. Above this it carries something of its own and counts as a screen. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"1kB\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "growthRatio": {
+                    "description": "Growth since the baseline to be a signal. With a baseline loaded, the bootstrap or a screen has grown if it is up by at least this share… A share: \"25%\", or the fraction 0.25. Recommended: \"10%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "growthMinBytes": {
+                    "description": "Minimum growth in size to be a signal. …and by at least this size, so a 2 kB screen doubling does not fire. A size: \"170kB\", \"1.5MB\", or bytes. Recommended: \"3kB\" in gzip, \"3kB\" in brotli, \"10kB\" raw.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "sharedGrowthTolerance": {
+                    "description": "How alike two screens grow to blame one shared chunk. Screens growing within this much of each other are read as one shared chunk growing under all of them, instead of as many separate screens. A share: \"25%\", or the fraction 0.25. Recommended: \"15%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "sharedGrowthMinScreens": {
+                    "description": "Screens growing alike before it is a shared chunk. Fewer screens than this growing alike is a coincidence, not a shared chunk. A number of screens. Recommended: 3.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "budgetSlackFactor": {
+                    "description": "Budget too high: times the current bootstrap. An error budget in angular.json this many times the current (raw) bootstrap is flagged as unreachable. A factor: 3 means three times. Recommended: 2.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "theirsRatio": {
+                    "description": "Share of the first load that can be somebody else’s code. Above this share, the report says how much of the first load nobody here wrote. It is never a fault on its own — a framework is somebody else’s code too — so what it raises is context, not a problem. A share: \"25%\", or the fraction 0.25. Recommended: \"70%\".",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    ]
+                },
+                "latencyMs": {
+                    "description": "Round trip on a slow mobile connection, for the time estimate. The three connection profiles scale with it, so moving it moves all of them instead of flattening them into one number. The only editable part of the time estimate. Throughput and parse cost belong to a device; latency belongs to where your users are, and they pay it once per round trip whatever the bytes compress to. Everything derived from it is an estimate and is labelled as one. Milliseconds. Recommended: 150.",
+                    "type": "number",
+                    "minimum": 0
+                }
+            }
+        },
+        "gates": {
+            "description": "What fails the command (exit code 1) and so the pipeline. A flag on the command line wins over the same gate here. Without any gate the command reports and never fails.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "maxBoot": {
+                    "description": "Fail when the bootstrap — what downloads before anything appears — is over this.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "maxScreen": {
+                    "description": "Fail when what a screen downloads in total is over this. \"screens\" overrides it per screen.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "maxOwn": {
+                    "description": "Fail when the code only one screen loads is over this.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "maxGrowth": {
+                    "description": "With a baseline: fail when the bootstrap or a screen grows by more than this.",
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                        },
+                        {
+                            "type": "number",
+                            "minimum": 1000,
+                            "description": "Bytes."
+                        }
+                    ]
+                },
+                "maxGrowthPct": {
+                    "description": "With a baseline: the same as maxGrowth, as a percentage. 10 or \"10%\" mean ten per cent.",
+                    "anyOf": [
+                        {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        {
+                            "type": "string",
+                            "pattern": "^\\s*\\d+(\\.\\d+)?\\s*%\\s*$"
+                        }
+                    ]
+                },
+                "failOn": {
+                    "description": "Fail when a signal of this severity or above is raised.",
+                    "enum": [
+                        "high",
+                        "mid",
+                        "none"
+                    ]
+                },
+                "failOnNewPackage": {
+                    "description": "Fail when a package enters the bootstrap that is not in \"packages\" — or, without that list, that was not in the baseline.",
+                    "type": "boolean"
+                },
+                "failOnSignals": {
+                    "description": "Signals that fail the command whatever their severity, for \"this one, always\": a secret, a forbidden package. Accepted signals do not count.",
+                    "type": "array",
+                    "items": {
+                        "enum": [
+                            "shared",
+                            "bootLazy",
+                            "bootSingle",
+                            "bigFile",
+                            "dupes",
+                            "heavy",
+                            "clean",
+                            "commonJs",
+                            "ownInBoot",
+                            "locales",
+                            "dataAsCode",
+                            "sourceMaps",
+                            "noSourceMaps",
+                            "splitDrift",
+                            "prefetched",
+                            "unreachable",
+                            "mixedImport",
+                            "ownBarrel",
+                            "packageBarrel",
+                            "cycles",
+                            "paidTwice",
+                            "twinScreens",
+                            "theirs",
+                            "fonts",
+                            "media",
+                            "duplicateAssets",
+                            "unreferencedAssets",
+                            "inlinedData",
+                            "updateWeight",
+                            "unstableChunk",
+                            "unhashable",
+                            "secrets",
+                            "devLeftovers",
+                            "sourceExposed",
+                            "thirdParty",
+                            "licences",
+                            "vulnerable",
+                            "transitive",
+                            "forbidden",
+                            "bootWaves",
+                            "slowScreens",
+                            "manyRequests",
+                            "bootGrew",
+                            "bootNewPackages",
+                            "sharedGrew",
+                            "signalsChanged",
+                            "screensGrew",
+                            "budgetNone",
+                            "budgetNotBuilt",
+                            "budgetWarnOnly",
+                            "budgetTooHigh",
+                            "zoneless",
+                            "assetOrigin",
+                            "cascadeShape",
+                            "servedUncompressed",
+                            "measuredWaves",
+                            "poolExhausted",
+                            "thirdPartyLoad",
+                            "revalidated",
+                            "swControlling",
+                            "measuredOrigin",
+                            "observedChannel",
+                            "measuredEager",
+                            "measuredExtra",
+                            "measuredShort",
+                            "measuredMatch",
+                            "situationAsked",
+                            "situationPriority",
+                            "situationMissing"
+                        ],
+                        "enumDescriptions": [
+                            "common code marked as lazy",
+                            "bootstrap for a lazy screen",
+                            "bootstrap package with a single importer",
+                            "large source file",
+                            "duplicate copies of a package",
+                            "expensive screen",
+                            "no signals",
+                            "CommonJS package",
+                            "your own code in the bootstrap for a lazy screen",
+                            "every language of a library",
+                            "data shipped as code",
+                            "source maps in the folder",
+                            "folder without source maps",
+                            "the breakdown does not add up to the file",
+                            "screens fetched before anybody asks",
+                            "chunks this report cannot reach",
+                            "imported both statically and dynamically",
+                            "barrel file of your own in the bootstrap",
+                            "package that comes in whole",
+                            "import cycles",
+                            "bytes paid for twice",
+                            "twin screens",
+                            "whose first load this is",
+                            "fonts",
+                            "images and video",
+                            "the same file under two names",
+                            "files nothing reaches",
+                            "files embedded as data URIs",
+                            "weight of the update",
+                            "chunk mixing what changes with what does not",
+                            "names that cannot be cached",
+                            "secrets or internal addresses in the bundle",
+                            "development leftovers in production",
+                            "your source code is published",
+                            "third-party services",
+                            "licences with conditions",
+                            "vulnerabilities that actually ship",
+                            "packages you did not ask for",
+                            "forbidden in loadline.json",
+                            "bootstrap in several round trips",
+                            "discovery depth",
+                            "granularity of the split",
+                            "bootstrap has grown",
+                            "new package in the bootstrap",
+                            "shared chunk has grown",
+                            "signals fixed and new",
+                            "screen has grown",
+                            "no size budget",
+                            "budget the pipeline never applies",
+                            "budget that only warns",
+                            "budget too high",
+                            "no zone.js",
+                            "assets served from another host",
+                            "hash cascade",
+                            "JavaScript served uncompressed",
+                            "more batches than computed",
+                            "the connection pool ran out",
+                            "third-party requests in the same load",
+                            "hashed files being revalidated",
+                            "a service worker controls this load",
+                            "the code came from another host",
+                            "observed environment",
+                            "the router loads an area the guard then rejects",
+                            "measured above computed",
+                            "measured below computed",
+                            "computed and measured agree",
+                            "the situation, answered",
+                            "which wait the team would rather pay",
+                            "questions that would change this report"
+                        ]
+                    },
+                    "uniqueItems": true,
+                    "examples": [
+                        [
+                            "forbidden",
+                            "secrets",
+                            "vulnerable"
+                        ]
+                    ]
+                },
+                "screens": {
+                    "description": "A limit per screen, over maxScreen: the screen as the report names it, or its source file. A name that matches no screen is reported.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "description": "The limit for this screen.",
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                            },
+                            {
+                                "type": "number",
+                                "minimum": 1000,
+                                "description": "Bytes."
+                            }
+                        ]
+                    },
+                    "examples": [
+                        {
+                            "rooms": "400kB",
+                            "src/app/map/map.page.ts": "900kB"
+                        }
+                    ]
+                }
+            }
+        },
+        "packages": {
+            "description": "The packages allowed in the bootstrap, for gates.failOnNewPackage. A list of names, so adding one is a line in a review.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true
+        },
+        "accepted": {
+            "description": "Signals the team has decided to live with. Each one names a reason and, ideally, a person and an expiry. It comes back when the date passes or when its figure grows past \"bytes\". Everything accepted is listed under the report: nothing disappears silently.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "kind",
+                    "why"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "kind": {
+                        "description": "Which signal.",
+                        "enum": [
+                            "shared",
+                            "bootLazy",
+                            "bootSingle",
+                            "bigFile",
+                            "dupes",
+                            "heavy",
+                            "clean",
+                            "commonJs",
+                            "ownInBoot",
+                            "locales",
+                            "dataAsCode",
+                            "sourceMaps",
+                            "noSourceMaps",
+                            "splitDrift",
+                            "prefetched",
+                            "unreachable",
+                            "mixedImport",
+                            "ownBarrel",
+                            "packageBarrel",
+                            "cycles",
+                            "paidTwice",
+                            "twinScreens",
+                            "theirs",
+                            "fonts",
+                            "media",
+                            "duplicateAssets",
+                            "unreferencedAssets",
+                            "inlinedData",
+                            "updateWeight",
+                            "unstableChunk",
+                            "unhashable",
+                            "secrets",
+                            "devLeftovers",
+                            "sourceExposed",
+                            "thirdParty",
+                            "licences",
+                            "vulnerable",
+                            "transitive",
+                            "forbidden",
+                            "bootWaves",
+                            "slowScreens",
+                            "manyRequests",
+                            "bootGrew",
+                            "bootNewPackages",
+                            "sharedGrew",
+                            "signalsChanged",
+                            "screensGrew",
+                            "budgetNone",
+                            "budgetNotBuilt",
+                            "budgetWarnOnly",
+                            "budgetTooHigh",
+                            "zoneless",
+                            "assetOrigin",
+                            "cascadeShape",
+                            "servedUncompressed",
+                            "measuredWaves",
+                            "poolExhausted",
+                            "thirdPartyLoad",
+                            "revalidated",
+                            "swControlling",
+                            "measuredOrigin",
+                            "observedChannel",
+                            "measuredEager",
+                            "measuredExtra",
+                            "measuredShort",
+                            "measuredMatch",
+                            "situationAsked",
+                            "situationPriority",
+                            "situationMissing"
+                        ],
+                        "enumDescriptions": [
+                            "common code marked as lazy",
+                            "bootstrap for a lazy screen",
+                            "bootstrap package with a single importer",
+                            "large source file",
+                            "duplicate copies of a package",
+                            "expensive screen",
+                            "no signals",
+                            "CommonJS package",
+                            "your own code in the bootstrap for a lazy screen",
+                            "every language of a library",
+                            "data shipped as code",
+                            "source maps in the folder",
+                            "folder without source maps",
+                            "the breakdown does not add up to the file",
+                            "screens fetched before anybody asks",
+                            "chunks this report cannot reach",
+                            "imported both statically and dynamically",
+                            "barrel file of your own in the bootstrap",
+                            "package that comes in whole",
+                            "import cycles",
+                            "bytes paid for twice",
+                            "twin screens",
+                            "whose first load this is",
+                            "fonts",
+                            "images and video",
+                            "the same file under two names",
+                            "files nothing reaches",
+                            "files embedded as data URIs",
+                            "weight of the update",
+                            "chunk mixing what changes with what does not",
+                            "names that cannot be cached",
+                            "secrets or internal addresses in the bundle",
+                            "development leftovers in production",
+                            "your source code is published",
+                            "third-party services",
+                            "licences with conditions",
+                            "vulnerabilities that actually ship",
+                            "packages you did not ask for",
+                            "forbidden in loadline.json",
+                            "bootstrap in several round trips",
+                            "discovery depth",
+                            "granularity of the split",
+                            "bootstrap has grown",
+                            "new package in the bootstrap",
+                            "shared chunk has grown",
+                            "signals fixed and new",
+                            "screen has grown",
+                            "no size budget",
+                            "budget the pipeline never applies",
+                            "budget that only warns",
+                            "budget too high",
+                            "no zone.js",
+                            "assets served from another host",
+                            "hash cascade",
+                            "JavaScript served uncompressed",
+                            "more batches than computed",
+                            "the connection pool ran out",
+                            "third-party requests in the same load",
+                            "hashed files being revalidated",
+                            "a service worker controls this load",
+                            "the code came from another host",
+                            "observed environment",
+                            "the router loads an area the guard then rejects",
+                            "measured above computed",
+                            "measured below computed",
+                            "computed and measured agree",
+                            "the situation, answered",
+                            "which wait the team would rather pay",
+                            "questions that would change this report"
+                        ]
+                    },
+                    "key": {
+                        "description": "Which instance — the package, chunk or screen source the signal is about. Leave it out to accept every instance of the kind, which is a bigger decision.",
+                        "type": "string"
+                    },
+                    "why": {
+                        "description": "Why it is being lived with. Required.",
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "who": {
+                        "description": "Who decided: somebody a reader can ask in a year.",
+                        "type": "string"
+                    },
+                    "until": {
+                        "description": "YYYY-MM-DD. After it the signal is raised again.",
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "bytes": {
+                        "description": "The figure that was accepted. When the signal grows past it, it comes back.",
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^\\s*\\d+(\\.\\d+)?\\s*([bB]|[kK][bB]|[mM][bB]|[gG][bB])\\s*$"
+                            },
+                            {
+                                "type": "number",
+                                "minimum": 1000,
+                                "description": "Bytes."
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "forbidden": {
+            "description": "What must never ship, or never ship in the bootstrap: a package or files of your own. Each rule that matches raises the \"forbidden\" signal, with its \"why\". An exception is an entry in \"accepted\"; failing the build on it is gates.failOn or gates.failOnSignals.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "why"
+                ],
+                "oneOf": [
+                    {
+                        "required": [
+                            "package"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "path"
+                        ]
+                    }
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "package": {
+                        "description": "A package name, with * for any text: \"moment\", \"@aws-sdk/*\".",
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "path": {
+                        "description": "Files of the project, with * for any text: \"src/app/admin/*\".",
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "in": {
+                        "description": "Where it must not be. \"anywhere\" when left out.",
+                        "enum": [
+                            "anywhere",
+                            "bootstrap"
+                        ],
+                        "enumDescriptions": [
+                            "Not in any file of the build.",
+                            "Not in the first load: a lazy screen may still load it."
+                        ]
+                    },
+                    "why": {
+                        "description": "Why not, and what to use instead. Required: it is shown on the signal.",
+                        "type": "string",
+                        "minLength": 1
+                    }
+                }
+            },
+            "examples": [
+                [
+                    {
+                        "package": "moment",
+                        "why": "We use date-fns."
+                    },
+                    {
+                        "path": "src/app/admin/*",
+                        "in": "bootstrap",
+                        "why": "Admin is lazy."
+                    }
+                ]
+            ]
+        },
+        "situation": {
+            "description": "The five questions the build cannot answer. An answer can raise a severity, never lower one. Written by the Situation tab of the page; anything left out reads as unanswered.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "navigation": {
+                    "description": "How do people move around the application? Where to look: route-change events per session, in your analytics.",
+                    "enum": [
+                        "inAndOut",
+                        "allDay",
+                        "profiles",
+                        "unknown"
+                    ],
+                    "enumDescriptions": [
+                        "They come in, do one thing and leave",
+                        "They spend the day inside, moving between sections",
+                        "It depends — there are two or three distinct profiles",
+                        "I don’t know"
+                    ]
+                },
+                "deploys": {
+                    "description": "How often does a new version reach production? Where to look: the tags or releases of the last quarter.",
+                    "enum": [
+                        "daily",
+                        "weekly",
+                        "monthly",
+                        "unknown"
+                    ],
+                    "enumDescriptions": [
+                        "Several times a day",
+                        "Weekly, more or less",
+                        "Every few weeks",
+                        "I don’t know"
+                    ]
+                },
+                "returning": {
+                    "description": "Of the people who open it on a given day, how many had already opened it this week? Where to look: the returning-visitor share in your analytics.",
+                    "enum": [
+                        "most",
+                        "half",
+                        "few",
+                        "unknown"
+                    ],
+                    "enumDescriptions": [
+                        "Nearly all of them — it is a work tool",
+                        "About half and half",
+                        "Almost none — most arrive from outside",
+                        "I don’t know"
+                    ]
+                },
+                "connection": {
+                    "description": "Where do they connect from, and on what? This is the one that lies most: people answer it the way they would like it to be. If you have RUM, do not answer it — import it.",
+                    "enum": [
+                        "office",
+                        "mobile",
+                        "worldwide",
+                        "unknown"
+                    ],
+                    "enumDescriptions": [
+                        "Office, laptop, good network",
+                        "Mobile, out and about, patchy coverage",
+                        "Spread around the world, far from the server",
+                        "I don’t know"
+                    ]
+                },
+                "priority": {
+                    "description": "Which is worse: a slow first screen, or a slow move from one screen to another? This one is not looked up anywhere: it is which wait the team would rather pay, and it has to be decided.",
+                    "enum": [
+                        "firstScreen",
+                        "navigation",
+                        "both",
+                        "unknown"
+                    ],
+                    "enumDescriptions": [
+                        "The first one — that is where people decide whether to stay",
+                        "Navigation — whoever gets in is staying anyway",
+                        "Both equally bad",
+                        "Not answered yet."
+                    ]
+                },
+                "screensPerSession": {
+                    "description": "Median distinct screens per session. Wins over \"navigation\".",
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "deploysPerWeek": {
+                    "description": "Releases per week. Wins over \"deploys\".",
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "returningPct": {
+                    "description": "Share of returning visitors, or warm-cache rate. A percentage. Wins over \"returning\".",
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "rum": {
+                    "description": "Whether the connection answer was imported from real-user monitoring.",
+                    "type": "boolean"
+                },
+                "answeredBy": {
+                    "description": "Who answered.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "answeredAt": {
+                    "description": "YYYY-MM-DD. The report says so once the answers are a year old.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "build": {
+            "description": "What the build does not say on its own, for a page or a tool no rule here reads: file names with * for the hash, and source paths with * for a segment and ** for several.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "entries": {
+                    "description": "Scripts the application starts at, added to what index.html names: for a page that starts it in a way Loadline does not read. \"client.*.js\".",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                },
+                "ignore": {
+                    "description": "Files of the folder no screen downloads — a polyfill only old browsers load, a copy for another target. Never an entry, never reached by a guess, and out of every figure when nothing the application imports reaches them.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                },
+                "screens": {
+                    "description": "Which lazy entries are screens and which are a piece of one, by source file (or chunk, without maps), with * for any text. The buttons of the screens table, written down for everybody; a click in the page still wins.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "enum": [
+                            "screen",
+                            "piece"
+                        ]
+                    }
+                },
+                "page": {
+                    "description": "The page of the application, when the folder holds several HTML files and index.html is not it: \"app.html\", \"admin/index.html\".",
+                    "type": "string"
+                },
+                "own": {
+                    "description": "Source paths that are your own code although they sit under node_modules: \"src/node_modules/**\".",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                },
+                "routeKeys": {
+                    "description": "Keys of a route table besides component, loadComponent, loadChildren, lazy, getComponent and asyncComponent, for a router that writes { path: \"/x\", page: () => import(\"./x.js\") }.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z_$][\\w$]*$"
+                    },
+                    "uniqueItems": true
+                },
+                "dependencies": {
+                    "description": "Source paths that are dependencies although they are not under node_modules — workspace packages, a vendored library — named after the folder matched: \"packages/*\" makes packages/ui/src/x.ts part of the package ui.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                }
+            }
+        }
+    }
+}

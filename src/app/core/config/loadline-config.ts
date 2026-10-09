@@ -7,8 +7,27 @@
  */
 
 import { type Finding, FINDING_KINDS } from '../findings/finding.types';
+import { type Lang } from '../i18n/ui-strings';
 import { readSituation } from '../situation/situation';
-import { type AcceptedFinding, type ConfigReadResult, type LoadlineConfig } from './loadline-config.types';
+import { CONFIG_TEXT } from './config-text';
+import {
+    readBuildHints,
+    readCriteriaBlock,
+    readExtends,
+    readForbidden,
+    readGatesBlock,
+    readMode,
+    readPackages,
+    readSizeValue,
+    SCHEMA_URL,
+    unknownTopKeys,
+} from './config-values';
+import {
+    type AcceptedFinding,
+    type BuildHints,
+    type ConfigReadResult,
+    type LoadlineConfig,
+} from './loadline-config.types';
 
 const KINDS = new Set<string>(FINDING_KINDS);
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,43 +46,109 @@ export const isLoadlineConfig = (value: unknown): value is LoadlineConfig => {
  *
  * An acceptance is dropped when it names a signal that does not exist or gives no reason: both are
  * ways of suppressing something by accident, and a suppression nobody meant is worse than a noisy
- * report. Everything else is kept.
+ * report. Every other block is read by `config-values.ts`, which does the same with what it cannot
+ * understand: leaves it out, and names it.
  */
-export const readConfig = (value: unknown): ConfigReadResult => {
+export const readConfig = (value: unknown, lang: Lang = 'en'): ConfigReadResult => {
+    const t = CONFIG_TEXT[lang];
     if (!isLoadlineConfig(value)) {
-        return { config: null, problems: ['Not a loadline.json: it needs "tool": "loadline" and "version": 1.'] };
+        return {
+            config: null,
+            problems: [t.notConfig],
+            gateProblems: [],
+        };
     }
 
-    const problems: string[] = [];
+    const file = value as unknown as Record<string, unknown>;
+    const mode = readMode(file['mode'], t);
+    const criteria = readCriteriaBlock(file['criteria'], t);
+    const gates = readGatesBlock(file['gates'], t);
+    const packages = readPackages(file['packages'], t);
+    const build = readBuildHints(file['build'], t);
+    const forbidden = readForbidden(file['forbidden'], t);
+    const bases = readExtends(file['extends'], t);
+    const problems: string[] = [
+        ...build.problems,
+        ...unknownTopKeys(file, t),
+        ...mode.problems,
+        ...criteria.problems,
+        ...gates.problems,
+        ...packages.problems,
+        ...forbidden.problems,
+        ...bases.problems,
+    ];
     const accepted: AcceptedFinding[] = [];
 
-    const entries = value.accepted ?? [];
+    const listed: unknown = value.accepted;
+    if (listed !== undefined && !Array.isArray(listed)) {
+        problems.push(t.acceptedNotList);
+    }
+    const entries = (Array.isArray(listed) ? listed : []).filter(
+        (entry): entry is AcceptedFinding => !!entry && typeof entry === 'object',
+    );
     for (const entry of entries) {
         const where = entry.key ? `${entry.kind} · ${entry.key}` : entry.kind;
         if (!KINDS.has(entry.kind)) {
-            problems.push(`Unknown signal in "accepted": ${entry.kind}. It accepts nothing.`);
+            problems.push(t.unknownAccepted(entry.kind));
             continue;
         }
         if (!entry.why || entry.why.trim().length === 0) {
-            problems.push(`The acceptance of ${where} has no "why". An acceptance without a reason is a suppression.`);
+            problems.push(t.noWhy(where));
             continue;
+        }
+        // `"12kB"` as readily as bytes, like every other size in the file. One that cannot be read
+        // is dropped from the entry, which then covers the signal at any size, and says so.
+        const bytes = entry.bytes === undefined ? null : readSizeValue(entry.bytes, t.bytesOf(where), t);
+        const sized = bytes && 'problem' in bytes ? { ...entry, bytes: undefined } : { ...entry, bytes: bytes?.value };
+        if (bytes && 'problem' in bytes) {
+            problems.push(t.ignored(bytes.problem));
         }
         if (entry.until && !DATE.test(entry.until)) {
-            problems.push(`The "until" of ${where} is not a YYYY-MM-DD date: ${entry.until}. It is ignored.`);
-            accepted.push({ ...entry, until: undefined });
+            problems.push(t.badUntil(where, entry.until));
+            accepted.push({ ...sized, until: undefined });
             continue;
         }
-        accepted.push(entry);
+        accepted.push(sized);
     }
 
     // The five answers get the same treatment as the acceptances, and for the same reason: an
     // answer nobody recognises has to become "unanswered" and a line to print, never a silent
     // nothing. An answer is the only thing in this file that can move a colour, so a typo in one
     // is the one mistake here that would change a verdict without anybody noticing.
-    const { situation, problems: situationProblems } = readSituation(value.situation);
+    const { situation, problems: situationProblems } = readSituation(value.situation, lang);
     problems.push(...situationProblems);
 
-    return { config: { ...value, accepted, situation }, problems };
+    const read: LoadlineConfig = {
+        ...(typeof file['$schema'] === 'string' && { $schema: file['$schema'] }),
+        tool: 'loadline',
+        version: 1,
+        ...(bases.names && { extends: bases.names }),
+        ...(mode.mode && { mode: mode.mode }),
+        ...(criteria.criteria && { criteria: criteria.criteria }),
+        ...(gates.gates && { gates: gates.gates }),
+        ...(packages.packages && { packages: packages.packages }),
+        ...(forbidden.forbidden && { forbidden: forbidden.forbidden }),
+        ...(build.build && { build: build.build }),
+        accepted,
+        situation,
+    };
+    // A rule of `forbidden` that cannot be read is a guard that switched itself off, the same as a
+    // gate that cannot be: it stops the command rather than being printed and passed.
+    return { config: read, problems, gateProblems: [...gates.problems, ...forbidden.problems, ...bases.problems] };
+};
+
+/**
+ * Whether two `build` blocks read a folder the same way: the same `entries`, `ignore`, `page` and
+ * `routeKeys`.
+ *
+ * `screens`, `own` and `dependencies` are left out on purpose. They reclassify what was read as the
+ * report is drawn, so they apply on their own; the other four decide which files are read, from
+ * where and with which edges, and a change in them means reading the folder again.
+ */
+export const sameFolderReading = (a: BuildHints | undefined, b: BuildHints | undefined): boolean => {
+    const reading = (hints: BuildHints | undefined): string =>
+        JSON.stringify([hints?.entries ?? [], hints?.ignore ?? [], hints?.page ?? null, hints?.routeKeys ?? []]);
+    return reading(a) === reading(b);
 };
 
 /** Why an acceptance did not apply, when it did not. */
@@ -112,7 +197,7 @@ export const applyAcceptances = (
         }
 
         const expired = !!entry.until && entry.until < day;
-        const grew = entry.bytes !== undefined && (finding.saving ?? 0) > entry.bytes;
+        const grew = entry.bytes !== undefined && (finding.size ?? finding.saving ?? 0) > entry.bytes;
         const lapse: AcceptanceLapse | null = expired ? 'expired' : grew ? 'grew' : null;
 
         accepted.push({ finding, entry, lapse });
@@ -129,7 +214,7 @@ export const applyAcceptances = (
  *
  * The whole criteria object goes in, not only what was changed: the file has to pin every threshold
  * or the next release of the tool silently moves one of them, which is the same drift this file
- * exists to end.
+ * exists to end — unless the file extends a base, which pins them instead (`criteriaToWrite`). `$schema` goes first, so the file opens in an editor that already knows every key.
  */
-export const writeConfig = (config: Omit<LoadlineConfig, 'tool' | 'version'>): string =>
-    `${JSON.stringify({ tool: 'loadline', version: 1, ...config }, null, 4)}\n`;
+export const writeConfig = (config: Omit<LoadlineConfig, 'tool' | 'version' | '$schema'>): string =>
+    `${JSON.stringify({ $schema: SCHEMA_URL, tool: 'loadline', version: 1, ...config }, null, 4)}\n`;

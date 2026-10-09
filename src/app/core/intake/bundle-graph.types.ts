@@ -1,7 +1,8 @@
 /** What the folder reader takes and what it gives back. */
 
 import { type Metafile } from '../analysis/metafile.types';
-import { type ChunkSplit } from '../analysis/sourcemap.types';
+import { type ChunkSplit } from '../analysis/sourcemap/sourcemap.types';
+import { type RouteRef } from '../build-text/route-table';
 
 /**
  * One file of the build folder.
@@ -31,4 +32,9 @@ export interface BundleGraph {
      * its source maps once instead of twice.
      */
     splits: Map<string, ChunkSplit>;
+    /**
+     * Chunk → the routes whose table entry imports it. Empty when the code has no route table this
+     * can read, which is a different answer from a build that was never read as a folder.
+     */
+    routes: Map<string, RouteRef[]>;
 }

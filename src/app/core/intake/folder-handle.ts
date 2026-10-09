@@ -91,3 +91,52 @@ export const readFolder = async (handle: FolderHandle): Promise<File[]> => {
     await walk(handle, handle.name);
     return files;
 };
+
+/**
+ * The files of a folder dropped onto the page, with their paths written where `readFolder` writes
+ * them. `null` when nothing dropped was a folder.
+ *
+ * A dropped folder arrives in `dataTransfer.files` as one empty pseudo-file named after it, so the
+ * build folder — the only thing a Vite, Rollup, SvelteKit or Nuxt build has to give, since none of
+ * them writes a stats file — could be chosen with a button and not dropped on the zone that asks
+ * for it.
+ */
+export const droppedFolder = async (items: DataTransferItemList): Promise<File[] | null> => {
+    const roots = [...items]
+        .filter(item => item.kind === 'file')
+        .map(item => item.webkitGetAsEntry())
+        .filter(entry => entry !== null);
+    if (roots.every(entry => !entry.isDirectory)) {
+        return null;
+    }
+
+    const files: File[] = [];
+    const walk = async (entry: FileSystemEntry, path: string): Promise<void> => {
+        if (entry.isFile) {
+            const file = await new Promise<File>((resolve, reject) => {
+                (entry as FileSystemFileEntry).file(resolve, reject);
+            });
+            Object.defineProperty(file, 'webkitRelativePath', { value: path, configurable: true });
+            files.push(file);
+            return;
+        }
+        const reader = (entry as FileSystemDirectoryEntry).createReader();
+        // `readEntries` hands a folder over in batches of a hundred, and an empty batch is the end.
+        for (;;) {
+            const batch = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+                reader.readEntries(resolve, reject);
+            });
+            if (batch.length === 0) {
+                return;
+            }
+            for (const child of batch) {
+                await walk(child, `${path}/${child.name}`);
+            }
+        }
+    };
+
+    for (const root of roots) {
+        await walk(root, root.name);
+    }
+    return files;
+};

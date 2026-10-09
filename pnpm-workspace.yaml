@@ -1,7 +1,9 @@
 # Quarantine for freshly published versions (in MINUTES): pnpm resolves nothing published less than
-# 24 h ago, direct or transitive. That is the window in which a compromised package gets detected
+# 3 days ago, direct or transitive. That is the window in which a compromised package gets detected
 # and unpublished. It does not touch an already written lockfile: only the resolution of new versions.
-minimumReleaseAge: 1440
+# It is the same 3 days as `cooldown` in .ncurc.js: shorter here, and a `^` range resolves to a
+# release ncu held back.
+minimumReleaseAge: 4320
 
 # Packages allowed to run install scripts. Everything else is installed without running them.
 allowBuilds:
@@ -10,3 +12,11 @@ allowBuilds:
   lmdb: true
   msgpackr-extract: true
   unrs-resolver: true
+
+# Advisories accepted, each with why. Removing an entry is how one is looked at again.
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3, stack exhaustion on deeply nested patterns (08/10/2026: no fixed version
+    # published). It reaches us only through Stylelint and globby, which expand the glob patterns
+    # this repository writes itself: nothing from outside is ever turned into a pattern here.
+    - GHSA-vfj7-8cjw-p6xm

@@ -1,0 +1,41 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 190460,
+        "rawBytes": 781811,
+        "files": 3
+    },
+    "firstTrip": {
+        "total": 199882,
+        "files": 4
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 1,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "my-view3: own 5272, shared 0, total 195732",
+        "my-view2: own 2051, shared 0, total 192511",
+        "my-view1: own 1142, shared 0, total 191602",
+        "my-view404: own 549, shared 0, total 191009"
+    ],
+    "deferred": [],
+    "shared": 0,
+    "workers": 0,
+    "onDemand": 0,
+    "data": 0,
+    "signals": [
+        "mid unreachable: 11 of your 18 chunks (385 kB) are in no figure here",
+        "mid unreferencedAssets: 12 kB in 2 files named by neither the HTML, nor the CSS, nor any chunk",
+        "mid unhashable: 21 files carry no hash in the name",
+        "info sourceMaps: The build folder carries 5 source maps",
+        "info media: 44 kB across 7 image or video files, 1 of them asked for by the page",
+        "info secrets: 1 string shaped like a secret that is not one",
+        "info devLeftovers: 2 development markers in the build, author unknown",
+        "info sourceExposed: 81 files of your source can be reconstructed from the 5 source maps in this folder"
+    ]
+}

@@ -1,0 +1,1 @@
+import{t as e}from"./table-BvzVqr3j.js";var t=()=>`<h1>Settings</h1>${e([1,2])}`;export{t as render};

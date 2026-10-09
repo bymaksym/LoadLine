@@ -27,7 +27,10 @@ export interface FontFamily {
     /** Every file of it, heaviest first. */
     files: { name: string; bytes: number; format: string }[];
     bytes: number;
-    /** Formats present. Two of them for the same weight means one is being downloaded for nothing. */
+    /**
+     * Formats present. Two of them for the same weight means one is stored for nothing: a browser
+     * takes the first format of the `src` list it understands and never fetches the other.
+     */
     formats: string[];
     /** Files the page preloads, which are the ones that cost part of the first load. */
     preloaded: string[];
@@ -60,6 +63,12 @@ export interface DuplicateAsset {
     bytes: number;
     /** Everything but the first copy: bytes shipped for nothing. */
     wasted: number;
+    /**
+     * How many of the copies the page or the code names; `null` when no text was read. A copy
+     * nothing names is never downloaded: Stencil writes its global stylesheet as `app.css` and as
+     * `p-qsbgvzk9.css`, the page asks for neither, and the report said a visitor downloads both.
+     */
+    named: number | null;
 }
 
 /** Bytes of a chunk that are really an image inlined as a `data:` URI. */
@@ -93,6 +102,11 @@ export interface FirstTrip {
     styles: number;
     fonts: number;
     images: number;
+    /**
+     * The scripts written inside the page rather than named by it, already counted in `scripts`: they
+     * are no file of their own, and they still have to arrive before anything runs.
+     */
+    inline: number;
     total: number;
     /** How many files it is, which is the other half of what a first load costs. */
     files: number;
@@ -132,4 +146,9 @@ export interface AssetReport {
      * was in the page.
      */
     inPage: string[];
+    /**
+     * The same, as the paths of the files inside the folder. A name several files share is asked
+     * for once, by the path the page wrote, and keyed by name all of them read as asked for.
+     */
+    inPagePaths: string[];
 }

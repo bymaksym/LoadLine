@@ -51,13 +51,47 @@ export interface DeferResult {
     screens: string[];
     /** Own files importing it: where the `import()` would have to be written. */
     importers: string[];
+    /**
+     * `false` when the name matched nothing and the bootstrap has chunks nothing names a file
+     * inside — a folder read without source maps. Then `weight`, `saved` and `screens` are not
+     * "none": they are "not known", and the zeros in them must not be read as an answer.
+     *
+     * `false` too for any build read from its folder alone, maps or not: `weight` still holds,
+     * the rest does not. The maps say what each chunk carries, never which file imports which, so
+     * walking the graph without a package finds nothing that depended on it. A real build got
+     * "0 B off the first load, nothing lazy uses it" for `@angular/material`: 92 kB of its
+     * bootstrap, and 679 kB of one of its screens.
+     */
+    measurable: boolean;
 }
 
 /**
- * @param name a package name, a project folder as the breakdown spells it, or a source path. It is
- *             matched in that order, which is the order of how specific the answer is.
+ * The bootstrap chunks whose inside is not known. That is a folder read without source maps, where
+ * what a chunk weighs is known and what it holds is not — and only that: a chunk holding no file of
+ * the project, like esbuild's runtime helpers, is known to hold none. See `undescribedChunks`.
  */
-export const simulateDefer = (analysis: Analysis, name: string): DeferResult => {
+export const opaqueBootChunks = (analysis: Analysis): string[] => {
+    const undescribed = new Set(analysis.undescribedChunks);
+    return analysis.bootChunks.filter(chunk => undescribed.has(chunk));
+};
+
+/**
+ * No chunk of the bootstrap says what is inside it: the folder came without source maps. What is
+ * said about the whole report — "no source maps here", "no saving can be measured" — is said on this,
+ * not on one chunk missing its map. Vite writes no map for the 84 bytes of `plugin-vue:export-helper`,
+ * and a folder with sixteen maps was announced as having none.
+ */
+export const blindBoot = (analysis: Analysis): boolean =>
+    analysis.bootChunks.length > 0 && opaqueBootChunks(analysis).length === analysis.bootChunks.length;
+
+/**
+ * @param name         a package name, a project folder as the breakdown spells it, or a source
+ *                     path. It is matched in that order, which is the order of how specific the
+ *                     answer is.
+ * @param importsKnown whether the build says which file imports which: a stats file does, a build
+ *                     folder read on its own does not. See `measurable`.
+ */
+export const simulateDefer = (analysis: Analysis, name: string, importsKnown = true): DeferResult => {
     const insights = analysis.insights();
     const byBucket = insights.filesByBucket.get(name);
 
@@ -104,5 +138,9 @@ export const simulateDefer = (analysis: Analysis, name: string): DeferResult => 
         after: Math.max(0, insights.bootTotal - saved),
         screens: importers.map(file => screenOf.get(file)).filter(label => label !== undefined),
         importers,
+        // Not finding the name is an answer only when every bootstrap chunk could have shown it.
+        // Without source maps "0 B" read as "deferring this saves nothing", of a package that the
+        // same build read with its stats.json showed inside the bootstrap.
+        measurable: importsKnown && (files.length > 0 || opaqueBootChunks(analysis).length === 0),
     };
 };

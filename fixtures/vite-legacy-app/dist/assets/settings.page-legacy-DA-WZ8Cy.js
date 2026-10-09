@@ -1,0 +1,1 @@
+(function(){System.register([`./table-legacy-BjSLRco2.js`],function(e,t){var n;return{setters:[function(e){n=e.t}],execute:function(){e(`render`,function(){return`<h1>Settings</h1>${n([1,2])}`})}}})})();

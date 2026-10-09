@@ -59,7 +59,7 @@ export const EN: UiStrings = {
     compareVersionsNote:
         'No installed path carried a version, so the versions could not be read at all. That is a gap in what these files say, not a finding that everything agrees: pnpm writes the version into the path, npm and yarn do not.',
     compareRejected: files =>
-        `Not a build: ${files.join(', ')}. Each file has to be a stats.json (an esbuild metafile).`,
+        `Not a build: ${files.join(', ')}. Each file has to be a stats.json (an esbuild metafile or webpack's stats).`,
     secCriteria: 'Rating criteria',
     secCriteriaSub:
         'The thresholds behind “good”, “fair” and “bad”, and the ones that fire each signal. You can change them.',
@@ -282,14 +282,14 @@ export const EN: UiStrings = {
     searchKeys: 'Ctrl K',
     homeAria: 'Loadline: change what is loaded',
     buildChipHelp: 'Change what is loaded',
-    intakeRequired: 'required',
+    intakeRequired: 'required · one of the two',
     intakeOptional: 'Optional · each one adds detail, now or later',
     intakeBack: 'Back to the report',
     contextRawNote: 'Raw figures: bytes on disk, not what travels',
     contextAddDetail: 'Add detail:',
     contextAddDist: 'browser/ folder → compressed figures',
     contextAddBaseline: 'baseline → compare',
-    contextAddContext: 'angular.json + pipeline → budgets',
+    contextAddContext: 'package.json + angular.json → name, budgets',
     heroCaptionBoot: boot => `${boot} the bundler marks as initial`,
     heroCaptionExtra: (extra, chunks, ratio) =>
         `${extra} in ${chunks === 1 ? 'one chunk' : `${chunks} chunks`} marked lazy that at least ${pct(ratio)} of the screens load anyway.`,
@@ -326,10 +326,11 @@ export const EN: UiStrings = {
     keyHelp: 'This list',
     keyTabs: 'Between tabs, with a tab focused',
 
-    drop1Title: 'Drop your stats.json here',
+    drop1Title: 'Drop your build folder or its stats.json here',
     drop1Body:
-        'Your bundler writes it with <code>ng build --stats-json</code> (Angular) or as an esbuild <code>metafile</code>. It is processed in your browser: nothing leaves your machine.',
+        'The build folder is enough for anything that emits ES modules — Vite, Rollup, SvelteKit, Nuxt, Astro, esbuild — because its chunks carry the import graph. Angular writes a <code>stats.json</code> with <code>ng build --stats-json</code>, esbuild a <code>metafile</code> and webpack its stats with <code>--json</code> — Angular 16 or earlier, Create React App, Vue CLI — and any of them is more exact than the folder alone. It is processed in your browser: nothing leaves your machine.',
     drop1Btn: 'Choose stats.json',
+    drop1FolderBtn: 'Choose build folder',
     sampleBtn: 'See an example',
     sampleLoaded: outputs => `Example build · ${outputs} outputs · not your project`,
     sampleRemove: 'Close the example',
@@ -347,7 +348,8 @@ export const EN: UiStrings = {
     statsIdle: 'Nothing loaded',
     distIdle: 'Nothing loaded · raw figures',
     statsLoaded: (name, outputs) => `${name} · ${outputs} outputs`,
-    statsFromFolder: (name, outputs) => `${name} · ${outputs} chunks · graph read from the folder`,
+    statsFromFolder: (name, outputs, opaque) =>
+        `${name} · ${outputs} chunks · graph read from the folder${opaque ? ' · no source maps: what is inside each chunk, and so any saving, cannot be measured' : ''}`,
     statsError: message => `Could not read it: ${message}`,
     distNoFiles: 'That folder has no build output in it',
     distNoApi: 'Your browser cannot compress here; keeping raw figures',
@@ -357,19 +359,49 @@ export const EN: UiStrings = {
     distLoadedMaps: (files, maps) => `${files} files · compressed figures · ${maps} source maps read`,
     distLoadedBrotli: 'real brotli from the .br files',
     distLoadedIndex: 'index.html read',
+    distTextUnread:
+        'restored without the text of the chunks: drop the folder again to search it for secrets and leftovers',
     splitExact: 'split from the source maps',
     splitApprox: 'split from the metafile',
     serverIgnored: n => `${n === 1 ? '1 server output' : `${n} server outputs`} left out`,
     serverIgnoredHelp:
-        'The build also carries the server bundle (server-side rendering). Nobody downloads it and it is usually the larger of the two, so only the browser side is analysed.',
+        'Outputs of the build that are not in the browser folder: almost always the server bundle (server-side rendering), which nobody downloads and is usually the larger of the two, so only the browser side is analysed. It can also be a file renamed after it was built, like the es5 polyfills of Angular 8, which nobody downloads under that name.',
+    offPageIgnored: ({ legacy, serviceWorker, server, ignored }) =>
+        `${[
+            legacy > 0 && `${legacy === 1 ? '1 file' : `${legacy} files`} for browsers without ES modules`,
+            serviceWorker > 0 && (serviceWorker === 1 ? 'the service worker' : `${serviceWorker} service worker files`),
+            server > 0 && `${server === 1 ? '1 file' : `${server} files`} only the server runs`,
+            ignored > 0 && `${ignored === 1 ? '1 file' : `${ignored} files`} loadline.json ignores`,
+        ]
+            .filter(Boolean)
+            .join(' and ')} left out`,
+    offPageIgnoredHelp:
+        'Only a browser that cannot run ES modules downloads the nomodule copy, a service worker runs beside the page rather than as part of a screen, the files of FastBoot run on the server, and build.ignore in loadline.json names what the team says no screen downloads. None of them is in any figure here, so every figure is what a current browser downloads.',
     notScreensLabel: 'Not counted as screens:',
-    notScreenKind: { block: 'lazy block inside a screen', grouper: 'route group', data: 'data' },
+    notScreenKind: {
+        block: 'lazy block inside a screen',
+        grouper: 'route group',
+        data: 'data',
+        package: 'package on demand',
+        worker: 'web worker',
+        onDemand: 'no route opens it',
+    },
     blocksHelp:
         'An Angular @defer, or a lazy() inside a component, produces a lazy chunk exactly like a route does. It is not a screen: nobody enters it, it loads when its trigger fires inside the screen holding it. Counting it as a screen would raise the screen count and lower the median with something nobody opens. What the graph cannot say is WHEN that trigger fires: a block behind a button really is bytes nobody pays for until they press it, while one imported as the screen mounts comes down with the first paint, and then the screen weighs more than its row says. Both look identical here. The Measured tab is what settles it.',
     groupersHelp:
         'A file that adds practically nothing of its own to its chunk and holds nothing but dynamic imports is grouping routes, whatever it is called. What it loads are the screens; it is not one of them. That is measured rather than read off the file name, so it also holds in a project that does not name its files the Angular way.',
     dataHelp:
         'A language file, a table of countries, a dictionary: an import() of a .json produces a lazy chunk exactly like a route does. Nobody navigates to one, and an application that lazy-loads fifty languages would otherwise report fifty screens. What to do about these is not "is this a screen" but whether the data has to travel inside the bundle at all.',
+    packagesHelp:
+        "A package with an import() of its own: a diagram renderer, a formula typesetter. Nobody navigates to it, and when it is asked for is what the graph cannot say, so it is in no screen's total.",
+    workersHelp:
+        'Code started with new Worker(): it runs off the page, in a chunk of its own, when the page starts it. Not a screen and not in any total.',
+    onDemandHelp:
+        'The code carries a route table, and no route of it imports this chunk: it is a component, a tab or a language file loaded inside a page, not a place somebody navigates to. If it is a route all the same, count it as a screen.',
+    noRouteTable:
+        'No route table was found in the code, so every chunk loaded lazily counts as a screen: some of these may be tabs or components inside a page rather than places somebody navigates to.',
+    routeCss: (count, list) =>
+        `Screens also load ${count === 1 ? 'a stylesheet' : `${count} stylesheets`} of their own (${list}), not in their totals: the figures here are JavaScript.`,
     markScreen: 'Count as a screen',
     markScreenHelp:
         'Puts this entry in the table as a screen of its own. Telling a screen from a piece of one is partly read off file names, and no set of names fits every project: this is the way out that does not need Loadline to learn yours.',
@@ -388,14 +420,13 @@ export const EN: UiStrings = {
 
     drop3Title: 'The previous measurement',
     drop3Body:
-        'The <code>stats.json</code> of the previous build, an analysis exported from Loadline, or the whole previous <code>browser/</code> folder (with its <code>stats.json</code>) to compare compressed figures. Every screen shows how much it changed, and a signal fires if something grew or entered the bootstrap.',
+        'The <code>stats.json</code> of the previous build, an analysis exported from Loadline, or the whole previous <code>browser/</code> folder — with its <code>stats.json</code> or without one, the way the build on screen is read — to compare compressed figures. Every screen shows how much it changed, and a signal fires if something grew or entered the bootstrap.',
     drop3Btn: 'Choose baseline',
     drop3BtnDist: 'Choose previous folder',
-    baselineNoStats: 'The folder has no stats.json in it.',
     baselineWorking: 'Compressing the previous folder…',
     drop4Title: 'The project context',
     drop4Body:
-        '<code>angular.json</code>, <code>package.json</code> and the pipeline file (<code>.gitlab-ci.yml</code> or the GitHub workflow). With them Loadline checks where the size budget is and whether the configuration the pipeline builds applies it.',
+        '<code>package.json</code> names the project and says what it asks for directly, which tells a package you chose from one that came along. On an Angular project, <code>angular.json</code> and the pipeline file (<code>.gitlab-ci.yml</code> or the GitHub workflow) also say where the size budget is and whether the configuration the pipeline builds applies it.',
     drop4Btn: 'Choose files',
     baselineIdle: 'Nothing loaded · no comparison',
     baselineLoaded: (name, mode, screens) => `${name} · ${mode} · ${screens} screens`,
@@ -408,6 +439,9 @@ export const EN: UiStrings = {
     contextLoaded: files => files.join(' · '),
     contextIgnored: files => `Not recognised: ${files.join(', ')}`,
     contextShort: n => (n === 1 ? 'context: 1 file' : `context: ${n} files`),
+    configExtends: names => `loadline.json extends ${names}, which the page cannot read`,
+    configExtendsHelp:
+        'The page has no disk to follow "extends" on, so it applies only what this file says itself. Run npx @bymaksym/loadline --print-config and drop what it prints here instead: that is the file with everything it extends joined in.',
     contextRemove: 'Remove context',
     restorePrompt: (name, date) => `This browser kept the last measurement: ${name} · ${date}`,
     restoreBtn: 'Restore',
@@ -511,6 +545,8 @@ export const EN: UiStrings = {
         `+ ${size} of CSS the page asks for${files > 1 ? ` in ${files} sheets` : ''} · ${total} before the first paint`,
     bootSplitRaw: total =>
         `Packages and your code are split in raw bytes, ${total} in all: a compressed file cannot be divided by what is inside it.`,
+    bootSplitUnknown:
+        'How much of it is packages and how much is your code is not known: the folder carries no source maps, so a chunk is a weight with nothing named inside. Build with source maps, or add the stats.json, to see the split.',
     tileBootSub: files => `what the bundler marks as initial · ${files === 1 ? '1 file' : `${files} files`}`,
     tileScreens: 'Lazy screens',
     tileScreensTypical: 'the typical one costs',
@@ -945,6 +981,8 @@ export const EN: UiStrings = {
     helpBootOfBoot: 'of the bootstrap',
     helpBootLazyOnly: max =>
         `At most ${max} files of yours import it and at least one is in a lazy screen, so they can be checked one by one. If they all turn out to be lazy, this package downloads on the first load for people who may never reach that screen.`,
+    helpImportsUnknown:
+        'Not known: a build folder says what each chunk carries, not which file imports which. The stats.json says it.',
     helpImportersNone:
         'No file of yours imports it directly: another package imports it. It is not removed from your code but from the package that brings it.',
     bootChain: 'How it enters the bootstrap',
@@ -1029,20 +1067,62 @@ export const EN: UiStrings = {
     noShared: 'No lazy chunk is shared by two screens.',
     footer: 'Everything is computed in your browser from the metafile: nothing is uploaded anywhere. Raw figures are bytes on disk; compressed ones are gzipped from the real files, which is what your users actually pay. The browser cannot compress in brotli, so that figure only appears when the folder brings the pre-compressed .js.br files; without them, count on brotli being 15 % to 20 % below the gzip you see. Press ? for the keyboard shortcuts.',
 
+    // --- three views drawn from figures the report already has ---
+    diffTitle: 'What changed in the bootstrap',
+    diffSub: (before, after, diff, baseline) =>
+        `${before} → ${after} (${diff}) against ${baseline}. Each area is what the part weighs now; its colour, how it moved.`,
+    diffChange: { new: 'new', grew: 'grew', shrank: 'shrank', same: 'unchanged', gone: 'gone' },
+    diffOwn: 'your code',
+    diffGone: 'No longer in the bootstrap',
+    diffEstimated:
+        'The changes are raw weights at the ratio the bootstrap compresses by: the right size, not the exact one, hence the ≈.',
+    diffPackagesOnly:
+        'Packages only: the baseline was exported before the folders of your own code were recorded, so they are drawn without a change.',
+    diffTile: (name, size, change) => `${name}, ${size}, ${change}`,
+    gridTitle: 'Screens × packages',
+    gridSub:
+        'What each screen downloads from each package. A column full from top to bottom is something every screen pays for, whether or not it uses it.',
+    gridBoot: 'In the bootstrap',
+    gridLazy: 'Loaded with the screen',
+    gridOwn: 'your code',
+    gridRest: 'the rest',
+    gridTotal: 'Screen total',
+    gridCell: (screen, size, what) => `${screen} carries ${size} of ${what}, raw, inside its chunks`,
+    gridScale: { less: 'less', more: 'more' },
+    gridRaw: 'Raw minified bytes inside the chunks; the total is in the report’s unit.',
+    tripsTitle: 'How it loads, trip by trip',
+    tripsNote:
+        'An estimate, not a measurement: the report’s round trips laid out on a time axis, with a standard connection profile. Each gap is a round trip spent waiting before the first byte.',
+    tripsProfile: { slow4g: 'slow 4G', fast4g: '4G', cable: 'cable' },
+    tripsBoot: 'first load',
+    tripsScreen: 'this screen',
+    tripLabel: index => `trip ${index}`,
+    tripsWait: 'waiting',
+    tripsParse: 'parse',
+    tripsTotal: (time, trips) => `≈ ${time} to have everything, in ${trips} ${trips === 1 ? 'trip' : 'trips'}`,
+    tripsAssumed:
+        'Without index.html the first load is drawn as one trip: the graph alone cannot tell which of its chunks the page names.',
+    tripBar: (index, wait, transfer, size, files) =>
+        `Trip ${index}: ${wait} waiting, ${transfer} transferring ${size} in ${files} ${files === 1 ? 'file' : 'files'}`,
+
     errNoEntries: 'This does not look like an esbuild metafile: no entry points found.',
     errNoMain: 'Could not identify the main entry point.',
     errNoOutputs: 'The JSON is shaped like a metafile but has no "outputs" key.',
     errNotMetafile: 'The JSON is not a metafile in any format this reads.',
     errExpected:
-        'What is expected is the stats.json `ng build --stats-json` writes (an object with "outputs" and "inputs"), or the whole browser/ folder, which Loadline reads on its own.',
+        'What is expected is the build folder, the one holding the index.html — enough for anything that emits ES modules: Vite, Rollup, SvelteKit, Nuxt, Astro — or a stats file: the metafile Angular 17 or later writes with `ng build --stats-json` (an object with "outputs" and "inputs"), or the stats.json of webpack (`webpack --json`).',
     errNotEsmGraph:
-        'the chunks of this folder are webpack or Turbopack output, not ES modules: their imports are numbers resolved at run time by the loader, so there is no graph in the files to read. That is Next.js, Create React App and Angular 16 or earlier. Statoscope reads that format and does it better.',
+        "The chunks of this folder are webpack or Turbopack output, not ES modules: their imports are numbers resolved at run time by the loader, so there is no graph in the files to read. The build's stats file has it, and Loadline reads it: `ng build --stats-json` on Angular 16 or earlier, `webpack --json > stats.json`, `react-scripts build --stats` on Create React App, `vue-cli-service build --report-json` on Vue CLI. Put it in the folder, or drop it with the folder, and the figures stay compressed. Next.js with Turbopack writes no such file.",
+    entryLabel: 'The script the application starts at, with * for the hash:',
+    entryBtn: 'Read the folder with it',
     errNoPage:
-        'The folder has no index.html naming the script the application starts at, and without it there is no way to tell the entry chunk from a shared one: a bundler writes the shared code into the entry chunk, so the entry ends up imported by its own children. Add the page to the folder, or load the stats.json of the build.',
+        'No index.html in the folder names a script of the folder the application starts at — no <script src>, no import() and no file name in an inline script — and without it there is no way to tell the entry chunk from a shared one: a bundler writes the shared code into the entry chunk, so the entry ends up imported by its own children. Add the page to the folder, load the stats.json of the build, or name the script it starts at: --entry "main.*.js" in the command, the field under this message in the page, or { "build": { "entries": ["main.*.js"] } } in loadline.json.',
+    errFolderUnreadable:
+        'The browser would not let this page read the folder dropped on it. Chrome does that to a page opened from the disk (file://): the folder arrives, and listing what is inside it fails. Choose the same folder with "Choose build folder", which it does allow, or write the page with the build already in it: npx @bymaksym/loadline <folder> --html loadline.html --open.',
     errWebpackStats:
-        'this is not an esbuild metafile but a webpack stats.json. From Angular 17 on, the application builder writes one (`ng build --stats-json`); if the project is still on the browser builder, that is why. Loadline does not read the webpack format on purpose: Statoscope does that job better.',
+        'This is a webpack stats.json with no chunk in it that writes a script, so there is nothing to analyse: it was written with `chunks` or `assets` turned off. Write it again with the defaults — `webpack --json > stats.json`, `ng build --stats-json` — which carry chunks, modules and the reasons each module is in.',
     errViteManifest:
-        'this is not an esbuild metafile but a Vite manifest.json. It is not needed: drop the build folder itself and Loadline reads the graph out of the chunks, which is where Vite actually writes it.',
+        'This is not an esbuild metafile but a Vite manifest.json. It is not needed: drop the build folder itself and Loadline reads the graph out of the chunks, which is where Vite actually writes it.',
     errVisualizer:
-        'this is not an esbuild metafile but rollup-plugin-visualizer output. Loadline reads the esbuild metafile, which is a different thing.',
+        'This is not an esbuild metafile but rollup-plugin-visualizer output. Loadline reads the esbuild metafile, which is a different thing.',
 };

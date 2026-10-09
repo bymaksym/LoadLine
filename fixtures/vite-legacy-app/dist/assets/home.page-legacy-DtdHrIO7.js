@@ -1,0 +1,1 @@
+(function(){System.register([`./index-legacy-DmXOc-8M.js`],function(e,t){var n,r;return{setters:[function(e){n=e.r,r=e.t}],execute:function(){e(`render`,function(){return r(function(){return t.import(`./chart.widget-legacy-BZ9Mkir2.js`).then(function(e){return n(document.querySelector(`#chart`),e.draw())})},void 0),`<h1>Home</h1><div id="chart"></div>`})}}})})();

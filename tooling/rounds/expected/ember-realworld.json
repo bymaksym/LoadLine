@@ -1,0 +1,32 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 197348,
+        "rawBytes": 809499,
+        "files": 2
+    },
+    "firstTrip": {
+        "total": 197388,
+        "files": 4
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 0,
+        "server": 2,
+        "ignored": 0
+    },
+    "screens": [],
+    "deferred": [],
+    "shared": 0,
+    "workers": 0,
+    "onDemand": 0,
+    "data": 0,
+    "signals": [
+        "mid assetOrigin: The render-blocking stylesheets come from 3 hosts that are not the page's own",
+        "info noSourceMaps: This folder carries no .map files, and that cuts the report short",
+        "info unhashable: 1 file carries no hash in the name",
+        "info devLeftovers: One development marker in the build, author unknown"
+    ]
+}

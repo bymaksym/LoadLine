@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { type Zone } from '@core/analysis/analysis.types';
-import { deliveryOf } from '@core/analysis/delivery';
+import { deliveryOf } from '@core/analysis/screens/delivery';
 import { formatDelta } from '@core/format/format.utils';
 import { isStale, type MeasuredWave, OBSERVED_FRESH_DAYS } from '@core/measurement/observed';
 import { ExplainComponent } from '@shared/explain/explain';

@@ -1,4 +1,6 @@
 import { computed, inject, Service, signal } from '@angular/core';
+import { toolLabel } from '../core/analysis/tool';
+import { blindBoot } from '../core/whatif/defer';
 import { I18nService } from './i18n.service';
 import { ReportStore } from './report.store';
 
@@ -44,9 +46,15 @@ export class HomeService {
 
         // Saying where the graph came from is not decoration: read from the folder it is the
         // chunks talking, and what a chunk carries inside is only known if the maps were there.
-        return this.store.derived()
-            ? t.statsFromFolder(info.name, info.outputs)
+        // Without the maps it says so here, where the report starts, and not only in a card further
+        // down: every "—" in the savings column depends on it.
+        const analysis = this.store.analysis();
+        const line = this.store.derived()
+            ? t.statsFromFolder(info.name, info.outputs, !!analysis && blindBoot(analysis))
             : t.statsLoaded(info.name, info.outputs);
+        // What wrote it, as the command's lead says it: proper names, the same in both languages.
+        const tool = analysis ? toolLabel(analysis.tool) : null;
+        return tool ? `${line} · ${tool}` : line;
     });
 
     show(): void {

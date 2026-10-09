@@ -29,8 +29,14 @@ export interface UnstableChunk {
     bytes: number;
     /** Fraction of the chunk that is `node_modules`, 0 to 1. */
     vendorRatio: number;
-    /** Bytes of it that are somebody else's code and did not have to be invalidated. */
+    /**
+     * Bytes of it that are somebody else's code and did not have to be invalidated, in the report's
+     * unit: the chunk's own figure at the share the dependencies take of it. An estimate whenever the
+     * report is compressed, because what is inside a chunk is only ever measured raw.
+     */
     vendorBytes: number;
+    /** Whether `vendorBytes` is that estimate: a compressed report. In a raw one it is exact. */
+    estimated: boolean;
     /** Whether it is part of the bootstrap, which is when everybody pays for the invalidation. */
     inBoot: boolean;
 }

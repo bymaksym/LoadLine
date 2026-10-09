@@ -1,0 +1,1 @@
+(function(){System.register([`./index-legacy-DmXOc-8M.js`],function(e,t){var n;return{setters:[function(e){n=e.n}],execute:function(){e(`draw`,function(){return`<svg role="img" aria-label="${n(42)}"><rect width="10" height="10" /></svg>`})}}})})();

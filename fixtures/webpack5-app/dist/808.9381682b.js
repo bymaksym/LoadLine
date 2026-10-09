@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkloadline_webpack5_fixture=self.webpackChunkloadline_webpack5_fixture||[]).push([[808],{808(e,a,i){var l=i(775);i.d(a,["draw",0,()=>`<svg role="img" aria-label="${(0,l.T)(42)}"><rect width="10" height="10" /></svg>`])}}]);
+//# sourceMappingURL=808.9381682b.js.map

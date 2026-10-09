@@ -39,6 +39,12 @@ export interface Advisory {
     range: string | null;
     /** What upgrading to would fix it, when the report says. */
     fixedIn: string | null;
+    /**
+     * The installed versions the audit found affected, when it names them — pnpm does, in
+     * `findings[].version`; npm writes only the range. What tells the copy in the browser from a
+     * copy only the server or the build tool has.
+     */
+    versions?: string[];
 }
 
 /** An advisory that matters here: its package is in the bundle. */

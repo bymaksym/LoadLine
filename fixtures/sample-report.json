@@ -6,7 +6,17 @@
   "mode": "raw",
   "unit": "raw",
   "splitSource": "metafile",
+  "builtWith": {
+    "bundler": "esbuild",
+    "framework": "angular"
+  },
   "serverOutputs": 0,
+  "offPage": {
+    "legacy": 0,
+    "serviceWorker": 0,
+    "server": 0,
+    "ignored": 0
+  },
   "pageCss": null,
   "firstTrip": null,
   "assets": null,
@@ -25,8 +35,10 @@
       "shared": 171080,
       "own": 439660,
       "total": 1178880,
+      "routes": [],
       "verdict": "ok",
-      "delta": null
+      "delta": null,
+      "causes": null
     },
     {
       "label": "invoices",
@@ -36,8 +48,10 @@
       "shared": 171080,
       "own": 171660,
       "total": 910880,
+      "routes": [],
       "verdict": "good",
-      "delta": null
+      "delta": null,
+      "causes": null
     },
     {
       "label": "dashboard",
@@ -47,8 +61,10 @@
       "shared": 0,
       "own": 249340,
       "total": 817480,
+      "routes": [],
       "verdict": "good",
-      "delta": null
+      "delta": null,
+      "causes": null
     },
     {
       "label": "orders",
@@ -58,8 +74,10 @@
       "shared": 171080,
       "own": 14380,
       "total": 753600,
+      "routes": [],
       "verdict": "good",
-      "delta": null
+      "delta": null,
+      "causes": null
     },
     {
       "label": "customers",
@@ -69,19 +87,23 @@
       "shared": 171080,
       "own": 10080,
       "total": 749300,
+      "routes": [],
       "verdict": "good",
-      "delta": null
+      "delta": null,
+      "causes": null
     },
     {
       "label": "users",
       "source": "src/app/features/admin/users.page.ts",
-      "files": 6,
+      "files": 7,
       "boot": 568140,
-      "shared": 171080,
+      "shared": 171900,
       "own": 8980,
-      "total": 748200,
+      "total": 749020,
+      "routes": [],
       "verdict": "good",
-      "delta": null
+      "delta": null,
+      "causes": null
     },
     {
       "label": "settings",
@@ -91,19 +113,23 @@
       "shared": 0,
       "own": 8280,
       "total": 576420,
+      "routes": [],
       "verdict": "good",
-      "delta": null
+      "delta": null,
+      "causes": null
     },
     {
       "label": "audit",
       "source": "src/app/features/admin/audit.page.ts",
-      "files": 5,
+      "files": 6,
       "boot": 568140,
-      "shared": 0,
+      "shared": 820,
       "own": 7380,
-      "total": 575520,
+      "total": 576340,
+      "routes": [],
       "verdict": "good",
-      "delta": null
+      "delta": null,
+      "causes": null
     }
   ],
   "deferred": [
@@ -121,6 +147,10 @@
     }
   ],
   "data": [],
+  "packages": [],
+  "workers": [],
+  "onDemand": [],
+  "routeTable": null,
   "shared": [
     {
       "file": "chunk-GRID-5NPX7J.js",
@@ -128,11 +158,19 @@
       "bytes": 171080,
       "screens": 5,
       "mainContent": "ag-grid-community/dist/package/main.esm.mjs"
+    },
+    {
+      "file": "chunk-ADMIN-9TYU2E.js",
+      "name": "chunk-ADMIN-9TYU2E.js",
+      "bytes": 820,
+      "screens": 2,
+      "mainContent": "src/app/features/admin/admin.routes.ts"
     }
   ],
   "findings": [
     {
       "kind": "shared",
+      "key": "chunk-GRID-5NPX7J.js",
       "severity": "high",
       "chip": "common code marked as lazy",
       "title": "167 kB downloaded by 5 of your 8 screens",
@@ -141,6 +179,7 @@
     },
     {
       "kind": "bootLazy",
+      "key": "date-fns",
       "severity": "high",
       "chip": "bootstrap for a lazy screen",
       "title": "date-fns weighs 28 kB in the bootstrap, and the code using it is in a lazy screen",
@@ -153,6 +192,7 @@
     },
     {
       "kind": "bigFile",
+      "key": "core",
       "severity": "mid",
       "chip": "large source file",
       "title": "countries.data.ts takes 47 kB of the bootstrap",
@@ -165,6 +205,7 @@
     },
     {
       "kind": "dupes",
+      "key": "date-fns",
       "severity": "mid",
       "chip": "duplicate copies",
       "title": "1 package shipped more than once",
@@ -173,6 +214,7 @@
     },
     {
       "kind": "heavy",
+      "key": "src/app/features/reports/reports.page.ts",
       "severity": "mid",
       "chip": "expensive screens",
       "title": "3 screens carry far more code of their own than the rest, worst of them reports with 429 kB",
@@ -189,10 +231,11 @@
     },
     {
       "kind": "slowScreens",
+      "key": "src/app/features/dashboard/dashboard.page.ts",
       "severity": "mid",
       "chip": "discovery depth",
       "title": "dashboard takes 3 round trips to be complete: 450 ms of pure waiting",
-      "body": "A browser does not know a chunk exists until it has downloaded and parsed the one importing it, so a screen split across several levels of static imports costs that many requests in a row, however little it weighs. The threshold here is a formula, not a number: every round trip is at least one latency, so 3 × 150 ms = 450 ms that no size figure shows. And it holds under every protocol: no compression touches a round trip, and neither does multiplexing, because what limits this is sequential discovery rather than transport. One screen takes 3 or more: dashboard (3). Its widest trip brings a single file: it is a chain end to end, and every level flattened removes a whole wait.",
+      "body": "A browser does not know a chunk exists until it has downloaded and parsed the one importing it, so a screen split across several levels of static imports costs that many requests in a row, however little it weighs. The threshold here is a formula, not a number: every round trip is at least one latency, so 3 × 150 ms = 450 ms that no size figure shows. And it holds under every protocol: no compression touches a round trip, and neither does multiplexing, because what limits this is sequential discovery rather than transport. 2 screens take 3 or more: dashboard (3), users (3). Its widest trip brings a single file: it is a chain end to end, and every level flattened removes a whole wait.",
       "fix": "Look at the chain in the Screens tab: each level is one file statically importing another. It shortens by importing from the screen what reaches it today through an intermediary, or — where the bundler allows it — by having the loader ask for the whole list at once, which is what Vite does with its preload list. This is not a question of size: merging chunks does not fix it while the chain is as deep."
     },
     {
@@ -201,7 +244,7 @@
       "chip": "chunk mixing what changes with what does not",
       "title": "3 chunks mix dependencies with your own code: 233 kB is re-invalidated on every deploy",
       "body": "Dependencies do not change for months and your code changes daily. A chunk holding both gets a new hash every time you touch a line, and everything third-party inside it is downloaded again for nothing. And it is in the bootstrap, so every returning visit pays for it. chunk-THEME-QW19MC.js — 83 % 43 kB (bootstrap) · main-K7QW2X.js — 32 % 28 kB (bootstrap) · chunk-GRID-5NPX7J.js — 97 % 162 kB.",
-      "fix": "Split them: in Rollup and Vite with a manualChunks rule sending everything from node_modules to its own chunk. Angular already does this by default, so if something shows up here, look for a static import dragging a dependency into a chunk of yours. Watch the opposite extreme: one enormous vendor chunk is invalidated whole when a single library is updated, so what is wanted is a split by how often things change, not by where they came from."
+      "fix": "Split them: in Rollup and Vite with a manualChunks rule sending everything from node_modules to its own chunk. Angular's application builder has no such rule and no option for one: it splits by what imports what, so a service of yours imported by every screen lands in the same chunk as the framework — the case to look for is exactly that, a file of yours that everything imports, and what moves it out is importing it from fewer places. Watch the opposite extreme: one enormous vendor chunk is invalidated whole when a single library is updated, so what is wanted is a split by how often things change, not by where they came from."
     },
     {
       "kind": "unhashable",
@@ -323,7 +366,9 @@
     "after": 490420,
     "estimated": false
   },
+  "measurable": true,
   "whatIf": [],
+  "why": [],
   "timing": [
     {
       "profile": "slow4g",
@@ -356,6 +401,7 @@
         "bytes": 53580,
         "vendorRatio": 0.8258426966292135,
         "vendorBytes": 44100,
+        "estimated": false,
         "inBoot": true
       },
       {
@@ -363,6 +409,7 @@
         "bytes": 90300,
         "vendorRatio": 0.31513537505548156,
         "vendorBytes": 28400,
+        "estimated": false,
         "inBoot": true
       },
       {
@@ -370,6 +417,7 @@
         "bytes": 171080,
         "vendorRatio": 0.973083674663546,
         "vendorBytes": 166300,
+        "estimated": false,
         "inBoot": false
       }
     ],

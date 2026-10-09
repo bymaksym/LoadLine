@@ -1,0 +1,95 @@
+@let t = i18n.ui();
+
+@if (diff(); as d) {
+    @let comparison = store.comparison();
+
+    <section class="card card--pad boot-diff">
+        <h3 class="boot-diff__title">{{ t.diffTitle }}</h3>
+        <p class="boot-diff__sub">{{ subtitle() }}</p>
+
+        <!-- Each colour with its word and its mark, so the map never says anything in colour alone. -->
+        <ul class="boot-diff__legend">
+            @for (change of changes; track change) {
+                <li class="boot-diff__entry">
+                    <i aria-hidden="true" class="boot-diff__key" [attr.data-change]="change"></i>
+                    {{ changeWord(change) }}
+                </li>
+            }
+        </ul>
+
+        <div class="boot-diff__layout" [class.boot-diff__layout--alone]="d.gone.length === 0">
+            <!--
+            The rectangles: a list, each item absolutely positioned and read out as one sentence. What
+            is drawn inside is the same sentence for the eye, cut to the room the rectangle has.
+            -->
+            @if (d.tiles.length > 0) {
+                <ul #frame class="boot-diff__map" [attr.aria-label]="t.diffTitle" [style.height.px]="height()">
+                    @for (drawn of tiles(); track drawn.tile.name) {
+                        <li
+                            class="boot-diff__tile"
+                            [attr.data-change]="drawn.tile.change"
+                            [style.height.px]="drawn.rect.h"
+                            [style.left.px]="drawn.rect.x"
+                            [style.top.px]="drawn.rect.y"
+                            [style.width.px]="drawn.rect.w"
+                        >
+                            <span class="sr-only">{{ drawn.label }}</span>
+                            @if (drawn.named) {
+                                <span aria-hidden="true" class="boot-diff__name">
+                                    @if (drawn.tile.change === 'grew') {
+                                        <b class="boot-diff__mark">+</b>
+                                    } @else if (drawn.tile.change === 'shrank') {
+                                        <b class="boot-diff__mark">−</b>
+                                    }
+                                    {{ drawn.tile.name }}
+                                    @if (drawn.tile.own) {
+                                        <span class="boot-diff__own">{{ t.diffOwn }}</span>
+                                    }
+                                </span>
+                            }
+                            @if (drawn.sized) {
+                                <span aria-hidden="true" class="boot-diff__size">
+                                    {{ drawn.size }}
+                                    @if (drawn.tile.change === 'new') {
+                                        · <b class="boot-diff__delta">{{ changeWord('new') }}</b>
+                                    } @else if (drawn.delta) {
+                                        · <b class="boot-diff__delta">{{ drawn.delta }}</b>
+                                    }
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+
+            <!-- What left: it has no area now, so it is listed beside the map rather than drawn on it. -->
+            @if (d.gone.length > 0) {
+                <div class="boot-diff__gone">
+                    <h4 class="boot-diff__gone-title">{{ t.diffGone }}</h4>
+                    <ul class="boot-diff__gone-list">
+                        @for (cause of d.gone; track cause.name) {
+                            <li class="boot-diff__gone-item">
+                                <span class="sr-only">{{ goneLabel(cause) }}</span>
+                                <i aria-hidden="true" class="boot-diff__key" data-change="gone"></i>
+                                <span aria-hidden="true" class="boot-diff__gone-name">
+                                    {{ cause.name }}
+                                    @if (cause.own) {
+                                        <span class="boot-diff__own">{{ t.diffOwn }}</span>
+                                    }
+                                </span>
+                                <b aria-hidden="true" class="boot-diff__gone-size">{{ deltaOf(cause.diff) }}</b>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+
+        @if (comparison?.causesEstimated) {
+            <p class="boot-diff__note">{{ t.diffEstimated }}</p>
+        }
+        @if (comparison && !comparison.causesOwnKnown) {
+            <p class="boot-diff__note">{{ t.diffPackagesOnly }}</p>
+        }
+    </section>
+}

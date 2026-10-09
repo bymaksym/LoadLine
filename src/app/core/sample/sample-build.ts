@@ -218,7 +218,7 @@ const CHUNKS: SampleChunk[] = [
 const WRAPPER = 180;
 
 const importsOf = (source: string): MetafileImport[] =>
-    (IMPORTS[source] ?? []).map(([path, kind]) => ({ path, kind: kind ?? 'import-statement' }));
+    (IMPORTS[source] ?? []).map(([path, kind = 'import-statement']) => ({ path, kind }));
 
 const buildMetafile = (): Metafile => {
     const inputs: Metafile['inputs'] = {};

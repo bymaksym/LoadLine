@@ -57,6 +57,9 @@ export const PROFILE_IDS: ProfileId[] = ['slow4g', 'fast4g', 'cable'];
  *                 three at once instead of flattening them into one number. `null` keeps the
  *                 profiles exactly as they are defined above.
  */
+/** Parse and compile of this much raw JavaScript, by the coefficient above. */
+export const scriptMsOf = (rawBytes: number): number => (rawBytes / KB) * MS_PER_RAW_KB;
+
 export const timingOf = (
     bytes: number,
     rawBytes: number,
@@ -69,7 +72,7 @@ export const timingOf = (
     const scale = latency === null ? 1 : latency / PROFILES.slow4g.latencyMs;
     const latencyMs = profile.latencyMs * scale * Math.max(1, waves);
     const transferMs = (bytes / profile.bytesPerSecond) * 1000;
-    const scriptMs = (rawBytes / KB) * MS_PER_RAW_KB;
+    const scriptMs = scriptMsOf(rawBytes);
 
     return {
         profile: profile.id,

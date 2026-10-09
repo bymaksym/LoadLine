@@ -47,11 +47,64 @@ export interface MetafileOutput {
      * output is named in the metafile and is never a file in the folder.
      */
     'ng-component'?: boolean;
+    /**
+     * Set by the folder reader on a file of the build that the page never downloads as part of a
+     * screen: the copy for browsers without ES modules (`<script nomodule>`, SystemJS) and a
+     * service worker with what it imports, and what `build.ignore` of `loadline.json` names. Left out
+     * of every figure and counted, the way the server side of a rendered build is.
+     */
+    offPage?: OffPageKind;
+    /**
+     * Set by the webpack reader on a lazy chunk: the chunks webpack's loader asks for in the same
+     * round trip, because they are one chunk group and `__webpack_require__.e` requests them all
+     * at once. What Vite's preload list says in a folder, said by the stats file.
+     */
+    fetchedWith?: string[];
 }
+
+/** `fetchedWith` of every output, in the shape `analyze` takes the preload lists of a folder in. */
+export const fetchedTogether = (outputs: Metafile['outputs']): Map<string, string[]> | null => {
+    const together = Object.entries(outputs).flatMap(([chunk, output]): [string, string[]][] =>
+        output.fetchedWith && output.fetchedWith.length > 0 ? [[chunk, output.fetchedWith]] : [],
+    );
+    return together.length > 0 ? new Map(together) : null;
+};
+
+/** Why a file of the folder is in no figure: see `MetafileOutput.offPage`. `ignored` is `loadline.json`'s. */
+export type OffPageKind = 'legacy' | 'service-worker' | 'server' | 'ignored';
+
+/** The bundler that wrote a build, as far as what is read says (`tool.ts`). */
+export type Bundler = 'esbuild' | 'webpack' | 'vite' | 'rollup' | 'requirejs';
+
+export type Framework =
+    | 'angular'
+    | 'react'
+    | 'vue'
+    | 'svelte'
+    | 'sveltekit'
+    | 'nuxt'
+    | 'sapper'
+    | 'stencil'
+    | 'ember'
+    | 'polymer'
+    | 'preact'
+    | 'solid'
+    | 'next';
 
 export interface Metafile {
     inputs: Record<string, MetafileInput>;
     outputs: Record<string, MetafileOutput>;
+    /**
+     * Loadline's note of what wrote the build, left by the reader that could tell: the webpack
+     * stats reader, and the folder reader from what it found in the chunks and the page. Absent on
+     * a metafile esbuild wrote, which is what that absence means (`toolOf`).
+     */
+    builtBy?: { bundler?: Bundler; framework?: Framework };
+    /**
+     * What Loadline read the graph out of, when it was not a metafile: the build folder, or a
+     * webpack stats file it translated. Absent on a metafile esbuild wrote.
+     */
+    readFrom?: 'folder' | 'webpack';
 }
 
 /**

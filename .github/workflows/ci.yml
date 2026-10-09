@@ -37,10 +37,20 @@ jobs:
 
             - run: pnpm install --frozen-lockfile
 
+            # Two versions of a package the ranges would let be one: an update that left the lockfile
+            # heavier than it needs to be. `check:all` runs it locally; here it holds for everybody.
+            - name: Lockfile duplicates
+              run: pnpm dedupe --check
+
             # The pre-commit hook only sees what one machine staged. This sees the whole tree,
             # including whatever arrived in a pull request from a fork.
             - name: Secrets
               run: pnpm run secrets:scan
+
+            # Prettier, html-validate, cspell and knip run on their own defaults, and pass, when they
+            # do not find their config. This asks each one what it reads, and keeps the root to its list.
+            - name: Every tool reads its config
+              run: pnpm run config:check
 
             - name: Formatting
               run: pnpm run format:check
@@ -65,6 +75,11 @@ jobs:
             # names and no rule in that component's scope declares. This can.
             - name: Styles in scope
               run: pnpm run lint-styles:scope
+
+            # The shape of the tree, which neither the compiler nor ESLint looks at: at most 20
+            # files per folder, and four modules sharing a prefix live in a folder of that name.
+            - name: Folders that need splitting
+              run: pnpm run lint:folders
 
             # What angular-eslint cannot see in a template: a header cell with no scope, a label
             # pointing at no control.
@@ -93,7 +108,7 @@ jobs:
               run: pnpm run knip
 
             # Informs too: a copy breaks nothing, and sometimes extracting it costs more than it
-            # saves. Deliberate copies are listed with their reason in duplicates.json.
+            # saves. Deliberate copies are listed with their reason in .config/duplicates.json.
             - name: Copied code
               continue-on-error: true
               run: pnpm run duplicates:audit
@@ -130,6 +145,19 @@ jobs:
                   name: loadline.html
                   path: loadline.html
                   if-no-files-found: error
+
+            # The README promises the page and the command run the same code with the same results,
+            # and the page is a file committed by hand: nothing else notices when the source moves on
+            # and `loadline.html` stays behind, published in the package with last month's analysis.
+            # The build is reproducible — content hashes, no timestamps, no paths — so the page the
+            # Build step wrote has to be byte for byte the committed one. Last on purpose: a stale
+            # page still leaves every check above run and the rebuilt page kept for download.
+            - name: The committed page is this build
+              run: |
+                  if ! git diff --exit-code --stat -- loadline.html; then
+                      echo "::error file=loadline.html::loadline.html is not what the source builds. Run \`pnpm build\` and commit the loadline.html it writes."
+                      exit 1
+                  fi
 
     # `engines.node` in package.json promises 20.19, and the job above proves nothing about it:
     # it runs on 24. A floor nobody exercises is a promise to whoever installs this on the oldest

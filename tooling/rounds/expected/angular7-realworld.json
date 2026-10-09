@@ -1,0 +1,42 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 133015,
+        "rawBytes": 501505,
+        "files": 3
+    },
+    "firstTrip": {
+        "total": 133035,
+        "files": 4
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 0,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "article: own 9787, shared 801, total 143603",
+        "profile: own 2256, shared 801, total 136072",
+        "editor: own 2671, shared 0, total 135686",
+        "settings: own 2397, shared 0, total 135412"
+    ],
+    "deferred": [],
+    "shared": 1,
+    "workers": 0,
+    "onDemand": 0,
+    "data": 0,
+    "signals": [
+        "mid packageBarrel: core-js ships 244 files (≈13 kB) and only 14 of them are imported from outside",
+        "mid commonJs: 3 packages shipped as CommonJS (115 kB): the bundler cannot tree-shake them",
+        "mid assetOrigin: The render-blocking stylesheets come from 3 hosts that are not the page's own",
+        "mid unstableChunk: 3 chunks mix dependencies with your own code: ≈129 kB is re-invalidated on every deploy",
+        "info cascadeShape: main.#.js names 5 of 8 chunks and no chunk carries its name: a change stops there",
+        "info theirs: 96 % of your first load is code you did not write",
+        "info unhashable: 4 files carry no hash in the name",
+        "info devLeftovers: One development marker in the build, author unknown",
+        "info situationMissing: 2 unanswered questions would change what this report says"
+    ]
+}

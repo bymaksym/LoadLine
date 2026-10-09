@@ -8,9 +8,7 @@ import {
     signal,
     viewChild,
 } from '@angular/core';
-import { type MapNode, mapOf, pathTo, type Rect, squarify } from '@core/analysis/treemap';
-import { formatBytes } from '@core/format/format.utils';
-import { BytesPipe } from '@shared/pipes/bytes.pipe';
+import { figureOfNode, type MapNode, mapOf, pathTo, type Rect, squarify } from '@core/analysis/views/treemap';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
@@ -54,7 +52,7 @@ const PAD = 3;
     selector: 'app-map-tab',
     templateUrl: './map-tab.html',
     styleUrl: './map-tab.scss',
-    imports: [PanelHeaderComponent, MapDetailComponent, BytesPipe],
+    imports: [PanelHeaderComponent, MapDetailComponent],
 })
 export class MapTabComponent {
     // * SERVICES
@@ -199,6 +197,7 @@ export class MapTabComponent {
             weight: roots.reduce((sum, node) => sum + node.weight, 0),
             bytes: roots.reduce((sum, node) => sum + (node.bytes ?? 0), 0),
             raw: roots.reduce((sum, node) => sum + node.raw, 0),
+            ratio: 1,
             zone: 'boot',
             screens: 0,
             own: false,
@@ -209,9 +208,9 @@ export class MapTabComponent {
 
     protected readonly detail = computed(() => this.picked() ?? this.current() ?? this.build());
 
-    /** The figure a node is read by: the report's unit for a chunk, raw for anything inside one. */
+    /** The figure a node is read by, in the report's unit: see `figureOfNode`. */
     protected figureOf(node: MapNode): string {
-        return formatBytes(node.bytes ?? node.raw);
+        return figureOfNode(node);
     }
 
     // --- moving around --------------------------------------------------------------------------

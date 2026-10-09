@@ -75,6 +75,9 @@ export interface UnitScale {
     estimated: boolean;
 }
 
+/** A raw report: nothing converted, nothing estimated. */
+export const RAW_SCALE: UnitScale = { ratio: 1, estimated: false };
+
 export const unitScale = (analysis: Analysis): UnitScale => {
     const estimated = analysis.bootRawBytes > 0 && analysis.bootBytes !== analysis.bootRawBytes;
     return { ratio: estimated ? analysis.bootBytes / analysis.bootRawBytes : 1, estimated };

@@ -17,10 +17,10 @@
 # So the counting is automated and the decision is not.
 #
 # Below 1.0.0 this bumps the minor for a feature and the patch for a fix, and a breaking change
-# is a minor too — `bump-minor-pre-major` in release-please-config.json. That is semver for 0.x,
+# is a minor too — `bump-minor-pre-major` in .github/release-please-config.json. That is semver for 0.x,
 # and it is what keeps the command's flags free to move without spending the 1.0.0.
 #
-# **Where it thinks it is lives in `.release-please-manifest.json`, and that file is not optional.**
+# **Where it thinks it is lives in `.github/release-please-manifest.json`, and that file is not optional.**
 # Without it release-please has nothing to count from, reads the whole history as unreleased and
 # proposes 1.0.0 — which it did, once. A tag it did not create itself is not an anchor: the
 # manifest is. It says 0.1.0 because that is what went to npm by hand.
@@ -54,6 +54,13 @@ jobs:
         steps:
             - uses: googleapis/release-please-action@v5
               id: release
+              # Both files live in .github/, next to dependabot.yml, with the rest of what decides
+              # versions. The action reads them from the repository at these paths (and writes the
+              # manifest back there in each release pull request); without the two lines it looks at
+              # the root, finds no manifest, and counts the whole history as unreleased again.
+              with:
+                  config-file: .github/release-please-config.json
+                  manifest-file: .github/release-please-manifest.json
 
             # The tag release-please pushes is pushed with GITHUB_TOKEN, and GitHub starts no workflow
             # from an event that token caused — so publish.yml, which listens for that tag, never ran:

@@ -1,6 +1,5 @@
 import { Component, inject, input, output } from '@angular/core';
-import { type MapNode } from '@core/analysis/treemap';
-import { formatBytes } from '@core/format/format.utils';
+import { figureOfNode, type MapNode } from '@core/analysis/views/treemap';
 import { ExplainComponent } from '@shared/explain/explain';
 import { BytesPipe } from '@shared/pipes/bytes.pipe';
 import { I18nService } from '@state/i18n.service';
@@ -45,9 +44,9 @@ export class MapDetailComponent {
     readonly upped = output();
     readonly found = output<MapNode>();
 
-    /** The figure a node is read by: the report's unit for a chunk, raw for anything inside one. */
+    /** The figure a node is read by, in the report's unit: see `figureOfNode`. */
     protected figureOf(node: MapNode): string {
-        return formatBytes(node.bytes ?? node.raw);
+        return figureOfNode(node);
     }
 
     /** Where in the build this node sits, as a share of its level and of everything. */

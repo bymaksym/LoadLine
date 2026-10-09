@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { brotliSizes, isAsset, isContextName, sniff } from './dist-files';
+import { brotliSizes, isAsset, isContextName, sniff, withGzipFallback } from './dist-files';
 
 const fileOf = (name: string, content = '', size?: number): File => {
     const file = new File([content], name);
@@ -38,6 +38,28 @@ describe('brotliSizes', () => {
 
     it('ignores anything else in the folder', () => {
         expect(brotliSizes([fileOf('main-ABC.js', 'x'), fileOf('index.html.br', 'x')]).size).toBe(0);
+    });
+});
+
+/**
+ * A pre-compressing plugin skips small files, and the server sends those gzip. Missing from the
+ * brotli figures, they read as no file of this folder: a Vue build lost `runtime-core` from its
+ * bootstrap and a screen from its table.
+ */
+describe('withGzipFallback', () => {
+    it('fills the files that brought no .br with what the server sends instead', () => {
+        const gzip = new Map([
+            ['main-A1.js', 40_000],
+            ['tiny-B2.js', 300],
+        ]);
+        const sizes = withGzipFallback(new Map([['main-A1.js', 35_000]]), gzip);
+
+        expect(sizes.get('main-A1.js')).toBe(35_000);
+        expect(sizes.get('tiny-B2.js')).toBe(300);
+    });
+
+    it('stays empty when the folder brought no .br at all, so brotli is never offered on gzip figures', () => {
+        expect(withGzipFallback(new Map(), new Map([['main-A1.js', 40_000]])).size).toBe(0);
     });
 });
 

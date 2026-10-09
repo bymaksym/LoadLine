@@ -13,6 +13,7 @@
  * leaves the report exactly where it was rather than softening it.
  */
 
+import { type Lang } from '../i18n/ui-strings';
 import {
     type Breadth,
     type ConnectionAnswer,
@@ -25,6 +26,7 @@ import {
     type Situation,
     type SituationKey,
 } from './situation.types';
+import { SITUATION_TEXT } from './situation-text';
 
 /** Nobody has answered anything. It is also what a report with no `loadline.json` runs on. */
 export const EMPTY_SITUATION: Situation = {
@@ -230,10 +232,11 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
  * acceptances make and for the same reason: the failure to avoid is a typo silently reading as an
  * answer, because an answer is the only thing here that can move a colour.
  */
-export const readSituation = (value: unknown): { situation: Situation; problems: string[] } => {
+export const readSituation = (value: unknown, lang: Lang = 'en'): { situation: Situation; problems: string[] } => {
     if (!value || typeof value !== 'object') {
         return { situation: EMPTY_SITUATION, problems: [] };
     }
+    const t = SITUATION_TEXT[lang];
 
     const raw = value as Record<string, unknown>;
     const problems: string[] = [];
@@ -245,9 +248,7 @@ export const readSituation = (value: unknown): { situation: Situation; problems:
             continue;
         }
         if (typeof answer !== 'string' || !OPTIONS.get(question.key)?.has(answer)) {
-            problems.push(
-                `Unknown answer in "situation.${question.key}": ${JSON.stringify(answer)}. It counts as unanswered.`,
-            );
+            problems.push(t.unknownAnswer(question.key, JSON.stringify(answer)));
             continue;
         }
         // The five fields are five different string unions and the loop knows the key only as one
@@ -263,7 +264,7 @@ export const readSituation = (value: unknown): { situation: Situation; problems:
         }
         const number = readNumber(given, key);
         if (number === null) {
-            problems.push(`"situation.${key}" is not a number between 0 and ${RAW_LIMITS[key]}. It is ignored.`);
+            problems.push(t.badSituationNumber(key, RAW_LIMITS[key] ?? 0));
             continue;
         }
         situation[key] = number;
@@ -274,7 +275,7 @@ export const readSituation = (value: unknown): { situation: Situation; problems:
 
     const answeredAt = readText(raw['answeredAt']);
     if (answeredAt !== null && !DATE.test(answeredAt)) {
-        problems.push(`"situation.answeredAt" is not a YYYY-MM-DD date: ${answeredAt}. It is ignored.`);
+        problems.push(t.badAnsweredAt(answeredAt));
     } else {
         situation.answeredAt = answeredAt;
     }

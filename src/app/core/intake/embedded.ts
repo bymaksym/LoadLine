@@ -20,6 +20,12 @@ export interface EmbeddedFile {
      * same length, unique to the file, which keeps every figure identical to the command's.
      */
     size?: number;
+    /**
+     * The SHA-256 of what was left out, in hex, when the command computed it. A font or a picture
+     * is read only to tell "the same file twice" from "two files of the same size", so the hash is
+     * all that has to travel: carried whole as base64, they made Excalidraw's report 54 MB.
+     */
+    sha256?: string;
 }
 
 /** What `#loadline-build` holds. */
@@ -60,6 +66,14 @@ const bytesOf = (file: EmbeddedFile): Uint8Array<ArrayBuffer> => {
 };
 
 /**
+ * The hashes that came with the build, for the stand-ins that carry no content of their own. Read
+ * by `hashOf` before it reads any bytes: hashing the filler would compare paths, not files.
+ */
+const KNOWN_HASHES = new WeakMap<File, string>();
+
+export const knownHashOf = (file: File): string | null => KNOWN_HASHES.get(file) ?? null;
+
+/**
  * The folder as a folder picker would have handed it over: each `File` carries the path it had
  * under the folder, which is what tells `orders/index.html` from `settings/index.html`.
  */
@@ -68,5 +82,8 @@ export const filesOf = (folder: NonNullable<EmbeddedBuild['folder']>): File[] =>
         const name = file.path.split('/').at(-1) ?? file.path;
         const made = new File([file.text ?? bytesOf(file)], name);
         Object.defineProperty(made, 'webkitRelativePath', { value: `${folder.name}/${file.path}` });
+        if (file.sha256) {
+            KNOWN_HASHES.set(made, file.sha256);
+        }
         return made;
     });

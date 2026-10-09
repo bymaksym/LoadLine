@@ -24,11 +24,11 @@ const entry = (file: string, rest: Partial<MeasuredEntry> = {}): MeasuredEntry =
     ...rest,
 });
 
-const paste = (entries: MeasuredEntry[], page = NO_PAGE): Measurement => ({
+const paste = (entries: MeasuredEntry[]): Measurement => ({
     url: 'https://app.example/',
     entries,
     source: 'json',
-    page: { ...page, origin: page.origin ?? 'https://app.example' },
+    page: { ...NO_PAGE, origin: 'https://app.example' },
 });
 
 describe('wavesOf · the trips the browser really took', () => {
@@ -142,7 +142,16 @@ describe('observedFrom · what is served, not what was built', () => {
             requests: 2,
             origins: ['https://analytics.example'],
             total: 3,
+            known: true,
         });
+    });
+
+    it('does not count third parties in a list of names, which carries no address to count them by', () => {
+        const named = (file: string): MeasuredEntry => entry(file, { url: null, protocol: null });
+        const observed = observedFrom(paste([named('main.js'), named('vendor.js')]), build);
+
+        expect(observed.thirdParty.known).toBe(false);
+        expect(observed.timed).toBe(false);
     });
 
     it('reports the protocol the build agreed on, and every one it saw', () => {

@@ -54,6 +54,7 @@ export const FINDING_KINDS = [
     'licences',
     'vulnerable',
     'transitive',
+    'forbidden',
     'bootWaves',
     'slowScreens',
     'manyRequests',
@@ -106,6 +107,13 @@ export interface Finding {
      */
     saving?: number;
     /**
+     * The figure the signal is about, in the report's unit, where that is not its saving: the
+     * files over the limit of `bigFile`, the fonts of `fonts`. What an acceptance's `bytes` is held
+     * against — without it an acceptance written at "100kB" never came back, because the saving it
+     * was compared with was 0 while the files it was about weighed 389 kB.
+     */
+    size?: number;
+    /**
      * The source files the saving is about.
      *
      * They are kept because the savings of several signals cannot simply be added: two of them
@@ -150,6 +158,22 @@ export interface DupeCopyData {
     pinned?: { parent: string; range: string } | null;
 }
 
+/** The same file under two names in the folder: what travels twice, and what is only stored twice. */
+export interface DuplicateAssetsData {
+    /** Files two names of which are asked for: a visitor can download both. */
+    count: number;
+    size: string;
+    list: string;
+    /** Files with one name asked for at most: they cost the deploy, not the visit. */
+    stored: {
+        count: number;
+        size: string;
+        list: string;
+        /** Not one copy of any of them is named, by the page or by the code. */
+        none: boolean;
+    };
+}
+
 export interface DupesData {
     count: number;
     /** Every package with each of its copies, already composed. */
@@ -183,6 +207,8 @@ export interface AssetOriginData {
     origins: string[];
     /** How many script files come from them between them. */
     scripts: number;
+    /** How many render-blocking stylesheets: the page paints nothing until those arrive. */
+    styles: number;
     /** Every file on another host, scripts included: stylesheets, fonts and images count too. */
     files: number;
     /** Of those hosts, the ones the page does not warm in advance: the handshake is on the clock. */
@@ -279,4 +305,23 @@ export interface SituationMissingData {
     asks: readonly string[];
     /** Whether anything at all has been answered, which changes the opening sentence. */
     started: boolean;
+}
+
+/** What a `forbidden` signal says: which rule of `loadline.json`, where it is broken and how. */
+export interface ForbiddenData {
+    /** The rule as written, for the title: plain text. */
+    rule: string;
+    /** The same, escaped and set apart, for the body. */
+    ruleHtml: string;
+    /** `in: "bootstrap"`: the rule is about the first load, and a lazy screen may still load it. */
+    inBoot: boolean;
+    /** The team's reason, escaped: it is text somebody wrote, not markup. */
+    why: string;
+    size: string;
+    /** What it matched, as HTML: package names or file labels, the heaviest first. */
+    names: string[];
+    /** How many more it matched than `names` lists. */
+    more: number;
+    /** From the entry to the heaviest match, as HTML. `null` when there is no chain to follow. */
+    chain: string | null;
 }

@@ -1,0 +1,44 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 105211,
+        "rawBytes": 291104,
+        "files": 2
+    },
+    "firstTrip": {
+        "total": 111714,
+        "files": 3
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 0,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "type-id: own 2958, shared 17131, total 125300",
+        "type: own 617, shared 17418, total 123246",
+        "person-id: own 2290, shared 15738, total 123239",
+        "index: own 486, shared 17351, total 123048",
+        "search: own 1072, shared 10214, total 116497",
+        "type-category-query: own 405, shared 10147, total 115763",
+        "genre-no-movie: own 395, shared 10147, total 115753",
+        "genre-no-tv: own 393, shared 10147, total 115751"
+    ],
+    "deferred": [],
+    "shared": 8,
+    "workers": 0,
+    "onDemand": 15,
+    "data": 0,
+    "signals": [
+        "mid media: 1021 kB across 8 image or video files",
+        "mid unreferencedAssets: 31 kB in 2 files named by neither the HTML, nor the CSS, nor any chunk",
+        "info cascadeShape: _nuxt/DRogN8e0.js is imported by 17 of 33 chunks: any change inside it renames all of them",
+        "info noSourceMaps: This folder carries no .map files, and that cuts the report short",
+        "info prefetched: The page prefetches 1 chunk (75 B) for a screen nobody has opened",
+        "info unhashable: 10 files carry no hash in the name",
+        "info situationMissing: 4 unanswered questions would change what this report says"
+    ]
+}

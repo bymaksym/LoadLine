@@ -1,25 +1,26 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { analyze } from '../core/analysis/analysis';
 import { type Analysis, type ScreenMark } from '../core/analysis/analysis.types';
-import { foreignFormat, isMetafile, type Metafile } from '../core/analysis/metafile.types';
-import { buildSearchIndex, countMatches } from '../core/analysis/search';
-import { type SearchIndex } from '../core/analysis/search.types';
-import { readSourceMaps, resolveSplits } from '../core/analysis/sourcemap';
-import { type ChunkSplit } from '../core/analysis/sourcemap.types';
+import { foreignFormat, type Metafile } from '../core/analysis/metafile.types';
+import { configuredMarks } from '../core/analysis/screens/marks';
+import { readSourceMaps, resolveSplits } from '../core/analysis/sourcemap/sourcemap';
+import { type ChunkSplit } from '../core/analysis/sourcemap/sourcemap.types';
+import { buildSearchIndex, countMatches } from '../core/analysis/views/search';
+import { type SearchIndex } from '../core/analysis/views/search.types';
 import { type AssetReport } from '../core/assets/assets.types';
 import { compare, isSnapshot, snapshotOf } from '../core/baseline/baseline';
 import { type Comparison, type Snapshot } from '../core/baseline/baseline.types';
+import { announcedIn, indexHtmlOf, originsIn, stylesIn, titleIn } from '../core/build-text/index-html';
 import { type CachingReport } from '../core/caching/caching.types';
 import { cachingOf } from '../core/caching/from-analysis';
-import { readConfig } from '../core/config/loadline-config';
+import { readConfig, sameFolderReading } from '../core/config/loadline-config';
 import { type LoadlineConfig } from '../core/config/loadline-config.types';
 import { type Criteria, type Mode } from '../core/criteria/criteria.types';
 import { readAudit, readDeps, readLock } from '../core/deps/deps';
 import { type Advisory, type DepsReport, type LockedPackage } from '../core/deps/deps.types';
-import { buildAssetFindings } from '../core/findings/assets';
-import { buildCachingFindings } from '../core/findings/caching';
+import { unitScale } from '../core/findings/actions';
+import { buildFolderFindings } from '../core/findings/bundle/shipped';
 import { composeFindings } from '../core/findings/compose';
-import { buildDepsFindings } from '../core/findings/deps';
 import { type Finding } from '../core/findings/finding.types';
 import {
     buildComparisonFindings,
@@ -27,17 +28,22 @@ import {
     buildFindings,
     buildMeasurementFindings,
 } from '../core/findings/findings';
-import { buildObservedFindings } from '../core/findings/observed';
-import { buildPageFindings, type PageOrigins } from '../core/findings/page';
-import { buildScanFindings } from '../core/findings/scan';
-import { buildFolderFindings } from '../core/findings/shipped';
-import { buildSituationFindings } from '../core/findings/situation';
+import { buildAssetFindings } from '../core/findings/folder/assets';
+import { buildCachingFindings } from '../core/findings/folder/caching';
+import { buildPageFindings, type PageOrigins } from '../core/findings/folder/page';
+import { buildScanFindings } from '../core/findings/folder/scan';
+import { buildDepsFindings } from '../core/findings/supplied/deps';
+import { buildForbiddenFindings } from '../core/findings/supplied/forbidden';
+import { buildObservedFindings } from '../core/findings/supplied/observed';
+import { buildSituationFindings } from '../core/findings/supplied/situation';
 import { baseName } from '../core/format/format.utils';
-import { readBundleGraph } from '../core/intake/bundle-graph';
+import { setOwnership } from '../core/format/ownership';
+import { readFolderGraph } from '../core/intake/bundle-graph';
 import { type BundleGraph } from '../core/intake/bundle-graph.types';
 import {
     brotliSizes,
     bundleFilesOf,
+    droppedStats,
     gzipSizes,
     type IntakeKind,
     isAsset,
@@ -45,10 +51,11 @@ import {
     type PageCss,
     pageCssOf,
     sniff,
+    withGzipFallback,
 } from '../core/intake/dist-files';
 import { readFolderAssets } from '../core/intake/folder-assets';
 import { canPickFolder, type FolderHandle, pickFolder, readFolder } from '../core/intake/folder-handle';
-import { announcedIn, indexHtmlOf, originsIn, scriptsIn, stylesIn } from '../core/intake/index-html';
+import { metafileOf } from '../core/intake/webpack-stats';
 import { contrast, readMeasurement } from '../core/measurement/measurement';
 import {
     type MeasuredReport,
@@ -65,6 +72,7 @@ import {
     repoPathsOf,
 } from '../core/project/project-context';
 import { type ProjectContext } from '../core/project/project-context.types';
+import { projectNameOf } from '../core/project/project-name';
 import { SAMPLE_CSS, SAMPLE_NAME, SAMPLE_PAGE, SAMPLE_STATS } from '../core/sample/sample-build';
 import { scanBuild } from '../core/scan/scan';
 import { type ScanReport } from '../core/scan/scan.types';
@@ -132,6 +140,9 @@ export class ReportStore {
      */
     readonly pageOrigins = signal<PageOrigins | null>(null);
 
+    /** The `<title>` of the build's page: what the application calls itself, to name the report by. */
+    private readonly pageTitle = signal<string | null>(null);
+
     /**
      * The stylesheets that same page asks for.
      *
@@ -179,7 +190,8 @@ export class ReportStore {
      * Chunks the loader asks for in the same round trip as a lazy one, from the lists Vite writes
      * into each dynamic import. Empty for every esbuild build, which writes no such list.
      */
-    private readonly parallel = signal<ReadonlyMap<string, readonly string[]> | null>(null);
+    /** What the folder reader found besides the metafile: the preload lists and the route table. */
+    private readonly graphLinks = signal<Pick<BundleGraph, 'parallel' | 'routes'> | null>(null);
 
     /**
      * Whether the graph was read from the compiled folder rather than from a `stats.json`. It
@@ -194,6 +206,15 @@ export class ReportStore {
      * source path, which survives the next `stats.json`.
      */
     readonly marks = signal<ReadonlyMap<string, ScreenMark>>(new Map());
+    /**
+     * The marks the analysis runs with: what `build.screens` of a dropped `loadline.json` says,
+     * with the clicks of this session over it — a person correcting the file wins over the file.
+     */
+    private readonly effectiveMarks = computed((): ReadonlyMap<string, ScreenMark> => {
+        const meta = this.metafile();
+        const configured = meta ? configuredMarks(this.config()?.build?.screens, meta) : new Map<string, ScreenMark>();
+        return new Map([...configured, ...this.marks()]);
+    });
 
     readonly statsInfo = signal<LoadedStats | null>(null);
     /**
@@ -213,9 +234,9 @@ export class ReportStore {
     /**
      * Which of the two waits is happening, so neither of them is a page that has simply stopped.
      *
-     * They are not the same kind of wait, and `scripts/measure-analysis.mjs` is where the numbers
-     * are. Compressing a folder is the long one — three seconds for ninety-nine megabytes — and it
-     * never holds the thread: `CompressionStream` yields between files and the progress bar moves.
+     * They are not the same kind of wait, and the figures say so. Compressing a folder is the long
+     * one — three seconds for ninety-nine megabytes — and it never holds the thread:
+     * `CompressionStream` yields between files and the progress bar moves.
      * Walking the import graph is the short one and the only one that freezes anything: a second at
      * eight thousand inputs, and a third of a second more when the signals ask for the exclusive
      * weight. A second of nothing responding, with no label on it, reads as a broken page.
@@ -267,13 +288,22 @@ export class ReportStore {
     /**
      * What the project is called, so a report names which project it is about at a glance.
      * `package.json` first because that is the name people use; `angular.json` names the project
-     * inside the workspace, which is the next best thing. Without context files there is no name:
-     * the metafile does not carry one, and inventing it from the `stats.json` file name would be
-     * worse than showing nothing.
+     * inside the workspace, which is the next best thing; then what the build says of itself — the
+     * page's `<title>` and the folder it came in — because without context files, which almost
+     * nobody loads, almost every report was about nothing in particular. Never the example's: that
+     * is not anybody's project, and the line next to it already says so.
      */
     readonly projectName = computed(() => {
+        if (this.isSample()) {
+            return null;
+        }
         const context = this.context();
-        return context.pkg?.name ?? context.angular?.project ?? null;
+        return projectNameOf({
+            packageName: context.pkg?.name,
+            angularProject: context.angular?.project,
+            pageTitle: this.pageTitle(),
+            folder: this.statsInfo()?.name,
+        });
     });
 
     readonly hasBrotli = computed(() => this.brotli() !== null);
@@ -316,6 +346,9 @@ export class ReportStore {
      * language nor the criteria — so switching language does not walk the graph again.
      */
     readonly analysis = computed<Analysis | null>(() => {
+        // Yours or theirs, for this analysis and every finding read off it (`core/format/ownership.ts`):
+        // `build.own` and `build.dependencies` of a dropped loadline.json, which is set once per file.
+        setOwnership(this.config()?.build);
         const meta = this.metafile();
         if (!meta) {
             return null;
@@ -327,9 +360,10 @@ export class ReportStore {
                 this.sizes(),
                 this.exact(),
                 this.announced(),
-                this.marks(),
+                this.effectiveMarks(),
                 { grouperMaxBytes: this.grouperMaxBytes() },
-                this.parallel(),
+                this.graphLinks()?.parallel ?? null,
+                this.graphLinks()?.routes ?? null,
             );
         } catch (error) {
             this.error.set(errorMessage(error, this.i18n.ui()));
@@ -365,9 +399,10 @@ export class ReportStore {
                 null,
                 this.exact(),
                 this.announced(),
-                this.marks(),
+                this.effectiveMarks(),
                 { grouperMaxBytes: this.grouperMaxBytes() },
-                this.parallel(),
+                this.graphLinks()?.parallel ?? null,
+                this.graphLinks()?.routes ?? null,
             );
         } catch {
             return null;
@@ -409,6 +444,13 @@ export class ReportStore {
         const mode = this.baseline()?.mode;
         return !!mode && mode !== 'raw' && mode !== this.mode();
     });
+
+    /**
+     * The folder's figures are here and its text is not: a restored session. The text is the whole
+     * build, megabytes of it, so it is not kept — and what only the text can say (secrets, leftovers,
+     * readable sources) is then missing from the signals without anything on the page saying why.
+     */
+    readonly textUnread = computed(() => (this.distFiles() ?? 0) > 0 && this.buildTexts().size === 0);
 
     /**
      * What reading the text of the build says. `null` until a folder is dropped: without the text
@@ -453,7 +495,9 @@ export class ReportStore {
      */
     readonly caching = computed<CachingReport | null>(() => {
         const analysis = this.analysis();
-        return analysis ? cachingOf(analysis, this.baseline(), this.assets(), this.announced() ?? new Set()) : null;
+        return analysis
+            ? cachingOf(analysis, this.baseline(), this.assets(), this.announced() ?? new Set(), [], this.sizes())
+            : null;
     });
 
     /**
@@ -478,14 +522,17 @@ export class ReportStore {
                     derived: this.derived(),
                     screens: analysis.screens.map(s => s.label),
                     drift: analysis.splitDrift,
+                    tool: analysis.tool,
                 },
                 lang,
             ),
             ...(assets ? buildAssetFindings(assets, lang, criteria, this.assetSources()) : []),
-            ...(caching ? buildCachingFindings(caching, lang, criteria, this.situation.situation()) : []),
+            ...(caching
+                ? buildCachingFindings(caching, lang, criteria, this.situation.situation(), analysis.tool)
+                : []),
             ...buildPageFindings(this.pageOrigins(), lang),
-            ...(scan ? buildScanFindings(scan, lang, criteria) : []),
-            ...(deps ? buildDepsFindings(deps, lang, criteria) : []),
+            ...(scan ? buildScanFindings(scan, lang, criteria, unitScale(analysis), analysis.tool) : []),
+            ...(deps ? buildDepsFindings(deps, lang, criteria, unitScale(analysis)) : []),
         ];
     }
 
@@ -508,6 +555,7 @@ export class ReportStore {
         return [
             ...buildFindings(analysis, lang, this.mode(), criteria, situation, this.deps()?.declared ?? null),
             ...buildContextFindings(this.context(), analysis, lang, criteria),
+            ...buildForbiddenFindings(analysis, this.config()?.forbidden, lang),
             ...this.folderFindings(analysis),
         ];
     });
@@ -529,7 +577,10 @@ export class ReportStore {
         const composed = composeFindings({
             base: buildFindings(analysis, lang, this.mode(), criteria, situation, this.deps()?.declared ?? null),
             fromComparison: comparison ? buildComparisonFindings(comparison, lang, criteria) : [],
-            fromContext: buildContextFindings(this.context(), analysis, lang, criteria),
+            fromContext: [
+                ...buildContextFindings(this.context(), analysis, lang, criteria),
+                ...buildForbiddenFindings(analysis, this.config()?.forbidden, lang),
+            ],
             fromMeasurement: measured
                 ? [
                       ...buildMeasurementFindings(measured, lang, criteria),
@@ -592,10 +643,12 @@ export class ReportStore {
 
         try {
             const text = await file.text();
-            const parsed: unknown = JSON.parse(text);
-            if (!isMetafile(parsed)) {
+            const raw: unknown = JSON.parse(text);
+            // webpack's stats come in through here too, translated (`metafileOf`).
+            const parsed = metafileOf(raw);
+            if (!parsed) {
                 // Not a metafile: say which format it is instead of 'could not read it'.
-                throw new Error(`NOT_METAFILE:${foreignFormat(parsed)}`);
+                throw new Error(`NOT_METAFILE:${foreignFormat(raw)}`);
             }
 
             this.dropStaleSizes(parsed);
@@ -603,7 +656,7 @@ export class ReportStore {
             // A real stats file says more than the folder ever could, so it takes over: the graph
             // read from the chunks and the preload lists that went with it are dropped together.
             this.derived.set(false);
-            this.parallel.set(null);
+            this.graphLinks.set(null);
             this.statsInfo.set({ name: file.name, outputs: Object.keys(parsed.outputs).length });
             this.isSample.set(false);
             this.statsText = text;
@@ -657,6 +710,7 @@ export class ReportStore {
         if (assets.length === 0) {
             return 'empty';
         }
+        this.folderFiles = list;
         if (typeof CompressionStream === 'undefined') {
             return 'unsupported';
         }
@@ -666,17 +720,21 @@ export class ReportStore {
         this.progress.set({ done: 0, total: assets.length });
 
         try {
-            const sizes = await gzipSizes(assets, (done, total) => this.progress.set({ done, total }));
+            const onProgress = (done: number, total: number): void => this.progress.set({ done, total });
+            const sizesByPath = new Map<string, number>();
+            const sizes = await gzipSizes(assets, onProgress, sizesByPath);
 
             // The same folder answers three more questions: what each file weighs once minified,
             // — if the pipeline pre-compresses — what brotli really takes off, and which chunks the
             // page asks for before it has parsed anything.
-            const brotli = brotliSizes(list);
-            const page = indexHtmlOf(list);
+            const brotli = withGzipFallback(brotliSizes(list), sizes);
+            const page = indexHtmlOf(list, this.config()?.build?.page);
             const html = page ? await page.text() : null;
 
-            // Reading the graph reads every map on the way, so the two never happen twice.
-            const graph = this.metafile() ? null : await this.readFolderGraph(list, html);
+            // Reading the graph reads every map on the way, so the two never happen twice. A graph
+            // that came from a folder is read again: it describes the folder as it was, and this one
+            // may be a rebuild or the same files under a `build` block that was not there before.
+            const graph = this.metafile() && !this.derived() ? null : await this.readFolderGraph(list, html);
             const splits = graph?.splits ?? (await readSourceMaps(list));
 
             this.gzip.set(sizes);
@@ -686,6 +744,7 @@ export class ReportStore {
             this.mapFiles.set(splits.size > 0 ? splits.size : null);
             this.announced.set(html ? new Set(announcedIn(html)) : null);
             this.pageOrigins.set(html ? originsIn(html) : null);
+            this.pageTitle.set(html ? titleIn(html) : null);
             this.pageCss.set(
                 html
                     ? pageCssOf(stylesIn(html), {
@@ -697,9 +756,8 @@ export class ReportStore {
             );
             // Everything the folder holds that is not code. It is read last because it is the only
             // part the report survives without: a failure here would be a shame, not a broken report.
-            const folder = await readFolderAssets(list, html, brotli.size > 0 ? brotli : sizes, (done, total) =>
-                this.progress.set({ done, total }),
-            );
+            const byPath = brotli.size > 0 ? withGzipFallback(brotliSizes(list, true), sizesByPath) : sizesByPath;
+            const folder = await readFolderAssets(list, html, brotli.size > 0 ? brotli : sizes, byPath, onProgress);
             this.assets.set(folder.report);
             this.buildTexts.set(folder.texts);
             this.buildMaps.set(folder.maps);
@@ -724,11 +782,10 @@ export class ReportStore {
         const folder = files[0]?.webkitRelativePath.split('/', 1)[0] ?? '';
 
         try {
-            const entries = new Set(html ? scriptsIn(html).entries : []);
-            const graph = await readBundleGraph(bundleFilesOf(files), entries);
+            const graph = await readFolderGraph(bundleFilesOf(files), html, this.config()?.build);
 
             this.metafile.set(graph.meta);
-            this.parallel.set(graph.parallel);
+            this.graphLinks.set({ parallel: graph.parallel, routes: graph.routes });
             this.derived.set(true);
             this.statsInfo.set({ name: folder || 'build', outputs: Object.keys(graph.meta.outputs).length });
             this.isSample.set(false);
@@ -752,6 +809,16 @@ export class ReportStore {
      */
     private readonly folderHandle = signal<FolderHandle | null>(null);
 
+    /**
+     * The files of the folder read last, for reading it again when `loadline.json` arrives after it.
+     *
+     * `build.entries`, `build.ignore` and `build.page` decide how the folder is read, not how the
+     * report is drawn, so a file dropped after the folder changed nothing until the folder was
+     * dropped again — and nothing on the page said so. Only references to the files: their bytes
+     * are read from disk again, not kept.
+     */
+    private folderFiles: File[] | null = null;
+
     /** Whether this browser can hold on to a folder at all. Decides whether the control is drawn. */
     readonly canPickFolder = canPickFolder();
 
@@ -771,7 +838,30 @@ export class ReportStore {
         }
 
         this.folderHandle.set(handle);
-        return this.loadDist(await readFolder(handle));
+        return this.loadFolder(await readFolder(handle));
+    }
+
+    /**
+     * A build folder however it came in — dropped, chosen with the button, picked or read again —
+     * with the stats file inside it read first when there is one: webpack writes it inside the
+     * folder it builds, Angular next to `browser/`. Only the drop looked for it, and the same webpack
+     * folder chosen with the button was refused with "put the stats file in the folder", where it was.
+     */
+    async loadFolder(files: Iterable<File>): Promise<'ok' | 'empty' | 'unsupported'> {
+        const list = [...files];
+        const stats = await droppedStats(list);
+        if (stats) {
+            await this.loadStats(stats);
+        }
+        return this.loadDist(list.filter(file => file !== stats));
+    }
+
+    /**
+     * A folder was dropped and the browser would not list what is in it: said, instead of nothing.
+     * Without what a build is expected to be, which `errorMessage` adds: the folder was the right one.
+     */
+    folderUnreadable(): void {
+        this.error.set(this.i18n.ui().errFolderUnreadable);
     }
 
     /** The same folder, read again after a rebuild. The point of having kept it. */
@@ -782,7 +872,7 @@ export class ReportStore {
         }
 
         try {
-            return await this.loadDist(await readFolder(handle));
+            return await this.loadFolder(await readFolder(handle));
         } catch {
             // The permission expired, or the folder is gone. The handle goes with it, so the button
             // stops being offered rather than staying there failing.
@@ -799,23 +889,13 @@ export class ReportStore {
      */
     clearDist(): void {
         this.folderHandle.set(null);
-        this.gzip.set(null);
-        this.brotli.set(null);
-        this.maps.set(null);
-        this.announced.set(null);
-        this.pageOrigins.set(null);
-        this.pageCss.set(null);
-        this.assets.set(null);
-        this.buildTexts.set(new Map());
-        this.buildMaps.set([]);
-        this.distFiles.set(null);
-        this.mapFiles.set(null);
+        this.forgetFolder();
 
         if (this.derived()) {
             this.metafile.set(null);
             this.statsInfo.set(null);
             this.statsText = null;
-            this.parallel.set(null);
+            this.graphLinks.set(null);
             this.derived.set(false);
         }
 
@@ -835,7 +915,7 @@ export class ReportStore {
         this.statsText = null;
         this.error.set(null);
         this.derived.set(false);
-        this.parallel.set(null);
+        this.graphLinks.set(null);
         this.clearDist();
         this.measurement.set(null);
         this.measurementPick.set(null);
@@ -882,11 +962,12 @@ export class ReportStore {
                 this.persist();
                 return;
             }
-            if (!isMetafile(parsed)) {
+            const meta = metafileOf(parsed);
+            if (!meta) {
                 throw new Error('NO_OUTPUTS');
             }
 
-            this.baseline.set(snapshotOf(analyze(parsed, null), 'raw', file.name, new Date(file.lastModified)));
+            this.baseline.set(snapshotOf(analyze(meta, null), 'raw', file.name, new Date(file.lastModified)));
             this.persist();
         } catch (error) {
             this.baseline.set(null);
@@ -898,15 +979,16 @@ export class ReportStore {
      * The previous build folder as the baseline: its `stats.json`, analysed with its own files
      * compressed here. It is the way to compare compressed against compressed — a bare previous
      * `stats.json` can only be compared raw.
+     *
+     * Without a stats file the graph is read from the chunks, as it is for the build on screen and as
+     * the command already did: refusing it left a Vite build, which never writes one, no way to be
+     * compared here. And the stats file is looked for under both names Angular gives it, because from
+     * 22.2 on it is `browser-stats.json` and only `stats.json` was looked for.
      */
-    async loadBaselineDist(files: FileList): Promise<void> {
+    async loadBaselineDist(files: Iterable<File>): Promise<void> {
         this.baselineError.set(null);
         const list = [...files];
-        const stats = list.find(file => file.name === 'stats.json');
-        if (!stats) {
-            this.baselineError.set(this.i18n.ui().baselineNoStats);
-            return;
-        }
+        const stats = await droppedStats(list);
 
         const assets = list.filter(file => isAsset(file.name));
         if (assets.length > 0 && typeof CompressionStream === 'undefined') {
@@ -916,23 +998,24 @@ export class ReportStore {
 
         this.baselineWorking.set(true);
         try {
-            const parsed: unknown = JSON.parse(await stats.text());
-            if (!isMetafile(parsed)) {
+            const parsed = metafileOf(stats ? JSON.parse(await stats.text()) : await this.baselineGraph(list));
+            if (!parsed) {
                 throw new Error('NO_OUTPUTS');
             }
 
             const sizes = await gzipSizes(assets);
 
             // The folder picked, so the baseline is named after it (`dist/app` rather than `stats.json`).
-            const folder = stats.webkitRelativePath.split('/', 1)[0] || stats.name;
+            const first = stats ?? list[0];
+            const folder = first?.webkitRelativePath.split('/', 1)[0] || (first?.name ?? 'build');
             // The previous folder is measured the same way as the current one, or the comparison
             // would be between two different units.
-            const brotli = brotliSizes(list);
+            const brotli = withGzipFallback(brotliSizes(list), sizes);
             const useBrotli = brotli.size > 0 && this.preferBrotli();
             const chosen = useBrotli ? brotli : sizes;
             const mode: Mode = useBrotli ? 'brotli' : sizes.size > 0 ? 'gzip' : 'raw';
             const analysis = analyze(parsed, chosen.size > 0 ? chosen : null);
-            this.baseline.set(snapshotOf(analysis, mode, folder, new Date(stats.lastModified)));
+            this.baseline.set(snapshotOf(analysis, mode, folder, new Date(first?.lastModified ?? Date.now())));
             this.persist();
         } catch (error) {
             this.baseline.set(null);
@@ -940,6 +1023,14 @@ export class ReportStore {
         } finally {
             this.baselineWorking.set(false);
         }
+    }
+
+    /** The graph of a previous folder that brought no stats file, read from its chunks. */
+    private async baselineGraph(list: readonly File[]): Promise<Metafile> {
+        const page = indexHtmlOf(list, this.config()?.build?.page);
+        const html = page ? await page.text() : null;
+        const graph = await readFolderGraph(bundleFilesOf(list), html, this.config()?.build);
+        return graph.meta;
     }
 
     clearBaseline(): void {
@@ -955,23 +1046,33 @@ export class ReportStore {
      * signal nobody can look at, and the page is where somebody goes **to** look; the command is
      * where an acceptance decides whether a build stops, and that is where it belongs.
      */
-    applyConfig(text: string): void {
+    async applyConfig(text: string): Promise<void> {
+        let config: LoadlineConfig | null;
         try {
-            const { config } = readConfig(JSON.parse(text));
-            if (config?.criteria) {
-                this.criteriaService.applyAll(config.criteria, this.mode());
-            }
-            // The five answers, unlike the acceptances, **are** applied here: they are context to
-            // read the report with rather than a decision to hide something, and having them in
-            // the file and not on the page is exactly the split this file exists to end. A block
-            // with nothing answered in it still replaces what is here, because the committed
-            // answers are the team's and a half-finished form in one browser is not.
-            if (config?.situation) {
-                this.situation.apply(config.situation);
-            }
-            this.config.set(config);
+            ({ config } = readConfig(JSON.parse(text)));
         } catch {
             // Not readable JSON: nothing changes, and the drop zone already says what was ignored.
+            return;
+        }
+        const before = this.config()?.build;
+        if (config?.criteria) {
+            this.criteriaService.applyAll(config.criteria, this.mode());
+        }
+        // The five answers, unlike the acceptances, **are** applied here: they are context to
+        // read the report with rather than a decision to hide something, and having them in
+        // the file and not on the page is exactly the split this file exists to end. A block
+        // with nothing answered in it still replaces what is here, because the committed
+        // answers are the team's and a half-finished form in one browser is not.
+        if (config?.situation) {
+            this.situation.apply(config.situation);
+        }
+        this.config.set(config);
+        // `build.screens` is applied as the report is drawn; the other three are how the folder is
+        // read, so the folder is read again under them. Without the files — a session restored
+        // after a reload — there is nothing to read, and the next drop of the folder applies them.
+        const files = this.folderFiles;
+        if (files && !sameFolderReading(before, config?.build)) {
+            await this.loadDist(files);
         }
     }
 
@@ -1146,8 +1247,8 @@ export class ReportStore {
         }
 
         try {
-            const parsed: unknown = JSON.parse(stored.statsText);
-            if (!isMetafile(parsed)) {
+            const parsed = metafileOf(JSON.parse(stored.statsText));
+            if (!parsed) {
                 throw new Error('NO_OUTPUTS');
             }
 
@@ -1155,7 +1256,9 @@ export class ReportStore {
             this.statsInfo.set({ name: stored.statsName, outputs: Object.keys(parsed.outputs).length });
             this.statsText = stored.statsText;
             this.derived.set(stored.derived === true);
-            this.parallel.set(stored.parallel ? new Map(stored.parallel) : null);
+            this.graphLinks.set(
+                stored.parallel ? { parallel: new Map(stored.parallel), routes: new Map(stored.routes) } : null,
+            );
         } catch (error) {
             this.error.set(errorMessage(error, this.i18n.ui()));
             return;
@@ -1171,6 +1274,7 @@ export class ReportStore {
         this.announced.set(stored.announced ? new Set(stored.announced) : null);
         this.pageOrigins.set(stored.pageOrigins ?? null);
         this.pageCss.set(stored.pageCss ?? null);
+        this.assets.set(stored.assets ?? null);
         if (stored.maps && stored.maps.length > 0) {
             const splits = new Map(stored.maps.map(([chunk, split]) => [chunk, new Map(split)]));
             this.maps.set(splits);
@@ -1223,11 +1327,27 @@ export class ReportStore {
             }
         }
 
+        this.forgetFolder();
+    }
+
+    /**
+     * Everything the build folder said, in one place: the sizes, the maps, the page and the files
+     * besides the code. It was two lists, and the one for a folder that no longer matched the build
+     * had left the pictures and the names out, which kept raising signals about a build that was no
+     * longer the one on screen.
+     */
+    private forgetFolder(): void {
+        this.folderFiles = null;
         this.gzip.set(null);
         this.brotli.set(null);
         this.maps.set(null);
         this.announced.set(null);
         this.pageOrigins.set(null);
+        this.pageTitle.set(null);
+        this.pageCss.set(null);
+        this.assets.set(null);
+        this.buildTexts.set(new Map());
+        this.buildMaps.set([]);
         this.distFiles.set(null);
         this.mapFiles.set(null);
     }
@@ -1243,13 +1363,14 @@ export class ReportStore {
         const brotli = this.brotli();
         const maps = this.maps();
         const announced = this.announced();
-        const parallel = this.parallel();
+        const links = this.graphLinks();
         const measurement = this.measurement();
         const session: StoredSession = {
             derived: this.derived(),
-            parallel: parallel
-                ? [...parallel].map(([chunk, together]): [string, string[]] => [chunk, [...together]])
+            parallel: links
+                ? [...links.parallel].map(([chunk, together]): [string, string[]] => [chunk, [...together]])
                 : null,
+            routes: links ? [...links.routes] : null,
             date: new Date().toISOString(),
             statsName: this.statsInfo()?.name ?? 'stats.json',
             statsText: text,
@@ -1259,6 +1380,7 @@ export class ReportStore {
             announced: announced ? [...announced] : null,
             pageOrigins: this.pageOrigins(),
             pageCss: this.pageCss(),
+            assets: this.assets(),
             baseline: this.baseline(),
             marks: [...this.marks()],
             context: [...this.contextTexts].map(([name, value]) => ({ name, text: value })),
@@ -1305,7 +1427,7 @@ export class ReportStore {
             return;
         }
         if (kind === 'config') {
-            this.applyConfig(await file.text());
+            await this.applyConfig(await file.text());
             return;
         }
         if (kind === 'baseline' || (kind === 'stats' && preferBaseline)) {

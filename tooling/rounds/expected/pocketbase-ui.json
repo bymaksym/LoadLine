@@ -1,0 +1,47 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 356682,
+        "rawBytes": 1192808,
+        "files": 2
+    },
+    "firstTrip": {
+        "total": 400686,
+        "files": 4
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 0,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "/pbinstal/:token: own 2444, shared 0, total 359126",
+        "/users/confirm-password-reset/:token: own 1925, shared 0, total 358607",
+        "/users/confirm-email-change/:token: own 1846, shared 0, total 358528",
+        "/request-password-reset: own 1646, shared 0, total 358328",
+        "/confirm-password-reset/:token: own 1610, shared 0, total 358292",
+        "/users/confirm-verification/:token: own 1487, shared 0, total 358169",
+        "/auth/oauth2-redirect-failure: own 407, shared 0, total 357089",
+        "/auth/oauth2-redirect-success: own 400, shared 0, total 357082"
+    ],
+    "deferred": [],
+    "shared": 0,
+    "workers": 1,
+    "onDemand": 19,
+    "data": 0,
+    "signals": [
+        "mid unreachable: 29 of your 61 chunks (827 kB) are in no figure here",
+        "mid fonts: 752 kB of fonts: 10 files across 4 families",
+        "mid prefetched: The page prefetches 16 chunks (402 kB) for a screen nobody has opened",
+        "mid inlinedData: 16 kB of the bundle is really 52 files embedded as a data URI",
+        "mid unhashable: 81 files carry no hash in the name",
+        "info cascadeShape: The names are spread about: assets/index-DHU3OdGN.js carries the most, 26 of 61",
+        "info noSourceMaps: This folder carries no .map files, and that cuts the report short",
+        "info media: 72 kB across 35 image or video files, 1 of them asked for by the page",
+        "info devLeftovers: One development marker in the build, author unknown",
+        "info situationMissing: 4 unanswered questions would change what this report says"
+    ]
+}

@@ -58,5 +58,17 @@
     "editor.formatOnPaste": false, // avoids lag when pasting large code
     "prettier.requireConfig": true, // only format when a Prettier config exists
 
-    "npm.packageManager": "pnpm"
+    "npm.packageManager": "pnpm",
+
+    // The root keeps the configs each tool looks for there (see "Tooling" in .github/CONTRIBUTING.md);
+    // the explorer folds them under the file they belong with, so the root reads as the project.
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+        "package.json": "pnpm-lock.yaml, pnpm-workspace.yaml, .ncurc.js, knip.jsonc",
+        "eslint.config.js": "eslint.typed.config.js, .htmlvalidate.mjs, .prettierignore",
+        "tsconfig.json": "tsconfig.*.json",
+        "README.md": "AGENTS.md, CLAUDE.md, CHANGELOG.md, LICENSE",
+        ".gitignore": ".gitattributes, .editorconfig, .mcp.json"
+    }
 }

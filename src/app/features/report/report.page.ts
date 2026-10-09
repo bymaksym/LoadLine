@@ -76,6 +76,12 @@ export class ReportPageComponent {
     /** The four kinds of figure, in the order the legend at the foot of the report gives them. */
     protected readonly sources: readonly DataSource[] = ['measured', 'derived', 'declared', 'unknown'];
 
+    /** How many files of the folder no screen downloads, for the line that says so. */
+    protected readonly offPageCount = computed(() => {
+        const off = this.store.analysis()?.offPage;
+        return off ? off.legacy + off.serviceWorker + off.server + off.ignored : 0;
+    });
+
     constructor() {
         // The browser lays the page out for paper right after `beforeprint`, without waiting for a
         // scheduled change detection: the panels are drawn by hand, twice, because the map measures
@@ -173,7 +179,7 @@ export class ReportPageComponent {
     protected readonly heroFigure = computed(() => {
         const text = formatBytes(this.effectiveBytes());
         // Whichever space `formatBytes` joins them with: plain for the command, narrow here.
-        const space = Math.max(text.lastIndexOf(' '), text.lastIndexOf(' '));
+        const space = Math.max(text.lastIndexOf(' '), text.lastIndexOf('\u{202F}'));
         return { value: text.slice(0, space), unit: text.slice(space + 1) };
     });
 

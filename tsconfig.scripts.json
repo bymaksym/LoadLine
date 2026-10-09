@@ -3,7 +3,7 @@
  *
  * They are JavaScript and stay JavaScript: `bin/loadline.js` is the only file that needs the
  * shebang and the only one that knows where the repository root is, and the three scripts are build
- * steps run with bare `node`. What they were missing was any checking at all — `tsconfig.app.json`
+ * steps and checks run with bare `node`. What they were missing was any checking at all — `tsconfig.app.json`
  * and `tsconfig.cli.json` between them cover `src/` and `cli/` and neither one looks here, so the
  * strictness the rest of the project is held to stopped at the `.mjs` boundary.
  *
@@ -24,5 +24,5 @@
         "importHelpers": false,
         "paths": {}
     },
-    "include": ["bin/**/*.js", "scripts/**/*.mjs", "eslint.config.js", "eslint.typed.config.js"]
+    "include": ["bin/**/*.js", "scripts/**/*.mjs", "tooling/**/*.mjs", "eslint.config.js", "eslint.typed.config.js"]
 }

@@ -3,7 +3,8 @@
  * reads as computation only.
  */
 
-import { type GraphInsights } from './insights.types';
+import { type GraphInsights } from './graph/insights.types';
+import { type BuildTool } from './tool';
 
 /** Where a chunk lands: everyone pays the bootstrap, several screens a shared one, one an own one. */
 export type Zone = 'boot' | 'shared' | 'own';
@@ -103,6 +104,11 @@ export interface ChunkInfo {
 
 export interface ScreenCost {
     label: string;
+    /**
+     * The routes that open it, as the route table names them: the router's name, or the path.
+     * Empty when no table was read. Three for a `Home` that vue-router serves at three paths.
+     */
+    routes?: string[];
     /** Source file the screen originates from. Doubles as its identifier. */
     source: string;
     files: number;
@@ -232,6 +238,10 @@ export interface DuplicatePackage {
 }
 
 export interface Analysis {
+    /** What wrote the build, for the advice the signals give (`tool.ts`). */
+    tool: BuildTool;
+    /** What the graph was read out of: a metafile, the build folder or webpack's stats. */
+    readFrom: 'metafile' | 'folder' | 'webpack';
     bootBytes: number;
     /** Bootstrap JavaScript in bytes on disk, whatever is being shown. */
     bootRawBytes: number;
@@ -251,6 +261,8 @@ export interface Analysis {
      * carries both sides; nobody downloads the server one. `0` when there was no server side.
      */
     serverOutputs: number;
+    /** Files of the build no screen downloads, left out like the server side: see `OffPageOutputs`. */
+    offPage: OffPageOutputs;
     /**
      * Angular component stylesheets the metafile names apart and the compiler inlines into the
      * JavaScript. Not files in the folder and not a server side: their bytes are already inside the
@@ -277,6 +289,25 @@ export interface Analysis {
      */
     lazyData: NotScreen[];
     /**
+     * Packages loaded on demand with an `import()` of their own: a diagram renderer, a formula
+     * typesetter. Not screens — nobody navigates to them — and not part of any screen's total,
+     * because when they are asked for is what the graph cannot say.
+     */
+    lazyPackages: NotScreen[];
+    /** Web workers started from the page: code that runs off it, on demand, in a chunk of its own. */
+    lazyWorkers: NotScreen[];
+    /**
+     * Lazy chunks of the project's own code that no route of the route table imports, in a build
+     * where that table was read: a language file, an async component, a tab inside a page. Every one
+     * of them used to be a screen, named after its hash when the folder had no maps.
+     */
+    lazyOnDemand: NotScreen[];
+    /**
+     * Whether the code carries a route table this could read (`route-table.ts`). `null` when the
+     * build was not read from its folder, so there was no code to look in.
+     */
+    routeTable: boolean | null;
+    /**
      * JavaScript in the build that nothing reachable from the entry point imports, by either kind
      * of import: a service worker, a chunk whose path is built at run time, or what a previous
      * build left in a folder nobody cleans. None of it is in any figure of the report, and on a
@@ -297,6 +328,13 @@ export interface Analysis {
     startup: Startup | null;
     /** Every JavaScript chunk of the build, to match what the browser downloaded against it. */
     allChunks: string[];
+    /**
+     * The chunks whose contents the build did not describe: a folder read without a source map for
+     * them. Not the same as a chunk with nothing in it — esbuild writes its runtime helpers into a
+     * chunk of their own whose `inputs` is `{}`, and reading that as "not known" printed "no source
+     * maps in this folder" over an Angular build analysed with its `stats.json`.
+     */
+    undescribedChunks: string[];
     bootBuckets: BucketSlice[];
     bootBucketTotal: number;
     screens: ScreenCost[];
@@ -356,4 +394,19 @@ export interface Analysis {
      * result is memoised: calling it a second time is free.
      */
     insights: () => GraphInsights;
+}
+
+/**
+ * Files a folder holds that the page never downloads as part of a screen. The folder reader is the
+ * only one that finds them; a metafile has neither.
+ */
+export interface OffPageOutputs {
+    /** The copy for browsers without ES modules: what only a `<script nomodule>` reaches. */
+    legacy: number;
+    /** A service worker and what it imports: it runs beside the page. */
+    serviceWorker: number;
+    /** What only a server runs, written into the same folder: Ember's FastBoot files. */
+    server: number;
+    /** What `build.ignore` of `loadline.json` names and nothing the application imports reaches. */
+    ignored: number;
 }

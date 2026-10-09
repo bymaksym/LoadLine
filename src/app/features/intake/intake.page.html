@@ -1,10 +1,18 @@
 @let t = i18n.ui();
 
-<input accept=".json,application/json" id="statsInput" type="file" (change)="onStats($event)" />
-<input id="distInput" multiple type="file" webkitdirectory (change)="onDist($event)" />
-<input accept=".json,application/json" id="baselineInput" type="file" (change)="onBaseline($event)" />
-<input id="baselineDistInput" multiple type="file" webkitdirectory (change)="onBaselineDist($event)" />
-<input accept=".json,.yml,.yaml" id="contextInput" multiple type="file" (change)="onContext($event)" />
+<!-- Out of the way of a screen reader: the labels are what is read out. See `fileInputs`. -->
+@for (input of fileInputs; track input.id) {
+    <input
+        aria-hidden="true"
+        tabindex="-1"
+        type="file"
+        [accept]="input.accept ?? ''"
+        [attr.webkitdirectory]="input.folder ? '' : null"
+        [id]="input.id"
+        [multiple]="input.multiple"
+        (change)="input.pick($event)"
+    />
+}
 
 @if (!home.open()) {
     <!--
@@ -37,6 +45,15 @@
         @if (store.baseline(); as baseline) {
             <span class="context-line__status" [attr.data-tone]="store.comparisonBlocked() ? 'error' : null">{{
                 t.baselineShort(baseline.name)
+            }}</span>
+        } @else if (store.baselineError() || store.baselineWorking()) {
+            <!--
+            Over the report too, not only on the front page: a previous folder that could not be read
+            used to leave this line exactly as it was, and nothing on screen said the comparison
+            somebody had just asked for was not there.
+            -->
+            <span aria-live="polite" class="context-line__status" [attr.data-tone]="baselineTone()">{{
+                baselineStatus()
             }}</span>
         }
         @if (store.contextInfo(); as context) {
@@ -123,6 +140,20 @@
                     >
                         {{ t.drop1Btn }}
                     </label>
+                    @if (store.canPickFolder) {
+                        <button class="file-btn file-btn--ghost" type="button" (click)="pickDist()">
+                            {{ t.drop1FolderBtn }}
+                        </button>
+                    } @else {
+                        <label
+                            class="file-btn file-btn--ghost"
+                            for="distInput"
+                            tabindex="0"
+                            (keydown)="activate($event, 'distInput')"
+                        >
+                            {{ t.drop1FolderBtn }}
+                        </label>
+                    }
                     <!--
                     The highest barrier this tool had: evaluating it started with building an
                     application. The example is the same analysis on a build that ships with the page.
@@ -139,6 +170,8 @@
                 <div aria-live="polite" class="status" [attr.data-tone]="store.error() ? 'error' : null">
                     {{ home.statsStatus() }}
                 </div>
+
+                <app-entry-form />
 
                 <!--
                 The one place a failure can be reported from. With a report on screen the same

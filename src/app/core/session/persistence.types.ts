@@ -1,8 +1,10 @@
 /** The shape of a saved session in IndexedDB. */
 
 import { type ScreenMark } from '../analysis/analysis.types';
+import { type AssetReport } from '../assets/assets.types';
 import { type Snapshot } from '../baseline/baseline.types';
-import { type PageOrigins } from '../findings/page';
+import { type RouteRef } from '../build-text/route-table';
+import { type PageOrigins } from '../findings/folder/page';
 import { type PageCss } from '../intake/dist-files';
 import { type MeasuredEntry, type MeasuredPage } from '../measurement/measurement.types';
 
@@ -43,6 +45,14 @@ export interface StoredSession {
      */
     pageCss?: PageCss | null;
     /**
+     * What the folder holds besides the code: pictures, fonts, `data:` URIs, names without a hash.
+     * Kept since 08/10/2026: before it, a restored session came back with its compressed figures and
+     * without the signals read from those files — four signals before the reload, one after, and
+     * nothing on the page saying three had stayed behind. The text of the chunks, which the scan for
+     * secrets and leftovers reads, is still not kept: it is the whole build, megabytes of it.
+     */
+    assets?: AssetReport | null;
+    /**
      * The browser measurement that was pasted, with the screen it was attributed to. Optional: a
      * session saved before there was a Measured tab simply does not have it.
      */
@@ -67,4 +77,6 @@ export interface StoredSession {
      * Vite build has any: it comes from the lists that build bakes into its dynamic imports.
      */
     parallel?: [string, string[]][] | null;
+    /** The route table read out of the code, chunk by chunk. Absent from sessions saved before it. */
+    routes?: [string, RouteRef[]][] | null;
 }

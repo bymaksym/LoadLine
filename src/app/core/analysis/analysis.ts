@@ -1,6 +1,16 @@
+import { type RouteRef } from '../build-text/route-table';
 import { RECOMMENDED } from '../criteria/criteria';
 import { type Criteria } from '../criteria/criteria.types';
-import { baseName, packageOf, projectFolderOf, screenLabel, shortName } from '../format/format.utils';
+import {
+    ANGULAR_BAZEL,
+    baseName,
+    packageOf,
+    projectFolderOf,
+    screenLabel,
+    shortName,
+    uniqueLabels,
+} from '../format/format.utils';
+import { isOwnFile } from '../format/ownership';
 import {
     type Analysis,
     type BucketSlice,
@@ -15,14 +25,23 @@ import {
     type TreeNode,
     type Zone,
 } from './analysis.types';
-import { chunkImportersOf } from './blast';
-import { depthOf, startupOf, wavesFrom, widthOf } from './delivery';
-import { browserSide, classifyLazyEntries, initialFiguresOf, labelledByWeight, lazyLoadersOf } from './entries';
-import { importGraphOf } from './importers';
-import { graphInsightsOf } from './insights';
-import { type GraphInsights } from './insights.types';
-import { type Metafile } from './metafile.types';
-import { splitDriftOf } from './split-drift';
+import { chunkImportersOf } from './graph/blast';
+import { importGraphOf } from './graph/importers';
+import { graphInsightsOf } from './graph/insights';
+import { type GraphInsights } from './graph/insights.types';
+import { fetchedTogether, type Metafile } from './metafile.types';
+import { depthOf, startupOf, widthOf } from './screens/delivery';
+import { browserSide, classifyLazyEntries, initialFiguresOf, labelledByWeight, lazyLoadersOf } from './screens/entries';
+import {
+    byLabel,
+    packagesOnDemand,
+    reachedThrough,
+    routedChunks,
+    routedName,
+    wavesThrough,
+} from './screens/route-files';
+import { splitDriftOf } from './sourcemap/split-drift';
+import { toolOf } from './tool';
 
 interface FileEntry {
     label: string;
@@ -44,6 +63,15 @@ interface Group {
 const PNPM_COPY = /node_modules\/\.pnpm\/((?:@[^+]+\+)?[^@]+)@([^/]+)\//;
 
 /**
+ * The version at the head of a pnpm directory name. pnpm appends the peers it resolved against,
+ * and on a long name a hash of them: `@angular+material@22.1.6_2ffb4168…` is version `22.1.6`,
+ * which the report used to print with the hash attached. A name too long for the disk is cut and
+ * hashed, version included — `@angular+platform-browser@2_49839d…` — and what survives is not a
+ * version: none is said rather than `2`.
+ */
+const PNPM_VERSION = /^\d+\.\d+\.\d+(?:-[\da-z.]+)?/i;
+
+/**
  * Which installed copy of a package a file belongs to.
  *
  * The identity of a copy is **where it is installed**: everything before the last `node_modules/`
@@ -60,7 +88,11 @@ const PNPM_COPY = /node_modules\/\.pnpm\/((?:@[^+]+\+)?[^@]+)@([^/]+)\//;
  */
 const copyOf = (input: string, pkg: string): { at: string; version: string | null; under: string | null } | null => {
     const marker = input.lastIndexOf('node_modules/');
-    if (marker === -1) {
+    // A file of Angular's own source maps names the folder Angular was built in, not where it was
+    // installed: it belongs to whichever copy is there and says nothing of which. Counted as one,
+    // every Angular package read through its maps came out "shipped twice", the second copy being
+    // the same files under that other path.
+    if (marker === -1 || ANGULAR_BAZEL.test(input)) {
         return null;
     }
 
@@ -80,7 +112,7 @@ const copyOf = (input: string, pkg: string): { at: string; version: string | nul
 
     return {
         at,
-        version: own ? (pnpm?.[2] ?? null) : null,
+        version: own ? (PNPM_VERSION.exec(pnpm?.[2] ?? '')?.[0] ?? null) : null,
         under: own || !at ? null : (pnpmName ?? packageOf(at) ?? (folder || null)),
     };
 };
@@ -109,7 +141,8 @@ const copyOf = (input: string, pkg: string): { at: string; version: string | nul
  *                  graph again.
  * @param parallel  chunks the loader asks for in the same round trip as a lazy one, when the build
  *                  writes that list into the call. Vite does; esbuild does not, and there the map
- *                  is empty and nothing changes.
+ *                  is empty and nothing changes. Without it, what a webpack stats file says
+ *                  (`fetchedWith`) stands in.
  */
 export const analyze = (
     meta: Metafile,
@@ -119,15 +152,21 @@ export const analyze = (
     marks: ReadonlyMap<string, ScreenMark> | null = null,
     limits: Pick<Criteria, 'grouperMaxBytes'> = RECOMMENDED.raw,
     parallel: ReadonlyMap<string, readonly string[]> | null = null,
+    routes: ReadonlyMap<string, readonly RouteRef[]> | null = null,
 ): Analysis => {
     // The keys of `gzip` are every asset of the build folder: the measured answer to what a
     // browser can actually download, which is what tells the two sides of an SSR build apart.
-    const { outputs, serverOutputs, componentStyles } = browserSide(meta.outputs, gzip ? new Set(gzip.keys()) : null);
+    const { outputs, serverOutputs, componentStyles, offPage } = browserSide(
+        meta.outputs,
+        gzip ? new Set(gzip.keys()) : null,
+    );
     const inputs = meta.inputs;
+    // A stats file of webpack says what travels together on the chunks themselves.
+    const together = parallel ?? fetchedTogether(meta.outputs);
     // `.mjs` is what esbuild writes with `--out-extension:.js=.mjs`, and what several setups ship.
     // Filtering on `.js` alone left those builds with no entry at all and threw `NO_ENTRIES`.
     const isJs = (file: string) => /\.m?js$/.test(file);
-    const isOwn = (input: string) => !input.includes('node_modules');
+    const isOwn = (input: string) => isOwnFile(input);
     /** Source-graph edges that keep files in the same chunk: anything but a lazy boundary or an external. */
     const travelsTogether = (imp: { kind: string; external?: boolean }) =>
         !imp.external && imp.kind !== 'dynamic-import';
@@ -270,6 +309,11 @@ export const analyze = (
         .filter(file => isJs(file) && !reachable.has(file))
         .map(file => ({ file, bytes: outputs[file]?.bytes ?? 0 }));
 
+    const lazyPackageEntries = packagesOnDemand(
+        entries,
+        chunk => lazyTargets.has(chunk) && reachable.has(chunk) && !boot.has(chunk),
+    );
+
     const lazyOwnEntries = entries
         .filter(([file]) => lazyTargets.has(file))
         // And reachable from where the application starts. A chunk only some other unreachable
@@ -278,7 +322,7 @@ export const analyze = (
         .filter(([file]) => reachable.has(file))
         .map(([file, out]) => ({ chunk: file, source: out.entryPoint ?? '', set: reach(file) }))
         // A screen is project code: an `await import('xlsx')` also produces a lazy entry and is not one.
-        .filter(entry => !entry.source.includes('node_modules'));
+        .filter(entry => isOwnFile(entry.source));
 
     // Which of them are screens, which are pieces of one and which only group routes. The three
     // rules and their reasons are in `entries.ts`; a mark, when there is one, overrules them.
@@ -289,13 +333,19 @@ export const analyze = (
         loaders: lazyLoaders,
         marks,
         grouperMaxBytes: limits.grouperMaxBytes,
+        routed: routedChunks(routes),
     });
+
+    // The route files a screen is reached through, and what it downloads with them: see `route-files.ts`.
+    const reached = reachedThrough(kinds.screens, kinds.groupers, outputs);
+    const setOf = (entry: { chunk: string; set: Set<string> }): Set<string> =>
+        reached.get(entry.chunk)?.set ?? entry.set;
 
     // How many screens each lazy chunk appears in. Every shared-chunk figure builds on this counter.
     const screenCount = new Map<string, number>();
     const chunkScreens = new Map<string, string[]>();
     for (const entry of kinds.screens) {
-        const lazyChunks = [...entry.set].filter(chunk => !boot.has(chunk));
+        const lazyChunks = [...setOf(entry)].filter(chunk => !boot.has(chunk));
         for (const chunk of lazyChunks) {
             screenCount.set(chunk, (screenCount.get(chunk) ?? 0) + 1);
             chunkScreens.set(chunk, [...(chunkScreens.get(chunk) ?? []), entry.source]);
@@ -319,20 +369,22 @@ export const analyze = (
     const bootRawBytes = [...boot].reduce((total, chunk) => total + (outputs[chunk]?.bytes ?? 0), 0);
     const { initialRawBytes, largestScript } = initialFiguresOf(outputs, boot);
 
-    const screens: ScreenCost[] = kinds.screens
-        .map(entry => {
-            const lazy = [...entry.set].filter(chunk => !boot.has(chunk));
+    // Unique names: two routes ending in the same file name are told apart by their folders.
+    const screens: ScreenCost[] = uniqueLabels(
+        kinds.screens.map(entry => {
+            const lazy = [...setOf(entry)].filter(chunk => !boot.has(chunk));
             const own = lazy.filter(chunk => screenCount.get(chunk) === 1);
             const shared = lazy.filter(chunk => (screenCount.get(chunk) ?? 0) > 1);
             // The bootstrap is already there when the router navigates, so it ends the walk: what
             // is being counted is the round trips this screen adds on top of an app already running.
             // What the loader asks for alongside the entry chunk starts in the same trip as it: a
             // build that ships that list has already paid for those files by the time it parses.
-            const together = parallel?.get(entry.chunk) ?? [];
-            const chunkWaves = wavesFrom(outputs, [entry.chunk, ...together], boot);
+            // And the route files it is reached through arrive before it, one after another.
+            const via = (reached.get(entry.chunk)?.via ?? []).map(grouper => grouper.chunk);
+            const chunkWaves = wavesThrough(outputs, [...via, entry.chunk], boot, together);
 
             return {
-                label: screenLabel(entry.source),
+                ...routedName(entry, routes, screenLabel(entry.source, entry.chunk)),
                 source: entry.source,
                 files: boot.size + lazy.length,
                 boot: bootBytes,
@@ -348,8 +400,10 @@ export const analyze = (
                 width: widthOf(chunkWaves),
                 chunkWaves,
             };
-        })
-        .toSorted((a, b) => b.total - a.total);
+        }),
+        // Without source maps a screen's source is its chunk, and only its hash tells two apart.
+        source => source in outputs,
+    ).toSorted((a, b) => b.total - a.total);
 
     // What the first load costs in round trips. Only `index.html` can say, so without it the
     // figure is absent rather than assumed.
@@ -743,6 +797,7 @@ export const analyze = (
             ),
             isOwn,
             modules,
+            reachable,
             boot,
             bootBytesOf: file => bootBytesByInput.get(file) ?? 0,
             screens,
@@ -759,17 +814,29 @@ export const analyze = (
         bootRawBytes,
         initialRawBytes,
         largestScript,
+        tool: toolOf(meta),
+        readFrom: meta.readFrom ?? 'metafile',
         bootFiles: boot.size,
         bootChunks: [...boot],
         startup,
         allChunks: Object.keys(outputs).filter(file => isJs(file)),
+        undescribedChunks: Object.keys(outputs).filter(file => isJs(file) && !outputs[file]?.inputs),
         bootBuckets: [...buckets.values()].toSorted((a, b) => b.bytes - a.bytes),
         bootBucketTotal,
         serverOutputs,
+        offPage,
         componentStyles,
         deferredBlocks: labelledByWeight(kinds.blocks, screenLabel, sizeOf),
         routeGroupers: labelledByWeight(kinds.groupers, screenLabel, sizeOf),
         lazyData: labelledByWeight(kinds.data, screenLabel, sizeOf),
+        lazyWorkers: labelledByWeight(kinds.workers, screenLabel, sizeOf),
+        lazyOnDemand: labelledByWeight(kinds.onDemand, screenLabel, sizeOf),
+        routeTable: routes ? routedChunks(routes) !== null : null,
+        // One row per package: mermaid writes a chunk per diagram type, and twenty-seven rows of
+        // "mermaid" say less than one with all of them added up.
+        lazyPackages: byLabel(
+            labelledByWeight(lazyPackageEntries, source => packageOf(source) ?? screenLabel(source), sizeOf),
+        ),
         unreachable,
         marks: marks ?? new Map<string, ScreenMark>(),
         screens,
@@ -786,7 +853,10 @@ export const analyze = (
         ownFilesInBoot,
         modules,
         chainTo,
-        splitSource: exact && exact.size > 0 ? 'sourcemap' : 'metafile',
+        // From the maps only when a map covers something the application reaches. Polymer ships maps
+        // for its polyfill bundles alone, and the report opened with "weight per file read from the
+        // source maps" right above "no source maps in this folder".
+        splitSource: [...reachable].some(chunk => exact?.has(baseName(chunk))) ? 'sourcemap' : 'metafile',
         splitDrift: splitDriftOf(outputs, exact ?? null),
         chunkOf: file => {
             const cached = chunkCache.get(file);

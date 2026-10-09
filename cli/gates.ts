@@ -10,12 +10,11 @@
 
 import { type LoadlineConfig } from '../src/app/core/config/loadline-config.types';
 import { type Severity } from '../src/app/core/findings/finding.types';
-import { formatBytes, formatDelta } from '../src/app/core/format/format.utils';
-import { parseSize } from '../src/app/core/project/project-context';
+import { formatBytes, formatBytesApart, formatDelta } from '../src/app/core/format/format.utils';
 import { type FailOn, type Gates } from './args.types';
 import { type GateName, type Violation } from './gates.types';
 import { type CliReport } from './report.types';
-import { CLI_TEXT } from './text';
+import { CLI_TEXT } from './text/text';
 
 const percent = (ratio: number): string => (ratio * 100).toFixed(1);
 
@@ -37,15 +36,18 @@ export const mergeGates = (gates: Gates, config: LoadlineConfig | null): Gates =
         return gates;
     }
 
-    const size = (value: string | undefined): number | null => (value === undefined ? null : parseSize(value));
+    // The file's sizes arrive as bytes: `readConfig` parsed them and named the ones it could not.
     return {
-        maxBoot: gates.maxBoot ?? size(wanted.maxBoot),
-        maxScreen: gates.maxScreen ?? size(wanted.maxScreen),
-        maxOwn: gates.maxOwn ?? size(wanted.maxOwn),
-        maxGrowth: gates.maxGrowth ?? size(wanted.maxGrowth),
+        maxBoot: gates.maxBoot ?? wanted.maxBoot ?? null,
+        maxScreen: gates.maxScreen ?? wanted.maxScreen ?? null,
+        screenLimits: { ...wanted.screens, ...gates.screenLimits },
+        maxOwn: gates.maxOwn ?? wanted.maxOwn ?? null,
+        maxGrowth: gates.maxGrowth ?? wanted.maxGrowth ?? null,
         maxGrowthRatio: gates.maxGrowthRatio ?? (wanted.maxGrowthPct === undefined ? null : wanted.maxGrowthPct / 100),
-        failOn: gates.failOn === 'none' ? (wanted.failOn ?? 'none') : gates.failOn,
+        failOn: gates.failOnTyped ? gates.failOn : (wanted.failOn ?? gates.failOn),
+        failOnTyped: gates.failOnTyped ?? false,
         failOnNewPackage: gates.failOnNewPackage || wanted.failOnNewPackage === true,
+        failOnSignals: wanted.failOnSignals ?? gates.failOnSignals,
     };
 };
 
@@ -60,18 +62,21 @@ export const checkGates = (report: CliReport, gates: Gates): Violation[] => {
             subject: null,
             limit: gates.maxBoot,
             actual: analysis.bootBytes,
-            message: text.overBoot(formatBytes(analysis.bootBytes), formatBytes(gates.maxBoot)),
+            message: text.overBoot(...formatBytesApart(analysis.bootBytes, gates.maxBoot)),
         });
     }
 
     for (const screen of analysis.screens) {
-        if (gates.maxScreen !== null && screen.total > gates.maxScreen) {
+        // Its own limit first, by the name the report gives it or by its source file; the general
+        // one otherwise. A map screen allowed 900 kB does not loosen the limit of every other one.
+        const limit = gates.screenLimits[screen.label] ?? gates.screenLimits[screen.source] ?? gates.maxScreen;
+        if (limit !== null && screen.total > limit) {
             violations.push({
                 gate: 'screen',
                 subject: screen.label,
-                limit: gates.maxScreen,
+                limit,
                 actual: screen.total,
-                message: text.overScreen(screen.label, formatBytes(screen.total), formatBytes(gates.maxScreen)),
+                message: text.overScreen(screen.label, ...formatBytesApart(screen.total, limit)),
             });
         }
         if (gates.maxOwn !== null && screen.own > gates.maxOwn) {
@@ -80,7 +85,7 @@ export const checkGates = (report: CliReport, gates: Gates): Violation[] => {
                 subject: screen.label,
                 limit: gates.maxOwn,
                 actual: screen.own,
-                message: text.overOwn(screen.label, formatBytes(screen.own), formatBytes(gates.maxOwn)),
+                message: text.overOwn(screen.label, ...formatBytesApart(screen.own, gates.maxOwn)),
             });
         }
     }
@@ -163,13 +168,87 @@ export const checkGates = (report: CliReport, gates: Gates): Violation[] => {
         }
     }
 
+    // The signals named one by one: one gate per signal, so the log says which of them stopped the
+    // run. Accepted ones are not in `findings` by now, and so do not count here either.
+    const named = new Set(gates.failOnSignals);
+    for (const kind of named) {
+        const raised = report.findings.filter(finding => finding.kind === kind);
+        if (raised.length > 0) {
+            violations.push({
+                gate: 'signal',
+                subject: kind,
+                limit: 0,
+                actual: raised.length,
+                message: text.signalRaised(kind, raised.length),
+            });
+        }
+    }
+
     return violations;
+};
+
+/**
+ * The screen limits that name no screen of this build. A renamed route or a typo would otherwise
+ * be a gate that silently guards nothing, so each one is said, with the names that do exist.
+ */
+export const unmatchedScreenLimits = (report: CliReport, gates: Gates): string[] => {
+    const names = new Set(report.analysis.screens.flatMap(screen => [screen.label, screen.source]));
+    return Object.keys(gates.screenLimits)
+        .filter(name => !names.has(name))
+        .map(name =>
+            CLI_TEXT[report.lang].screenLimitUnmatched(
+                name,
+                report.analysis.screens.map(s => s.label),
+            ),
+        );
+};
+
+/**
+ * The gates that were asked for and have nothing to be checked against on this run.
+ *
+ * A gate that cannot run passes, and a pipeline guarded by one passes every build. So one typed on
+ * the command line stops the run, as `--max-growth` without `--baseline` always has; one written in
+ * `loadline.json` is said and skipped, because the file is read on every machine and the baseline
+ * usually exists only in the pipeline. A baseline in another unit stops the run either way: it was
+ * given precisely so that something would be compared.
+ */
+export const uncheckedGates = (
+    report: CliReport,
+    gates: Gates,
+    typed: Gates,
+): { refuse: string | null; skipped: string[] } => {
+    const text = CLI_TEXT[report.lang];
+    const hasBaseline = report.comparison !== null || report.comparisonBlocked;
+    const growth = gates.maxGrowth !== null || gates.maxGrowthRatio !== null;
+
+    if (growth && report.comparisonBlocked) {
+        return {
+            refuse: `${text.blocked(report.baselineMode ?? 'raw', report.mode)} ${text.growthUnchecked}`,
+            skipped: [],
+        };
+    }
+
+    const listed = !!report.config?.packages;
+    if (typed.failOnNewPackage && !hasBaseline && !listed) {
+        return { refuse: text.newPackageUnchecked, skipped: [] };
+    }
+
+    const skipped: string[] = [];
+    if (growth && !hasBaseline) {
+        skipped.push(text.configGrowthSkipped);
+    }
+    if (gates.failOnNewPackage && !typed.failOnNewPackage && !hasBaseline && !listed) {
+        skipped.push(text.configNewPackageSkipped);
+    }
+    return { refuse: null, skipped };
 };
 
 /** Whether any gate was asked for at all, which is what tells "passed" from "nothing was checked". */
 export const anyGate = (gates: Gates): boolean =>
     gates.failOn !== 'none' ||
     gates.failOnNewPackage ||
+    gates.failOnSignals.length > 0 ||
+    Object.keys(gates.screenLimits).length > 0 ||
     [gates.maxBoot, gates.maxScreen, gates.maxOwn, gates.maxGrowth, gates.maxGrowthRatio].some(limit => limit !== null);
 
 /**

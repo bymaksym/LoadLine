@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
-import { type PathNode } from '@core/analysis/path-tree.types';
-import { whyHere } from '@core/analysis/why-here';
+import { whyHere } from '@core/analysis/graph/why-here';
+import { type PathNode } from '@core/analysis/views/path-tree.types';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 import { ChainComponent } from '../chain/chain';

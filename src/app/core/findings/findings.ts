@@ -10,16 +10,19 @@ import { configurationBudgets, isZoneless, pipelineKnown } from '../project/proj
 import { type ProjectContext } from '../project/project-context.types';
 import { EMPTY_SITUATION } from '../situation/situation';
 import { type Situation } from '../situation/situation.types';
-import { buildBootSingleFindings } from './boot-single';
-import { buildCascadeShapeFindings } from './caching';
-import { buildDupesFindings } from './dupes';
+import { formatSaving, unitScale } from './actions';
+import { buildBootSingleFindings } from './bundle/boot-single';
+import { buildDupesFindings } from './bundle/dupes';
+import { buildGraphFindings } from './bundle/graph';
+import { buildOwnInBootFindings } from './bundle/own-in-boot';
+import { buildRequestFindings } from './bundle/requests';
+import { buildShippedFindings } from './bundle/shipped';
 import { type Finding } from './finding.types';
-import { chainHtml, mono } from './finding-html';
-import { TEXT } from './finding-text';
-import { buildGraphFindings } from './graph';
-import { buildOwnInBootFindings } from './own-in-boot';
-import { buildRequestFindings } from './requests';
-import { buildShippedFindings } from './shipped';
+import { buildCascadeShapeFindings } from './folder/caching';
+import { signalList } from './kind-names';
+import { bootCausesText, screenCausesText } from './text/causes';
+import { chainHtml, mono } from './text/finding-html';
+import { TEXT } from './text/finding-text';
 
 const unitText = (lang: Lang, mode: Mode): string => {
     if (lang === 'es') {
@@ -136,13 +139,21 @@ export const buildFindings = (
             target: { tab: 'boot', key: projectFolderOf(first.path) },
             kind: 'bigFile',
             saving: insights.exclusiveOf(bigFiles.map(file => file.path)),
+            size: bigFiles.reduce((sum, file) => sum + file.bytes, 0),
             sources: bigFiles.map(file => file.path),
+            // The files are raw bytes, and so is the limit they are held to: both are said in the
+            // report's unit, at the ratio the bootstrap compresses by, as the savings are.
             ...text.bigFile({
                 count: bigFiles.length,
-                each: formatBytes(c.bigOwnFileBytes),
+                each: formatSaving(c.bigOwnFileBytes, unitScale(analysis)),
                 name: baseName(first.path),
-                size: formatBytes(bigFiles.reduce((sum, file) => sum + file.bytes, 0)),
-                list: bigFiles.map(file => `${mono(file.path)} (${formatBytes(file.bytes)})`).join(' · '),
+                size: formatSaving(
+                    bigFiles.reduce((sum, file) => sum + file.bytes, 0),
+                    unitScale(analysis),
+                ),
+                list: bigFiles
+                    .map(file => `${mono(file.path)} (${formatSaving(file.bytes, unitScale(analysis))})`)
+                    .join(' · '),
             }),
         });
     }
@@ -170,6 +181,7 @@ export const buildFindings = (
                 severity: 'mid',
                 target: { tab: 'screens', key: worstScreen.source },
                 kind: 'heavy',
+                size: worstScreen.own,
                 ...text.heavy({
                     count: byOwn.length,
                     label: worstScreen.label,
@@ -188,6 +200,10 @@ export const buildFindings = (
     const unreachable = analysis.unreachable;
     if (unreachable.length > 0) {
         const unreachableBytes = unreachable.reduce((sum, chunk) => sum + chunk.bytes, 0);
+        const namesakes = new Map<string, number>();
+        for (const chunk of unreachable) {
+            namesakes.set(baseName(chunk.file), (namesakes.get(baseName(chunk.file)) ?? 0) + 1);
+        }
         // `allChunks` is every chunk of the build, these among them, so the share is over that.
         const allBytes = analysis.allChunks.reduce((sum, file) => sum + (analysis.chunkOf(file)?.bytes ?? 0), 0);
         // Two service workers are a footnote; most of the build is not. The share is what decides,
@@ -199,6 +215,7 @@ export const buildFindings = (
             severity: most ? 'mid' : 'info',
             kind: 'unreachable',
             ...text.unreachable({
+                folder: analysis.readFrom === 'folder',
                 count: unreachable.length,
                 total: analysis.allChunks.length,
                 size: formatBytes(unreachableBytes),
@@ -206,9 +223,13 @@ export const buildFindings = (
                 // All of them, heaviest first. This signal exists because a report described 12
                 // chunks of 244 without saying so; naming four of the 232 would be the same
                 // mistake one level down.
+                // By path where two share a name: TinyMCE ships 25 `plugin.min.js`, and the list
+                // read "plugin.min.js" 25 times, which identifies none of them.
                 list: unreachable
                     .toSorted((a, b) => b.bytes - a.bytes)
-                    .map(chunk => mono(baseName(chunk.file)))
+                    .map(chunk =>
+                        mono((namesakes.get(baseName(chunk.file)) ?? 0) > 1 ? chunk.file : baseName(chunk.file)),
+                    )
                     .join(', '),
             }),
         });
@@ -310,6 +331,9 @@ export const buildComparisonFindings = (comparison: Comparison, lang: Lang, c: C
                 before: formatBytes(comparison.boot.before),
                 after: formatBytes(comparison.boot.after),
                 baseline: comparison.baselineName,
+                causes: bootCausesText(comparison, lang),
+                estimated: comparison.causesEstimated,
+                ownKnown: comparison.causesOwnKnown,
             }),
         });
     }
@@ -322,8 +346,13 @@ export const buildComparisonFindings = (comparison: Comparison, lang: Lang, c: C
             kind: 'bootNewPackages',
             ...text.bootNewPackages({
                 count: comparison.newBootPackages.length,
+                // Raw, as everything inside a chunk is: at the ratio the bootstrap compresses by,
+                // or "marked (40 kB)" sat next to "marked ≈+15 kB" for the same package.
                 list: comparison.newBootPackages
-                    .map(pkg => `${mono(pkg.name)} (${formatBytes(pkg.bytes)})`)
+                    .map(
+                        pkg =>
+                            `${mono(pkg.name)} (${comparison.causesEstimated ? '≈' : ''}${formatBytes(pkg.bytes * comparison.causesRatio)})`,
+                    )
                     .join(' · '),
                 baseline: comparison.baselineName,
             }),
@@ -333,15 +362,14 @@ export const buildComparisonFindings = (comparison: Comparison, lang: Lang, c: C
     // What the person actually wants to see on a merge request: not the delta of bytes, but which
     // signals went away and which came in. It is the only thing that makes fixing something visible.
     if (comparison.findingsComparable && (comparison.newFindings.length > 0 || comparison.goneFindings.length > 0)) {
-        const chips = (list: readonly { kind: string }[]) => list.map(item => mono(item.kind)).join(', ');
         findings.push({
             severity: comparison.newFindings.length > 0 ? 'mid' : 'ok',
             kind: 'signalsChanged',
             ...text.signalsChanged({
                 fixed: comparison.goneFindings.length,
                 added: comparison.newFindings.length,
-                fixedList: chips(comparison.goneFindings),
-                addedList: chips(comparison.newFindings),
+                fixedList: signalList(lang, comparison.goneFindings),
+                addedList: signalList(lang, comparison.newFindings),
                 baseline: comparison.baselineName,
             }),
         });
@@ -370,6 +398,10 @@ export const buildComparisonFindings = (comparison: Comparison, lang: Lang, c: C
     const individual = sharedGrowth ? grown.filter(screen => !alike.includes(screen)) : grown;
     const top = individual[0];
     if (top) {
+        // Each screen with what grew in it, when both snapshots broke it down: "+120 kB" sends the
+        // person to open two reports side by side; "`xlsx` ≈+118 kB (new)" is the answer itself.
+        const rows = individual.map(screen => ({ screen, causes: screenCausesText(screen, lang) }));
+        const explained = rows.filter(row => row.causes.length > 0);
         findings.push({
             severity: 'mid',
             target: { tab: 'screens', key: top.source },
@@ -379,9 +411,14 @@ export const buildComparisonFindings = (comparison: Comparison, lang: Lang, c: C
                 top: top.label,
                 diff: signed(top.lazy.diff),
                 pct: pctOf(top.lazy.ratio),
-                list: individual
-                    .map(screen => `${mono(screen.label)} ${signed(screen.lazy.diff)} (${pctOf(screen.lazy.ratio)} %)`)
+                list: rows
+                    .map(({ screen, causes }) => {
+                        const figure = `${mono(screen.label)} ${signed(screen.lazy.diff)} (${pctOf(screen.lazy.ratio)} %)`;
+                        return causes.length > 0 ? `${figure} — ${causes.join(', ')}` : figure;
+                    })
                     .join(' · '),
+                explained: explained.length > 0,
+                estimated: explained.some(row => row.screen.causesEstimated),
             }),
         });
     }

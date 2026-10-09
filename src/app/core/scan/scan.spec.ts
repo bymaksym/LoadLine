@@ -4,12 +4,12 @@ import { packageOf } from '../format/format.utils';
 import { exposureOf, scanBuild } from './scan';
 import { findSecrets } from './secrets';
 
-const module = (path: string, bytes = 1000, chunk = 'main-A1.js'): ModuleEntry => ({
+const module = (path: string, bytes = 1000): ModuleEntry => ({
     path,
     label: path.replace(/^node_modules\//, ''),
     pkg: packageOf(path),
     bytes,
-    places: [{ chunk, chunkName: chunk, bytes, zone: 'boot', screens: 0 }],
+    places: [{ chunk: 'main-A1.js', chunkName: 'main-A1.js', bytes, zone: 'boot', screens: 0 }],
 });
 
 describe('findSecrets', () => {
@@ -29,6 +29,23 @@ describe('findSecrets', () => {
         const texts = new Map([['main-A1.js', 'const apiKey = "aGVsbG8gd29ybGQgdGhpcyBpcyBub3QgYSBrZXk";']]);
 
         expect(findSecrets(texts)).toEqual([]);
+    });
+
+    /**
+     * The header alone is what a form shows as the placeholder of a field for pasting a key into.
+     * PocketBase's did, and it was a `high` at the top of the report and a failed `--fail-on high`.
+     */
+    it('finds a private key by its body, not by the header a placeholder also has', () => {
+        const body = 'MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7'.repeat(2);
+        const key = new Map([
+            ['main-A1.js', String.raw`const k="-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----";`],
+        ]);
+        const placeholder = new Map([
+            ['main-A1.js', String.raw`placeholder:"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"`],
+        ]);
+
+        expect(findSecrets(key).map(match => match.kind)).toEqual(['privateKey']);
+        expect(findSecrets(placeholder)).toEqual([]);
     });
 
     it('finds an internal address and an unsubstituted environment variable', () => {
@@ -92,6 +109,29 @@ describe('scanBuild · the rest of what the text says', () => {
         expect(report.leftovers.find(item => item.kind === 'consoleLogs')?.count).toBe(2);
     });
 
+    /**
+     * PocketBase's API documentation is template literals of example code, and its examples were
+     * 26 "development leftovers". In a minified chunk an indented line can only be inside a string.
+     */
+    it('does not count a console.log written inside an example, but does count one in real code', () => {
+        const example =
+            "const docs=`pb.collection('x').subscribe('*', function (e) {\n    console.log(e.record);\n});`;";
+        const minified = `${'a'.repeat(4000)};console.log("real");${example}`;
+        const plain = 'function f() {\n    console.log("unminified");\n}\n';
+        const found = scanBuild({
+            texts: new Map([
+                ['docs-A1.js', minified],
+                ['plain-B2.js', plain],
+            ]),
+            modules: [],
+            boot: new Set(),
+            maps: [],
+        }).leftovers.find(item => item.kind === 'consoleLogs');
+
+        // The real call in the minified chunk and the one in the unminified chunk; not the example.
+        expect(found?.count).toBe(2);
+    });
+
     it('does not call a build a development build because a chunk mentions one', () => {
         // The mistake this rule was written with. What decides is whether the file is in the
         // bundle, which the metafile says outright.
@@ -126,6 +166,29 @@ describe('exposureOf', () => {
         expect(exposure?.paths).toEqual(['src/app/secret-pricing.ts']);
         expect(exposure?.hasContent).toBe(true);
         expect(exposure?.envReferences).toBe(1);
+    });
+
+    /** A Vue app read "394 references" — every one a library's NODE_ENV — and missed its own. */
+    it("counts the project's environment variables, Vite's included, and not the libraries'", () => {
+        const map = JSON.stringify({
+            version: 3,
+            sources: [
+                '../src/App.vue',
+                '../src/App.vue?vue&type=script&setup=true&lang.ts',
+                '../node_modules/vue/index.js',
+            ],
+            sourcesContent: [
+                '<template/>',
+                'const api = import.meta.env.VITE_API_HOST;',
+                'if (process.env.NODE_ENV !== "production") {}',
+            ],
+            mappings: '',
+        });
+
+        const exposure = exposureOf([{ name: 'index-A1.js.map', text: map }]);
+
+        expect(exposure?.envReferences).toBe(1);
+        expect(exposure?.paths).toEqual(['src/App.vue']);
     });
 
     it('says nothing at all when there were no maps to read', () => {

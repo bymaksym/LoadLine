@@ -1,0 +1,1 @@
+var e={home:`Inicio`,orders:`Pedidos`,settings:`Ajustes`,total:`Total`};export{e as default};

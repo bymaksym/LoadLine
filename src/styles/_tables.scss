@@ -24,7 +24,14 @@
     }
 }
 
+/*
+   A box that scrolls sideways is also the containing block of what is positioned inside it. Without
+   it the `.sr-only` labels in its cells — absolute, 1px — are placed against the page instead, keep
+   the column they were written in, and widen the page past the phone: 846px of scroll on a 390px
+   screen, through every table that swipes.
+*/
 .scroller {
+    position: relative;
     overflow-x: auto;
 }
 
@@ -84,6 +91,8 @@
 */
 @media (width < 800px) {
     .scroller--swipe {
+        /* See `.scroller`: what scrolls holds what is positioned inside it. */
+        position: relative;
         overflow-x: auto;
 
         > table > thead th {
@@ -272,6 +281,8 @@ tr.detail td {
 
     /* Wide tables keep their columns and scroll inside the card rather than squeezing. */
     &--scroll {
+        /* See `.scroller`: what scrolls holds what is positioned inside it. */
+        position: relative;
         overflow-x: auto;
     }
 

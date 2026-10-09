@@ -28,7 +28,7 @@ export interface SecretMatch {
      * `messagingSenderId` is the `apiKey` of a Firebase web configuration, which identifies the
      * project and is public by design — what protects it is the security rules, not the key.
      */
-    benign?: 'firebaseConfig' | null;
+    benign?: 'firebaseConfig' | 'envDefined' | null;
     /**
      * Whose code the match is in: a package name, or `null` when it is the project's or cannot be
      * told. A `process.env.DEBUG` inside the `debug` package is that package reading its own switch,

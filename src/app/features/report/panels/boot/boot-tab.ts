@@ -1,10 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { type BucketSlice } from '@core/analysis/analysis.types';
-import { mergePathItems } from '@core/analysis/path-tree';
-import { type PathItem } from '@core/analysis/path-tree.types';
+import { mergePathItems } from '@core/analysis/views/path-tree';
+import { type PathItem } from '@core/analysis/views/path-tree.types';
 import { rate } from '@core/criteria/criteria';
 import { type Verdict } from '@core/criteria/criteria.types';
 import { baseName, chainSteps, formatBytes } from '@core/format/format.utils';
+import { blindBoot } from '@core/whatif/defer';
 import { ChainComponent } from '@shared/chain/chain';
 import { ExplainComponent } from '@shared/explain/explain';
 import { PathTreeComponent } from '@shared/path-tree/path-tree';
@@ -16,6 +17,7 @@ import { ReportStore } from '@state/report.store';
 import { ReportNav } from '@state/report-nav.service';
 import { PanelHeaderComponent } from '../panel-header/panel-header';
 import { revealOnFocus } from '../reveal-on-focus.utils';
+import { BootDiffComponent } from './boot-diff';
 
 type SortKey = 'name' | 'bytes' | 'exclusive' | 'importers';
 
@@ -65,6 +67,7 @@ interface BootRow extends BucketSlice {
         SortHeaderComponent,
         ChainComponent,
         ExplainComponent,
+        BootDiffComponent,
     ],
 })
 export class BootTabComponent {
@@ -151,6 +154,15 @@ export class BootTabComponent {
     protected readonly rows = computed<BootRow[]>(() => {
         const query = this.filter().trim().toLowerCase();
         return query ? this.allRows().filter(row => row.name.toLowerCase().includes(query)) : this.allRows();
+    });
+
+    /** Read from a folder: what each chunk holds is known, who imports what is not. */
+    protected readonly importsKnown = computed(() => !this.store.derived());
+
+    /** The bootstrap's chunks name nothing inside them: a folder read without source maps. */
+    protected readonly opaque = computed(() => {
+        const analysis = this.store.analysis();
+        return !!analysis && blindBoot(analysis);
     });
 
     protected readonly split = computed(() => {

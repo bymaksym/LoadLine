@@ -221,6 +221,22 @@ describe('readPipeline', () => {
         expect(pipeline.builds.map(b => [b.job, b.configurations])).toEqual([['BuildWeb', ['production']]]);
     });
 
+    it('does not read a build into a message an echo prints', () => {
+        // This project's own workflow, which tells whoever broke it what to run.
+        const github = [
+            'jobs:',
+            '  check:',
+            '    steps:',
+            '      - run: ng build --configuration production',
+            '      - run: |',
+            '          echo "::error file=loadline.html::Run `pnpm build` and commit it." && exit 1',
+            String.raw`          printf 'then ng build again\n'`,
+        ].join('\n');
+
+        const pipeline = readPipeline('ci.yml', github, { build: 'ng build' });
+        expect(pipeline.builds.map(b => [b.job, b.configurations])).toEqual([['check', ['production']]]);
+    });
+
     it('a file that is not a pipeline says so: no kind and nothing built', () => {
         const compose = ['services:', '  web:', '    image: nginx', '    ports:', '      - 8080:80'].join('\n');
         const pipeline = readPipeline('docker-compose.yml', compose);
@@ -279,9 +295,19 @@ describe('isZoneless', () => {
     it('angular.json decides when it lists the polyfills; package.json otherwise', () => {
         expect(isZoneless({ ...EMPTY_CONTEXT, angular: readAngularJson(angularJson) })).toBe(false);
         expect(isZoneless({ ...EMPTY_CONTEXT, pkg: readPackageJson(packageJson) })).toBe(true);
-        expect(isZoneless({ ...EMPTY_CONTEXT, pkg: readPackageJson({ dependencies: { 'zone.js': '1' } }) })).toBe(
-            false,
-        );
+        expect(
+            isZoneless({
+                ...EMPTY_CONTEXT,
+                pkg: readPackageJson({ dependencies: { '@angular/core': '^22.0.0', 'zone.js': '1' } }),
+            }),
+        ).toBe(false);
         expect(isZoneless(EMPTY_CONTEXT)).toBeNull();
+    });
+
+    /** No zone.js in a Svelte, React or Vue app says nothing about Angular's change detection. */
+    it('says nothing about a project that is not Angular', () => {
+        expect(
+            isZoneless({ ...EMPTY_CONTEXT, pkg: readPackageJson({ dependencies: { svelte: '^4.0.0' } }) }),
+        ).toBeNull();
     });
 });

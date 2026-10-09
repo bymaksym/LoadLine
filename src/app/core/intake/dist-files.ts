@@ -1,13 +1,45 @@
-import { isMetafile } from '../analysis/metafile.types';
 import { isSnapshot } from '../baseline/baseline';
 import { isLoadlineConfig } from '../config/loadline-config';
 import { type BundleFile } from './bundle-graph.types';
+import { knownHashOf } from './embedded';
+import { metafileOf } from './webpack-stats';
 
 /** Which of the dropped files goes where. Decided by name first, by content when the name says nothing. */
 export type IntakeKind = 'stats' | 'baseline' | 'context' | 'lock' | 'audit' | 'config' | 'unknown';
 
 /** The files that make up the build output, the only ones worth compressing. */
 export const isAsset = (name: string): boolean => /\.(?:m?js|css)$/i.test(name);
+
+/**
+ * What a build's stats file is called, newest first: Angular's metafile from 22.2 and before it,
+ * the webpack stats Angular 8 to 11 write with differential loading, Create React App's `--stats`
+ * and Vue CLI's `--report-json`. The page and the command look for the same names; a name says
+ * where to look, and the content still decides (`metafileOf`).
+ */
+export const STATS_NAMES = [
+    'browser-stats.json',
+    'stats.json',
+    'stats-es2015.json',
+    'bundle-stats.json',
+    'report.json',
+] as const;
+
+/** The stats file among some files, by the order of `STATS_NAMES`. */
+export const statsFileIn = <T extends { name: string }>(files: readonly T[]): T | null => {
+    for (const name of STATS_NAMES) {
+        const found = files.find(file => file.name === name);
+        if (found) {
+            return found;
+        }
+    }
+    return null;
+};
+
+/** The same among dropped files, when it is one: a `report.json` that is no stats file stays a file. */
+export const droppedStats = async (files: readonly File[]): Promise<File | null> => {
+    const named = statsFileIn(files);
+    return named && (await sniff(named)) === 'stats' ? named : null;
+};
 
 /**
  * Files worth reading as text, to find which names anything in the folder mentions.
@@ -26,6 +58,11 @@ export const isSearchable = (name: string): boolean => /\.(?:m?js|css|json|webma
  * the report says so, rather than reporting "no duplicates" and meaning "nobody looked".
  */
 export const hashOf = async (file: File): Promise<string | null> => {
+    // A report written by `--html` brings the hash instead of the bytes.
+    const known = knownHashOf(file);
+    if (known) {
+        return known;
+    }
     // Read as possibly absent: `crypto.subtle` is undefined outside a secure context (a page opened
     // over plain http), whatever lib.dom says.
     const subtle = (crypto as { subtle?: SubtleCrypto }).subtle;
@@ -76,17 +113,32 @@ export const gzipSize = async (file: File): Promise<number> => {
     return size;
 };
 
-/** Every asset of the folder, compressed. Keyed by file name, which is how the metafile names them. */
+/**
+ * Where a picked file sits inside the folder: `browser/assets/a.js` picked as `browser` is
+ * `assets/a.js`. The file name when the browser gave no path.
+ */
+export const pathInside = (file: File): string =>
+    (file.webkitRelativePath || '').split('/').slice(1).join('/') || file.name;
+
+/**
+ * Every asset of the folder, compressed. Keyed by file name, which is how the metafile names them.
+ *
+ * @param byPath filled with the same figures by path inside the folder, for the files that share a
+ *               name: keyed by name, 25 `plugin.min.js` all weigh the last one compressed.
+ */
 export const gzipSizes = async (
     files: File[],
     onProgress?: (done: number, total: number) => void,
+    byPath?: Map<string, number>,
 ): Promise<Map<string, number>> => {
     const sizes = new Map<string, number>();
-    for (const file of files) {
-        sizes.set(file.name, await gzipSize(file));
+    for (const [index, file] of files.entries()) {
+        const size = await gzipSize(file);
+        sizes.set(file.name, size);
+        byPath?.set(pathInside(file), size);
         // Tens of megabytes go through here one file at a time, and the page used to say nothing
         // about it beyond one line of grey text that never changed.
-        onProgress?.(sizes.size, files.length);
+        onProgress?.(index + 1, files.length);
     }
 
     return sizes;
@@ -96,18 +148,43 @@ export const gzipSizes = async (
  * Sizes of the pre-compressed files of the folder. Nothing has to be decompressed: the size of a
  * `.br` file *is* the brotli figure.
  */
-export const brotliSizes = (files: File[]): Map<string, number> => {
+export const brotliSizes = (files: File[], byPath = false): Map<string, number> => {
     const sizes = new Map<string, number>();
     for (const file of files) {
         // `.br` is what every server and every plugin writes; `.brotli` turns up often enough that
         // not reading it means silently showing gzip figures on a folder that had brotli ones.
         const found = /^(.*\.(?:m?js|css))\.(?:br|brotli)$/i.exec(file.name);
         if (found?.[1]) {
-            sizes.set(found[1], file.size);
+            sizes.set(byPath ? pathInside(file).replace(/\.(?:br|brotli)$/i, '') : found[1], file.size);
         }
     }
 
     return sizes;
+};
+
+/**
+ * The brotli figures with a gzip one wherever a file brought no `.br` of its own.
+ *
+ * Pre-compressing plugins skip small files — vite-plugin-compression below 1 kB — and the server
+ * then sends that file the way it sends anything else, gzip. Without this a file with no `.br` was
+ * missing from the brotli figures, and the analysis reads "not in the figures" as "not a file of
+ * this folder": a Vue build lost `runtime-core` from its bootstrap (18 kB instead of 40) and a whole
+ * screen from its table, under a line calling it the server side of a rendered build.
+ */
+export const withGzipFallback = (
+    brotli: ReadonlyMap<string, number>,
+    gzip: ReadonlyMap<string, number>,
+): Map<string, number> => {
+    const complete = new Map(brotli);
+    if (complete.size === 0) {
+        return complete;
+    }
+    for (const [name, bytes] of gzip) {
+        if (!complete.has(name)) {
+            complete.set(name, bytes);
+        }
+    }
+    return complete;
 };
 
 /**
@@ -118,10 +195,7 @@ export const brotliSizes = (files: File[]): Map<string, number> => {
  * of the build. Dropping the first segment is what makes the two line up.
  */
 export const bundleFilesOf = (files: readonly File[]): BundleFile[] =>
-    files.map(file => {
-        const inside = (file.webkitRelativePath || '').split('/').slice(1).join('/');
-        return { path: inside || file.name, bytes: file.size, text: () => file.text() };
-    });
+    files.map(file => ({ path: pathInside(file), bytes: file.size, text: () => file.text() }));
 
 /** What a dropped file is, without loading it. Cheap: reads the name, then the JSON if needed. */
 export const sniff = async (file: File): Promise<IntakeKind> => {
@@ -145,7 +219,7 @@ export const sniff = async (file: File): Promise<IntakeKind> => {
         if (isLoadlineConfig(parsed)) {
             return 'config';
         }
-        if (isMetafile(parsed)) {
+        if (metafileOf(parsed)) {
             return 'stats';
         }
         // An audit report has no name of its own — people redirect it to whatever they like — so it

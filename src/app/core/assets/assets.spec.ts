@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { RECOMMENDED } from '../criteria/criteria';
+import { buildAssetFindings } from '../findings/folder/assets';
 import { type AssetInput, readAssets } from './assets';
 
 const file = (name: string, bytes: number) => ({ path: `assets/${name}`, name, bytes });
@@ -115,6 +117,43 @@ describe('readAssets · the rest', () => {
         expect(hashed.duplicates[0]?.names).toEqual(['assets/hero-E5.avif', 'assets/leftover-Z9.png']);
     });
 
+    /**
+     * Stencil writes its global stylesheet as `app.css` and as `p-qsbgvzk9.css` and the page asks for
+     * neither; Sapper's `main.css` is linked by the page and `chunk.css` loaded by its runtime. The
+     * first is a file stored twice, the second one that travels twice, and both read "a visitor
+     * downloads both".
+     */
+    it('tells a copy that travels twice from one only stored twice', () => {
+        const css = 'body{margin:0}';
+        const report = (texts: Map<string, string>) =>
+            readAssets(
+                input({
+                    files: [file('main-D4.js', 100_000), file('app.css', 154), file('p-qsbgvzk9.css', 154)],
+                    texts: new Map([...texts, ['app.css', css], ['p-qsbgvzk9.css', css]]),
+                    inPage: new Set(['main-D4.js']),
+                    hashes: new Map([
+                        ['assets/app.css', 'same'],
+                        ['assets/p-qsbgvzk9.css', 'same'],
+                    ]),
+                }),
+            );
+        const stored = report(new Map([['main-D4.js', 'boot()']]));
+        const travels = report(new Map([['main-D4.js', 'load("app.css");load("p-qsbgvzk9.css")']]));
+
+        expect(stored.duplicates[0]?.named).toBe(0);
+        expect(travels.duplicates[0]?.named).toBe(2);
+
+        const onlyStored = buildAssetFindings(stored, 'en', RECOMMENDED.gzip).find(
+            finding => finding.kind === 'duplicateAssets',
+        );
+        expect(onlyStored?.severity).toBe('info');
+        expect(onlyStored?.title).toBe('154 B in a file the folder holds twice and the page downloads once at most');
+        const twice = buildAssetFindings(travels, 'en', RECOMMENDED.gzip).find(
+            finding => finding.kind === 'duplicateAssets',
+        );
+        expect(twice?.title).toBe('154 B in a file that ships twice under different names');
+    });
+
     // Nuxt and Astro write a folder per route, so `index.html`, `orders/index.html` and
     // `settings/index.html` all exist and all hold a different page. Keyed by file name the three
     // collapsed onto one hash and came out grouped as "identical byte for byte — it was compared,
@@ -138,6 +177,31 @@ describe('readAssets · the rest', () => {
         expect(report.duplicates).toEqual([]);
     });
 
+    /**
+     * Nuxt's `200.html`, `404.html` and every route's shell are the same page on purpose, and two
+     * routes' `_payload.json` matched because they held the same timestamp. One per navigation.
+     */
+    it('does not report pages and data files as shipped twice, however equal', () => {
+        const report = readAssets(
+            input({
+                files: [
+                    { path: '200.html', name: '200.html', bytes: 900 },
+                    { path: '404.html', name: '404.html', bytes: 900 },
+                    { path: 'tv/_payload.json', name: '_payload.json', bytes: 80 },
+                    { path: 'movie/_payload.json', name: '_payload.json', bytes: 80 },
+                ],
+                hashes: new Map([
+                    ['200.html', 'same'],
+                    ['404.html', 'same'],
+                    ['tv/_payload.json', 'data'],
+                    ['movie/_payload.json', 'data'],
+                ]),
+            }),
+        );
+
+        expect(report.duplicates).toEqual([]);
+    });
+
     it('adds up the whole first trip, and keeps the breakdown next to the total', () => {
         const { firstTrip } = readAssets(input());
 
@@ -147,6 +211,68 @@ describe('readAssets · the rest', () => {
         expect(firstTrip.fonts).toBe(30_000);
         expect(firstTrip.images).toBe(40_000);
         expect(firstTrip.total).toBe(190_000);
+    });
+
+    /**
+     * TinyMCE ships 25 `plugin.min.js`. Read by name, PocketBase's sixteen prefetched files came
+     * out as five, all weighing the same.
+     */
+    it('counts prefetched files that share a name one by one, each with its own weight', () => {
+        const { prefetched, prefetchedBytes } = readAssets(
+            input({
+                html: '<link rel="prefetch" href="./libs/a/plugin.min.js"><link rel="prefetch" href="./libs/b/plugin.min.js">',
+                files: [
+                    { path: 'libs/a/plugin.min.js', name: 'plugin.min.js', bytes: 9000 },
+                    { path: 'libs/b/plugin.min.js', name: 'plugin.min.js', bytes: 4000 },
+                ],
+                weighPath: new Map([
+                    ['libs/a/plugin.min.js', 3000],
+                    ['libs/b/plugin.min.js', 1000],
+                ]),
+            }),
+        );
+
+        expect(prefetched.map(entry => entry.name)).toEqual(['libs/a/plugin.min.js', 'libs/b/plugin.min.js']);
+        expect(prefetchedBytes).toBe(4000);
+    });
+
+    /** By name, a page naming one `plugin.min.js` asked for all of them, at one weight. */
+    it('takes the one file the page names out of several sharing its name, at its own weight', () => {
+        const report = readAssets(
+            input({
+                html: '<script src="./libs/b/plugin.min.js"></script>',
+                files: [
+                    { path: 'libs/a/plugin.min.js', name: 'plugin.min.js', bytes: 9000 },
+                    { path: 'libs/b/plugin.min.js', name: 'plugin.min.js', bytes: 4000 },
+                    { path: 'libs/c/plugin.min.js', name: 'plugin.min.js', bytes: 7000 },
+                ],
+                inPage: new Set(['plugin.min.js']),
+                weigh: new Map([['plugin.min.js', 2500]]),
+                weighPath: new Map([['libs/b/plugin.min.js', 1000]]),
+            }),
+        );
+
+        expect(report.inPagePaths).toEqual(['libs/b/plugin.min.js']);
+        expect(report.firstTrip.files).toBe(1);
+        expect(report.firstTrip.scripts).toBe(1000);
+    });
+
+    /**
+     * `inPage` comes from everything the page names, `prefetch` included, and from hosts that are
+     * not this folder. PocketBase read "731 kB across 12 files" for 392 kB in 5; Nuxt counted forty
+     * posters on an image CDN as files of its first trip.
+     */
+    it('leaves out what the page only prefetches, and what lives on another host', () => {
+        const { firstTrip } = readAssets(
+            input({
+                files: [...input().files, file('later-C3.js', 300_000)],
+                inPage: new Set([...input().inPage, 'later-C3.js', 'css2', 'poster.jpg']),
+                prefetched: new Set(['later-C3.js']),
+            }),
+        );
+
+        expect(firstTrip.total).toBe(190_000);
+        expect(firstTrip.files).toBe(4);
     });
 
     it('attributes a stylesheet to the chunk whose own text names it', () => {

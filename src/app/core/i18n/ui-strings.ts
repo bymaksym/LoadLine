@@ -2,7 +2,7 @@
 UI strings. Signals live apart, in `findings.ts`.
 */
 
-import { type Delivery } from '../analysis/analysis.types';
+import { type Delivery, type OffPageOutputs } from '../analysis/analysis.types';
 import { type CriteriaKey, type DataSource, type Mode, type Provenance, type Scale } from '../criteria/criteria.types';
 import { type Effort } from '../findings/effort';
 import { type Breadth, type Exposure, type RawKey, type SituationKey } from '../situation/situation.types';
@@ -216,6 +216,8 @@ export interface UiStrings {
     drop1Title: string;
     drop1Body: string;
     drop1Btn: string;
+    /** The same zone's other way in: the build folder, which is all a Vite or Nuxt build has. */
+    drop1FolderBtn: string;
     /** Loads the built-in example, for looking at the tool without building an application first. */
     sampleBtn: string;
     /** What the status line says while the example is loaded, so it is never mistaken for a build. */
@@ -236,8 +238,11 @@ export interface UiStrings {
     statsIdle: string;
     distIdle: string;
     statsLoaded: (name: string, outputs: number) => string;
-    /** No stats file: the graph was read from the chunks of the folder themselves. */
-    statsFromFolder: (name: string, outputs: number) => string;
+    /**
+     * No stats file: the graph was read from the chunks of the folder themselves. `opaque` when
+     * the folder brought no source maps either, so what is inside each chunk is not known.
+     */
+    statsFromFolder: (name: string, outputs: number, opaque: boolean) => string;
     statsError: (message: string) => string;
     distNoFiles: string;
     distNoApi: string;
@@ -250,22 +255,37 @@ export interface UiStrings {
     distLoadedBrotli: string;
     /** The folder also carried the page, so the round trips of the first load can be counted. */
     distLoadedIndex: string;
+    /** A restored session: the figures came back, the text of the build did not. */
+    distTextUnread: string;
     splitExact: string;
     splitApprox: string;
     splitHelp: string;
     /** An SSR build carries both sides in one metafile; only the browser one is analysed. */
     serverIgnored: (n: number) => string;
     serverIgnoredHelp: string;
+    /** Files of the folder no screen downloads: the `nomodule` copy and the service worker. */
+    offPageIgnored: (off: OffPageOutputs) => string;
+    offPageIgnoredHelp: string;
     /** The line under the screens table: the lazy entries it has no row for. */
     notScreensLabel: string;
     /** What kind each of those entries is, written after its size. */
-    notScreenKind: { block: string; grouper: string; data: string };
+    notScreenKind: { block: string; grouper: string; data: string; package: string; worker: string; onDemand: string };
     /** Lazy entries that are a piece of a screen, not a screen: @defer and friends. */
     blocksHelp: string;
     /** Lazy entries that are a list of routes and no code: what they load is the screen. */
     groupersHelp: string;
     /** Lazy entries that are data rather than screens. */
     dataHelp: string;
+    /** Packages loaded on demand with an `import()` of their own. */
+    packagesHelp: string;
+    /** Web workers started from the page. */
+    workersHelp: string;
+    /** Lazy chunks no route of the route table opens, in a build where the table was read. */
+    onDemandHelp: string;
+    /** Under the table of a folder build whose code has no route table: every lazy chunk is a screen. */
+    noRouteTable: string;
+    /** The stylesheets the screens load and the page does not ask for: not in any total. */
+    routeCss: (count: number, list: string) => string;
     /** Reclassifying an entry by hand, for when the rules get it wrong in a project. */
     markScreen: string;
     markScreenHelp: string;
@@ -301,12 +321,17 @@ export interface UiStrings {
     baselineRemove: string;
     /** Zone 3 also takes the previous build folder, to compare compressed against compressed. */
     drop3BtnDist: string;
-    baselineNoStats: string;
     baselineWorking: string;
     contextIdle: string;
     contextLoaded: (files: string[]) => string;
     contextIgnored: (files: string[]) => string;
     contextShort: (n: number) => string;
+    /**
+     * Compact bar, when the `loadline.json` dropped extends others the page cannot read: which, and
+     * that only what this file says is applied. `configExtendsHelp` is the longer version, on hover.
+     */
+    configExtends: (names: string) => string;
+    configExtendsHelp: string;
     contextRemove: string;
     /** Offer to restore the measurement this browser kept from the previous visit. */
     restorePrompt: (name: string, date: string) => string;
@@ -396,6 +421,11 @@ export interface UiStrings {
     tileBootSub: (files: number) => string;
     /** Under the bootstrap split when the report is compressed: the split itself is raw bytes. */
     bootSplitRaw: (total: string) => string;
+    /**
+     * In place of the split when the bootstrap's chunks carry no source maps: what is inside them is
+     * not known, and two tiles reading "0 B" said it was nothing.
+     */
+    bootSplitUnknown: string;
     /** The stylesheets the page also asks for, which the figure above does not include. */
     tileBootCss: (size: string, files: number, total: string) => string;
     tileScreens: string;
@@ -801,6 +831,11 @@ export interface UiStrings {
     helpBootOfBoot: string;
     helpBootLazyOnly: (max: number) => string;
     helpImportersNone: string;
+    /**
+     * On the exclusive weight and the importers of a build read from its folder: the maps say what
+     * each chunk carries, never who imports what, and "0 B · nobody imports it" read as an answer.
+     */
+    helpImportsUnknown: string;
     /** Detail of a bootstrap package: the import chain from the entry, and the files importing it. */
     bootChain: string;
     bootChainNone: string;
@@ -892,6 +927,43 @@ export interface UiStrings {
     footer: string;
     /** With a report open the footer folds into the question it answers. */
 
+    // --- three views drawn from figures the report already has ---
+    /** The bootstrap map coloured by how each part moved since the baseline (bootstrap tab). */
+    diffTitle: string;
+    diffSub: (before: string, after: string, diff: string, baseline: string) => string;
+    diffChange: { new: string; grew: string; shrank: string; same: string; gone: string };
+    /** A folder of the project's own code, as opposed to a package. */
+    diffOwn: string;
+    diffGone: string;
+    /** Under the map in a compressed report: the deltas are raw weights at the bootstrap's ratio. */
+    diffEstimated: string;
+    /** Against a baseline that did not record the project's folders: they are not compared. */
+    diffPackagesOnly: string;
+    diffTile: (name: string, size: string, change: string) => string;
+    /** Screens × packages (screens tab). */
+    gridTitle: string;
+    gridSub: string;
+    gridBoot: string;
+    gridLazy: string;
+    gridOwn: string;
+    gridRest: string;
+    gridTotal: string;
+    gridCell: (screen: string, size: string, what: string) => string;
+    gridScale: { less: string; more: string };
+    gridRaw: string;
+    /** One screen's load, trip by trip (screen detail). */
+    tripsTitle: string;
+    tripsNote: string;
+    tripsProfile: { slow4g: string; fast4g: string; cable: string };
+    tripsBoot: string;
+    tripsScreen: string;
+    tripLabel: (index: number) => string;
+    tripsWait: string;
+    tripsParse: string;
+    tripsTotal: (time: string, trips: number) => string;
+    tripsAssumed: string;
+    tripBar: (index: number, wait: string, transfer: string, size: string, files: number) => string;
+
     errNoEntries: string;
     errNoMain: string;
     errNoOutputs: string;
@@ -901,6 +973,10 @@ export interface UiStrings {
     errExpected: string;
     /** A folder read on its own, without the page that says which chunk the application starts at. */
     errNoPage: string;
+    /** A folder dropped on the page that the browser would not let it read. */
+    errFolderUnreadable: string;
+    entryLabel: string;
+    entryBtn: string;
     /** A folder of chunks whose imports the loader resolves at run time: webpack's, Turbopack's. */
     errNotEsmGraph: string;
     /** The file is fine, it is another format: which one, and what to do instead. */

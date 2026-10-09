@@ -195,6 +195,11 @@ tr.row-btn--lazy .boot-name {
     color: var(--muted);
 }
 
+/* Where it scrolls sideways, below, it holds the `.sr-only` labels of its cells: see `.scroller`. */
+.boot-table {
+    position: relative;
+}
+
 /*
    Narrow, the table keeps its columns and scrolls sideways inside its card. A card that scrolls is
    its own scroll container, so the header stops pinning: left sticky, it would be pushed down

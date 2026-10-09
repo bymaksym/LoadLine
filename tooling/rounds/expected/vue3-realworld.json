@@ -1,0 +1,42 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 44278,
+        "rawBytes": 112744,
+        "files": 6
+    },
+    "firstTrip": {
+        "total": 49557,
+        "files": 7
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 0,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "article: own 17154, shared 793, total 62225",
+        "profile: own 1063, shared 3202, total 48543",
+        "global-feed: own 801, shared 2817, total 47896",
+        "settings: own 1213, shared 0, total 45491",
+        "edit-article: own 1173, shared 0, total 45451",
+        "register: own 1019, shared 0, total 45297",
+        "login: own 973, shared 0, total 45251",
+        "not-found: own 419, shared 0, total 44697"
+    ],
+    "deferred": [],
+    "shared": 3,
+    "workers": 0,
+    "onDemand": 0,
+    "data": 0,
+    "signals": [
+        "mid assetOrigin: The render-blocking stylesheets come from 2 hosts that are not the page's own",
+        "mid unhashable: 2 files carry no hash in the name",
+        "info cascadeShape: assets/runtime-core.esm-bundler-DvtSYmKL.js is imported by 15 of 17 chunks: any change inside it renames all of them",
+        "info noSourceMaps: This folder carries no .map files, and that cuts the report short",
+        "info situationMissing: 2 unanswered questions would change what this report says"
+    ]
+}

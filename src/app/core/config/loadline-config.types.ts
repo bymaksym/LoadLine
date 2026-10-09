@@ -39,18 +39,46 @@ export interface AcceptedFinding {
     /** `YYYY-MM-DD`. After it, the signal is raised again. */
     until?: string;
     /**
-     * The figure the decision was taken about, in bytes. When the signal comes back bigger than
-     * this, the acceptance no longer covers it: what was accepted was 12 kB, not 400.
+     * The figure the decision was taken about: `"12kB"` in the file, bytes once read. When the
+     * signal comes back bigger than this, the acceptance no longer covers it: what was accepted
+     * was 12 kB, not 400.
      */
     bytes?: number;
 }
 
-/** The gates as a file writes them. Sizes are strings — `350kB` — because that is how people read them. */
+/**
+ * Something the team has decided must not ship: a package, or files of its own, anywhere in the
+ * build or only in the bootstrap.
+ *
+ * `packages` already guards the bootstrap, but as a closed list: everything not on it fails. That
+ * fits a team that reviews every package; it does not fit "anything but moment", which is the rule
+ * most teams actually have and could only write down in a README. This is the open list, and it is
+ * declarative on purpose — no code, so the page and the command read the same rule the same way.
+ *
+ * What it raises is an ordinary signal, `forbidden`. So an exception is an entry in `accepted`, with
+ * a reason and a date, and failing the build on it is `failOn` or `failOnSignals`: nothing here is
+ * a second way of doing what the file already does.
+ */
+export interface ForbiddenRule {
+    /** A package name, with `*` for any text: `"moment"`, `"@aws-sdk/*"`. */
+    package?: string;
+    /** Files of the project, with `*` for any text: `"src/app/admin/*"`. */
+    path?: string;
+    /** Where it must not be. `anywhere` when the file leaves it out. */
+    in: 'bootstrap' | 'anywhere';
+    /** Why not. Required, and shown on the signal: it is what the person who meets it reads first. */
+    why: string;
+}
+
+/**
+ * The gates as read. The file writes a size as people read it — `"350kB"` — or as bytes, and by the
+ * time it gets here it is bytes: the reader checked every one and named the ones it could not use.
+ */
 export interface ConfigGates {
-    maxBoot?: string;
-    maxScreen?: string;
-    maxOwn?: string;
-    maxGrowth?: string;
+    maxBoot?: number;
+    maxScreen?: number;
+    maxOwn?: number;
+    maxGrowth?: number;
     /** A percentage as a number: `10` means ten per cent. */
     maxGrowthPct?: number;
     failOn?: 'high' | 'mid' | 'none';
@@ -59,6 +87,21 @@ export interface ConfigGates {
      * want: bundles do not grow all at once, they grow one `npm install` at a time.
      */
     failOnNewPackage?: boolean;
+    /**
+     * Signals that fail the run whatever their severity: `["forbidden", "secrets"]`.
+     *
+     * `failOn` is a level, and a level is the wrong tool for "this one, always". A secret in the
+     * bundle is the same decision at any severity, and lowering the level far enough to catch it
+     * also failed the build on every medium signal nobody meant to stop a deploy for. Accepted
+     * signals do not count, the same as with `failOn`.
+     */
+    failOnSignals?: FindingKind[];
+    /**
+     * A limit per screen, over `maxScreen`: `{ "rooms": "400kB" }`. Keyed by the screen as the
+     * report names it, or by its source file. One heavy screen that is heavy on purpose — a map, an
+     * editor — used to force a limit loose enough for it on every other screen as well.
+     */
+    screens?: Record<string, number>;
 }
 
 /**
@@ -77,8 +120,17 @@ export interface ConfigGates {
  * repository is a false fact with the shape of a measurement. They live in the session, not here.
  */
 export interface LoadlineConfig {
+    /** Where an editor finds `loadline.schema.json`, for completion and the description of every key. */
+    $schema?: string;
     tool: 'loadline';
     version: 1;
+    /**
+     * Other `loadline.json` files this one builds on: a path (`"./base.loadline.json"`) or a package
+     * (`"@acme/loadline-config"`, which reads its `loadline.json`), resolved from the file that
+     * writes it. Written as one name or a list; always a list once read. Only the command follows
+     * it — the page has no disk to follow it on, and says so. See `mergeConfigs` for how they join.
+     */
+    extends?: string[];
     /** The unit the thresholds are written in. A gzip threshold checked against raw bytes is not one. */
     mode?: Mode;
     /** Whatever of the thresholds the team decided to move. Anything absent keeps its recommended value. */
@@ -90,6 +142,10 @@ export interface LoadlineConfig {
      */
     packages?: string[];
     accepted?: AcceptedFinding[];
+    /** What must never ship, or never ship in the first load: see `ForbiddenRule`. */
+    forbidden?: ForbiddenRule[];
+    /** What the build folder does not say on its own: see `BuildHints`. */
+    build?: BuildHints;
     /**
      * What the team answered about the world this build ships into: the five questions.
      *
@@ -114,9 +170,69 @@ export interface LoadlineConfig {
     situation?: Situation;
 }
 
+/**
+ * The two things about a build folder that the folder cannot always say, for the build it does not.
+ *
+ * Every rule that reads a folder is a guess about how some tool writes one, and a tool that does
+ * something new — or something old nobody wrote a rule for — will one day get past all of them.
+ * These are the way through without waiting for a release: two lists of file names, read by the
+ * page and the command alike.
+ */
+export interface BuildHints {
+    /**
+     * Scripts the application starts at, by file name (`client.11806644.js`) or with `*` for the
+     * hash (`client.*.js`). Added to what `index.html` names, for a page that starts the
+     * application in a way this does not read.
+     */
+    entries?: string[];
+    /**
+     * Files of the folder no screen downloads — a polyfill only old browsers load, a copy for
+     * another target — by name or with `*`. Never taken as an entry or reached by a guess, and left
+     * out of every figure when nothing the application imports reaches them.
+     */
+    ignore?: string[];
+    /**
+     * Which lazy entries are screens and which are a piece of one, by source file (or chunk, in a
+     * build without maps), with `*` for any text: `{ "src/app/admin/*": "screen", "*.widget.ts":
+     * "piece" }`. The same correction as the buttons of the screens table, written down once for
+     * everybody instead of clicked by each person in their own browser. A click still wins.
+     */
+    screens?: Record<string, 'screen' | 'piece'>;
+    /**
+     * The page of the application, when the folder holds several and none is `index.html`, or the
+     * `index.html` is not the one: `"app.html"`, `"admin/index.html"`.
+     */
+    page?: string;
+    /**
+     * Source paths that are the project's own code although they sit under `node_modules/`, with `*`
+     * for a segment and `**` for any number: `["src/node_modules/**"]`. Read before the default.
+     */
+    own?: string[];
+    /**
+     * Source paths that are dependencies although they are not under `node_modules/` — a monorepo's
+     * workspace packages, a vendored library — named after the folder the pattern matches:
+     * `["packages/*"]` makes `packages/ui/src/x.ts` part of a package called `ui`.
+     */
+    dependencies?: string[];
+    /**
+     * Keys of a route table besides the ones every router uses (`component`, `loadComponent`,
+     * `loadChildren`, `lazy`, `getComponent`, `asyncComponent`), for a router that writes
+     * `{ path: '/x', page: () => import('./x.js') }`. Without its key the table is not found and every
+     * lazy chunk counts as a screen.
+     */
+    routeKeys?: string[];
+}
+
 /** What reading the file produced, with everything wrong about it named rather than thrown. */
 export interface ConfigReadResult {
     config: LoadlineConfig | null;
     /** Lines to print. An acceptance with no reason, a date that is not one, an unknown signal. */
     problems: string[];
+    /**
+     * The ones among `problems` that leave a gate guarding less than the file says: a size that
+     * does not parse, a severity that is not one, a key that is not a gate. The command refuses to
+     * run on these instead of printing them, because a gate that switched itself off passes, and a
+     * typo in a committed file turned a pipeline green with nothing but a line on stderr.
+     */
+    gateProblems: string[];
 }

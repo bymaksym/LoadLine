@@ -6,7 +6,7 @@
 import { formatBytes, formatDelta } from '../src/app/core/format/format.utils';
 import { UI } from '../src/app/core/i18n/ui';
 import { type CliReport } from './report.types';
-import { CLI_TEXT } from './text';
+import { CLI_TEXT } from './text/text';
 
 /**
  * What moved since the last run of this build, in one line: "bootstrap 156 kB → 129 kB (−27 kB)",
@@ -41,5 +41,5 @@ export const sinceLastLine = (report: CliReport): string | null => {
     const date = Number.isNaN(when.getTime())
         ? since.baselineDate
         : `${when.getFullYear()}-${two(when.getMonth() + 1)}-${two(when.getDate())} ${two(when.getHours())}:${two(when.getMinutes())}`;
-    return text.sinceLast(date, parts.length > 0 ? parts.join(' · ') : text.lastRunUnchanged);
+    return text.sinceLast(date, parts.length > 0 ? parts.join(' · ') : text.lastRunUnchanged, report.sinceLastBranch);
 };

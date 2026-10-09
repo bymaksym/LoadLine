@@ -70,6 +70,11 @@ export interface ObservedThirdParty {
      * third parties do not share the page's connection, so each origin is its own handshake.
      */
     total: number;
+    /**
+     * Whether the paste could say: it needs the page's origin and the addresses of what was fetched.
+     * A list of file names has neither, and "0 requests to 0 hosts" then read as an answer.
+     */
+    known: boolean;
 }
 
 /**
@@ -321,7 +326,12 @@ export const observedFrom = (measurement: Measurement, build: ReadonlySet<string
         cache: { fromCache, revalidated, network },
         connections: { opened, lastAt },
         assetOrigins: [...assetOrigins],
-        thirdParty: { requests: thirdRequests, origins: [...thirdOrigins], total: measurement.entries.length },
+        thirdParty: {
+            requests: thirdRequests,
+            origins: [...thirdOrigins],
+            total: measurement.entries.length,
+            known: !!pageOrigin && measurement.entries.some(entry => !!originOf(entry.url)),
+        },
         serviceWorker: page.serviceWorker,
         caches: page.caches,
         modulepreloads: page.modulepreloads,

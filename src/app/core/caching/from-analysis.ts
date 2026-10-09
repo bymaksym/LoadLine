@@ -37,7 +37,14 @@ const chunksOf = (analysis: Analysis): ChunkContents[] => {
                 .filter(child => child.kind === 'folder')
                 .reduce((sum, child) => sum + child.bytes, 0);
 
-            return { name: node.label, bytes: node.bytes, inBoot: boot.has(node.id), vendorBytes, ownBytes };
+            return {
+                name: node.label,
+                bytes: node.bytes,
+                rawBytes: node.rawBytes,
+                inBoot: boot.has(node.id),
+                vendorBytes,
+                ownBytes,
+            };
         });
 };
 
@@ -50,6 +57,10 @@ const chunksOf = (analysis: Analysis): ChunkContents[] => {
  * @param baseline the previous build. Only the snapshots that carry `files` can answer what an
  *                 update costs; an older export cannot, and the report says nothing rather than
  *                 guessing from the byte totals.
+ * @param weighed  what each script and stylesheet of the folder weighs in the unit of the report, by
+ *                 name. A file named here is said in it; the rest — an image, a font — travel as
+ *                 they are. Without it the list of names that carry no hash said `my-app.js (681 kB)`
+ *                 under a heading of compressed figures, for a file that travels as 173 kB.
  */
 export const cachingOf = (
     analysis: Analysis,
@@ -57,10 +68,12 @@ export const cachingOf = (
     assets: AssetReport | null,
     inPage: ReadonlySet<string>,
     hrefs: readonly string[] = [],
+    weighed: ReadonlyMap<string, number> | null = null,
 ): CachingReport => {
     // What the page asks for, as the folder reader worked it out. Without a folder there is only
     // what `index.html` announced of the JavaScript, which is what the caller passes.
-    const named = assets ? new Set(assets.inPage) : inPage;
+    // By path when the folder was read, which is also what the files below carry.
+    const named = assets ? new Set(assets.inPagePaths) : inPage;
     const current = new Map(
         analysis.allChunks.map(file => {
             const chunk = analysis.chunkOf(file);
@@ -76,7 +89,11 @@ export const cachingOf = (
         previous,
         chunks: chunksOf(analysis),
         files: assets
-            ? assets.files.map(file => ({ name: file.name, path: file.path, bytes: file.bytes }))
+            ? assets.files.map(file => ({
+                  name: file.name,
+                  path: file.path,
+                  bytes: weighed?.get(file.name) ?? file.bytes,
+              }))
             : [...current].map(([name, file]) => ({ name, bytes: file.bytes })),
         referencedAs: new Map(hrefs.map(href => [baseName(/^[^?#]*/.exec(href)?.[0] ?? ''), href] as const)),
         // Keyed by file name, because that is the only thing the two builds have in common: the

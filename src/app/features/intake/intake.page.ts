@@ -1,10 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { type Mode } from '@core/criteria/criteria.types';
+import { droppedFolder } from '@core/intake/folder-handle';
 import { copyText } from '@shared/clipboard.utils';
 import { ExportService } from '@state/export.service';
 import { HomeService } from '@state/home.service';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
+import { EntryFormComponent } from './entry-form/entry-form';
 
 type Zone = 'stats' | 'dist' | 'baseline' | 'context';
 
@@ -20,6 +22,7 @@ type Zone = 'stats' | 'dist' | 'baseline' | 'context';
     selector: 'app-intake-page',
     templateUrl: './intake.page.html',
     styleUrl: './intake.page.scss',
+    imports: [EntryFormComponent],
 })
 export class IntakePageComponent {
     // * SERVICES
@@ -29,6 +32,38 @@ export class IntakePageComponent {
     protected readonly home = inject(HomeService);
 
     // * ATTRIBUTES
+    /**
+     * The five file inputs the labels of the page open. Kept out of the accessibility tree and out
+     * of the tab order: what is focused, read out and pressed is the label naming each one. Left in,
+     * they were five more unnamed buttons reading "Choose file" in the browser's language, ahead of
+     * the five that say what they are for.
+     */
+    protected readonly fileInputs: readonly {
+        id: string;
+        accept: string | null;
+        folder: boolean;
+        multiple: boolean;
+        pick: (event: Event) => void;
+    }[] = [
+        {
+            id: 'statsInput',
+            accept: '.json,application/json',
+            folder: false,
+            multiple: false,
+            pick: e => this.onStats(e),
+        },
+        { id: 'distInput', accept: null, folder: true, multiple: true, pick: e => this.onDist(e) },
+        {
+            id: 'baselineInput',
+            accept: '.json,application/json',
+            folder: false,
+            multiple: false,
+            pick: e => this.onBaseline(e),
+        },
+        { id: 'baselineDistInput', accept: null, folder: true, multiple: true, pick: e => this.onBaselineDist(e) },
+        { id: 'contextInput', accept: '.json,.yml,.yaml', folder: false, multiple: true, pick: e => this.onContext(e) },
+    ];
+
     /** Which zone a drag is hovering, so only that one highlights. */
     protected readonly dragging = signal<Zone | null>(null);
     /** "Copied" on the diagnostics button, back to its label after a moment. */
@@ -38,8 +73,8 @@ export class IntakePageComponent {
     protected readonly distStatus = computed(() => {
         const t = this.i18n.ui();
         // Walking the import graph is the one wait that freezes the page — about a second on a big
-        // application — so it is the one that most needs saying out loud. See
-        // `scripts/measure-analysis.mjs` for why it is this half and not the compressing.
+        // application — so it is the one that most needs saying out loud. Why it is this half and
+        // not the compressing, with the figures, is on `ReportStore.phase`.
         if (this.store.phase() === 'read') {
             return t.distReading;
         }
@@ -71,6 +106,9 @@ export class IntakePageComponent {
         // there. Its absence is explained where the figure would be, in the screens tab.
         if (this.store.announced()) {
             parts.push(t.distLoadedIndex);
+        }
+        if (this.store.textUnread()) {
+            parts.push(t.distTextUnread);
         }
         return parts.join(' · ');
     });
@@ -180,13 +218,37 @@ export class IntakePageComponent {
         if (files.length === 0) {
             return;
         }
+        // Read now: the entries of a drop are only there while the event is being handled. A folder
+        // the browser will not list — Chrome, on a page opened from the disk — was a drop that did
+        // nothing at all, and said nothing either.
+        const folder = (event.dataTransfer ? droppedFolder(event.dataTransfer.items) : Promise.resolve(null)).catch(
+            () => 'unreadable' as const,
+        );
 
         if (zone === 'context') {
             void this.store.loadContext(files);
         } else if (zone === 'baseline') {
-            void this.store.loadAny(files, true);
+            void folder.then(found =>
+                found === 'unreadable'
+                    ? this.store.folderUnreadable()
+                    : found
+                      ? this.store.loadBaselineDist(found)
+                      : this.store.loadAny(files, true),
+            );
         } else {
-            void this.store.loadAny(files, false).then(() => this.home.hide());
+            void folder.then(async found => {
+                if (found === 'unreadable') {
+                    this.store.folderUnreadable();
+                    return;
+                }
+                if (found) {
+                    const result = await this.store.loadFolder(found);
+                    this.distIssue.set(result === 'ok' ? null : result);
+                } else {
+                    await this.store.loadAny(files, false);
+                }
+                this.home.hide();
+            });
         }
     }
 
@@ -236,7 +298,7 @@ export class IntakePageComponent {
         }
 
         this.distIssue.set(null);
-        void this.store.loadDist(files).then(result => {
+        void this.store.loadFolder(files).then(result => {
             this.distIssue.set(result === 'ok' ? null : result);
         });
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { analyze } from '../analysis/analysis';
-import { announcedIn } from '../intake/index-html';
+import { announcedIn } from '../build-text/index-html';
 import { SAMPLE_PAGE, SAMPLE_STATS } from '../sample/sample-build';
 import { anonymise, diagnosticsOf } from './diagnostics';
 

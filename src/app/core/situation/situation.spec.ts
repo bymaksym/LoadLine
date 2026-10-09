@@ -3,7 +3,7 @@
  *
  * The rule is the one worth pinning: **an answer may raise a severity and may never lower one, and
  * `unknown` does nothing at all.** It is tested here as arithmetic and again in
- * `findings/situation.spec.ts` as severities, because the two are separate ways of getting it
+ * `findings/supplied/situation.spec.ts` as severities, because the two are separate ways of getting it
  * wrong: a derivation that quietly turns "nobody said" into a default breaks the first, and a
  * builder that branches on `low` breaks the second.
  */

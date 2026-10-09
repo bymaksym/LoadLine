@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkloadline_webpack5_fixture=self.webpackChunkloadline_webpack5_fixture||[]).push([[318],{318(e,a,r){r.r(a);var t=r(72);r.d(a,["render",0,()=>`<h1>Settings</h1>${(0,t.t)([1,2])}`])}}]);
+//# sourceMappingURL=318.55c6ed89.js.map

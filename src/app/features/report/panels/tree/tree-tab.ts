@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { type TreeNode } from '@core/analysis/analysis.types';
-import { shapeOf, type ZoneShape } from '@core/analysis/shape';
+import { shapeOf, type ZoneShape } from '@core/analysis/screens/shape';
 import { formatBytes } from '@core/format/format.utils';
 import { TreeNodeComponent } from '@shared/bundle-tree/tree-node';
 import { pickSort, type Sort, sortSign } from '@shared/sort-header/sort.utils';

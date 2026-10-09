@@ -3,7 +3,7 @@ import { type Metafile } from '../src/app/core/analysis/metafile.types';
 import { EMPTY_CONTEXT } from '../src/app/core/project/project-context';
 import { parseArgs } from './args';
 import { type Options } from './args.types';
-import { anyGate, checkGates, violationLines } from './gates';
+import { anyGate, checkGates, mergeGates, uncheckedGates, violationLines } from './gates';
 import { buildReport } from './report';
 import { type CliReport } from './report.types';
 
@@ -63,6 +63,7 @@ const reportWith = (opts: Options): CliReport =>
         {
             meta,
             parallel: null,
+            routes: null,
             statsName: 'stats.json',
             gzip: null,
             brotli: null,
@@ -110,7 +111,7 @@ describe('checkGates', () => {
     });
 
     it('own code is checked apart from the total, because the bootstrap is not the screen fault', () => {
-        const opts = options('--max-own', '500');
+        const opts = options('--max-own', '500B');
         const violations = checkGates(reportWith(opts), opts.gates);
 
         expect(violations.map(violation => violation.gate)).toEqual(['own']);
@@ -126,10 +127,73 @@ describe('checkGates', () => {
         expect(violations.filter(violation => violation.gate === 'signals')).toHaveLength(raised > 0 ? 1 : 0);
     });
 
+    it('failOnSignals fails on the signals it names, one gate each, whatever their severity', () => {
+        const opts = options();
+        const report = reportWith(opts);
+        const kind = report.findings[0]?.kind;
+        expect(kind).toBeDefined();
+
+        const gates = { ...opts.gates, failOnSignals: [kind ?? 'clean', kind ?? 'clean'] };
+        const violations = checkGates(report, gates);
+
+        expect(anyGate(gates)).toBe(true);
+        expect(violations.map(violation => [violation.gate, violation.subject])).toEqual([['signal', kind]]);
+    });
+
+    it('failOnSignals says nothing about a signal this build does not raise', () => {
+        const opts = options();
+        const report = reportWith(opts);
+        const absent = (['secrets', 'vulnerable'] as const).filter(k => report.findings.every(f => f.kind !== k));
+
+        expect(checkGates(report, { ...opts.gates, failOnSignals: [...absent] })).toEqual([]);
+    });
+
     it('growth gates stay quiet without a baseline: there is nothing to grow against', () => {
-        const opts = options('--max-growth', '1');
+        const opts = options('--max-growth', '1B');
 
         expect(checkGates(reportWith(opts), opts.gates)).toEqual([]);
+    });
+});
+
+describe('mergeGates', () => {
+    const file = { tool: 'loadline', version: 1, gates: { failOn: 'mid' } } as const;
+
+    it("takes the file's failOnSignals, which has no flag", () => {
+        const withSignals = { ...file, gates: { failOnSignals: ['secrets' as const] } };
+        expect(mergeGates(options().gates, withSignals).failOnSignals).toEqual(['secrets']);
+    });
+
+    it("takes the file's failOn when the command line said nothing", () => {
+        expect(mergeGates(options().gates, file).failOn).toBe('mid');
+    });
+
+    /** `none` is also the default, so it used to read as "not given" and the file won. */
+    it('lets a typed --fail-on none win over the file, as every other flag does', () => {
+        expect(mergeGates(options('--fail-on', 'none').gates, file).failOn).toBe('none');
+    });
+});
+
+describe('uncheckedGates', () => {
+    it('refuses --fail-on-new-package with nothing to say what was there before', () => {
+        const opts = options('--fail-on-new-package');
+
+        expect(uncheckedGates(reportWith(opts), opts.gates, opts.gates).refuse).toMatch(/--baseline/);
+    });
+
+    it('says and skips the same gate when it comes from the file, which every machine reads', () => {
+        const typed = options();
+        const merged = { ...typed.gates, failOnNewPackage: true, maxGrowth: 1024 };
+        const result = uncheckedGates(reportWith(typed), merged, typed.gates);
+
+        expect(result.refuse).toBeNull();
+        expect(result.skipped).toHaveLength(2);
+    });
+
+    it('refuses a growth gate against a baseline in another unit, which would pass every build', () => {
+        const opts = options('--max-growth', '1kB');
+        const report = { ...reportWith(opts), comparisonBlocked: true, baselineMode: 'brotli' as const };
+
+        expect(uncheckedGates(report, opts.gates, opts.gates).refuse).toMatch(/--mode brotli/);
     });
 });
 

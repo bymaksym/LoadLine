@@ -1,0 +1,107 @@
+@let t = i18n.ui();
+@let p = plan();
+@let parse = parseBar();
+
+@if (p) {
+    <section class="trips">
+        <div class="trips__head">
+            <h4 class="trips__title">{{ t.tripsTitle }}</h4>
+            <div class="trips__profiles" role="group" [attr.aria-label]="t.tripsTitle">
+                @for (option of profiles; track option) {
+                    <button
+                        class="ctl"
+                        type="button"
+                        [attr.aria-pressed]="profile() === option"
+                        [class.ctl--active]="profile() === option"
+                        (click)="choose(option)"
+                    >
+                        {{ t.tripsProfile[option] }}
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- An estimate, always said as one: the model is timing.ts laid out in sequence. -->
+        <p class="trips__note">{{ t.tripsNote }}</p>
+        @if (p.bootAssumed) {
+            <p class="trips__note">{{ t.tripsAssumed }}</p>
+        }
+
+        <p class="trips__total">{{ t.tripsTotal(ms(p.totalMs), p.trips.length) }}</p>
+
+        <!-- What each texture and colour means, each swatch beside its word. -->
+        <p class="trips__legend">
+            <span class="trips__key"
+                ><i aria-hidden="true" class="trips__swatch trips__swatch--wait"></i>{{ t.tripsWait }}</span
+            >
+            <span class="trips__key"><i aria-hidden="true" class="dot" data-zone="boot"></i>{{ t.tripsBoot }}</span>
+            <span class="trips__key"><i aria-hidden="true" class="dot" data-zone="own"></i>{{ t.colOwn }}</span>
+            @if (screen().sharedChunks.length > 0) {
+                <span class="trips__key"
+                    ><i aria-hidden="true" class="dot" data-zone="shared"></i>{{ t.colShared }}</span
+                >
+            }
+            <span class="trips__key"
+                ><i aria-hidden="true" class="trips__swatch trips__swatch--parse"></i>{{ t.tripsParse }}</span
+            >
+        </p>
+
+        <!--
+        One row per trip on one axis: the hatched gap is the round trip spent waiting, the solid bar
+        the bytes arriving. The bar is a drawing; the sentence beside it is what a screen reader reads.
+        -->
+        <ol class="trips__rows">
+            @for (row of rows(); track row.trip.index) {
+                <li class="trips__row">
+                    <span class="trips__label">
+                        {{ t.tripLabel(row.trip.index) }}
+                        <span class="tag">{{ row.trip.boot ? t.tripsBoot : t.tripsScreen }}</span>
+                    </span>
+                    <span aria-hidden="true" class="trips__track">
+                        <i
+                            class="trips__seg trips__seg--wait"
+                            [style.left.%]="row.waitLeft"
+                            [style.width.%]="row.waitWidth"
+                        ></i>
+                        <span
+                            class="trips__seg trips__seg--transfer"
+                            [style.left.%]="row.transferLeft"
+                            [style.width.%]="row.transferWidth"
+                        >
+                            @for (part of row.parts; track part.zone) {
+                                <i class="trips__part" [attr.data-zone]="part.zone" [style.width.%]="part.share"></i>
+                            }
+                        </span>
+                    </span>
+                    <span aria-hidden="true" class="trips__figure">
+                        {{ row.size }} · {{ t.filesCount(row.trip.chunks.length) }}
+                    </span>
+                    <span class="sr-only">{{ row.text }}</span>
+                </li>
+            }
+
+            @if (parse) {
+                <li class="trips__row">
+                    <span class="trips__label">{{ t.tripsParse }}</span>
+                    <span aria-hidden="true" class="trips__track">
+                        <i
+                            class="trips__seg trips__seg--parse"
+                            [style.left.%]="parse.left"
+                            [style.width.%]="parse.width"
+                        ></i>
+                    </span>
+                    <span class="trips__figure">{{ ms(p.parseMs) }}</span>
+                </li>
+            }
+        </ol>
+
+        <!-- The axis the rows share: from the click to everything parsed. -->
+        <div aria-hidden="true" class="trips__axis">
+            <span class="trips__ticks">
+                <span>0</span>
+                <span>{{ ms(p.totalMs / 2) }}</span>
+                <span>{{ ms(p.totalMs) }}</span>
+            </span>
+        </div>
+    </section>
+}

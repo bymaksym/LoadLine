@@ -36,8 +36,16 @@ const INTERNAL_HOST = String.raw`https?:\/\/(?:[\w-]+\.)*(?:local|internal|intra
 const PRIVATE_IP = String.raw`https?:\/\/(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.[\d.]${URL_TAIL}`;
 
 const PATTERNS: Pattern[] = [
-    // A PEM block in a browser bundle is never right, whatever it turns out to be a key for.
-    { kind: 'privateKey', pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/g, keep: 40 },
+    // A PEM block in a browser bundle is never right, whatever it turns out to be a key for. The
+    // header with a body after it: the header alone is also what a form shows as the placeholder
+    // of a field to paste a key into — PocketBase's Apple sign-in settings do — and that was a
+    // `high` at the top of the report, an instruction to rotate a key, and every build failing
+    // `--fail-on high`. A body is base64 after a line break, written raw or as `\n` in a string.
+    {
+        kind: 'privateKey',
+        pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----(?:\\[nr]|\s)+[\d+/=A-Za-z]{64}/g,
+        keep: 40,
+    },
     { kind: 'awsKey', pattern: /\b(?:AKIA|ASIA)[\dA-Z]{16}\b/g, keep: 4 },
     { kind: 'googleKey', pattern: /\bAIza[\w-]{35}\b/g, keep: 6 },
     { kind: 'githubToken', pattern: /\bgh[pousr]_[\dA-Za-z]{36,}\b/g, keep: 5 },
@@ -62,6 +70,13 @@ const PATTERNS: Pattern[] = [
  */
 const FIREBASE_NEIGHBOURS = /\b(?:authDomain|projectId|messagingSenderId|storageBucket|measurementId)\b/;
 
+/**
+ * A build that defines `process.env` itself — `window.process = { env: { NODE_ENV: 'production' } }`
+ * in its page, as Polymer's starter kit does on purpose — has left no substitution undone: its
+ * `process.env.NODE_ENV` reads a value that is there. It was reported as a secret of medium severity.
+ */
+const DEFINES_ENV = /\bprocess\s*=\s*\{\s*env\s*:|\bprocess\.env\s*=[^=]/;
+
 /** How far either side of a match its neighbours are looked for: one minified object literal. */
 const NEIGHBOURHOOD = 400;
 
@@ -82,6 +97,11 @@ const redact = (value: string, keep: number): string =>
  */
 export const findSecrets = (texts: ReadonlyMap<string, string>, ownerOf: OwnerOf | null = null): SecretMatch[] => {
     const found = new Map<string, SecretMatch>();
+    // A loop, not `Iterator#some`: this runs on Node 20, which has no iterator helpers.
+    let envDefined = false;
+    for (const text of texts.values()) {
+        envDefined ||= DEFINES_ENV.test(text);
+    }
 
     /** One match: counted when it was seen before, written down with what explains it when not. */
     const record = (chunk: string, text: string, kind: SecretKind, keep: number, hit: RegExpExecArray): void => {
@@ -96,7 +116,8 @@ export const findSecrets = (texts: ReadonlyMap<string, string>, ownerOf: OwnerOf
         }
 
         const around = text.slice(Math.max(0, hit.index - NEIGHBOURHOOD), hit.index + NEIGHBOURHOOD);
-        const benign = kind === 'googleKey' && FIREBASE_NEIGHBOURS.test(around) ? 'firebaseConfig' : null;
+        const firebase = kind === 'googleKey' && FIREBASE_NEIGHBOURS.test(around);
+        const benign = firebase ? 'firebaseConfig' : kind === 'envLeftover' && envDefined ? 'envDefined' : null;
         const owner = kind === 'envLeftover' && ownerOf ? ownerOf(chunk, hit.index, match) : null;
         found.set(key, { kind, chunk, redacted: redact(match, keep), count: 1, benign, owner });
     };

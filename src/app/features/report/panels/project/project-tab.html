@@ -54,6 +54,7 @@ which does not need them. With them, the budgets come first and the history foll
                             {{ t.projectPick }}:
                             <select
                                 class="field"
+                                name="project"
                                 [title]="t.projectPickHelp(angular.applications.length)"
                                 (change)="pickProject($event)"
                             >

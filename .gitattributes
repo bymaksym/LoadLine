@@ -8,7 +8,7 @@ bin/loadline.js text eol=lf
 # Mixing its lines produces a dependency tree that belongs to neither branch, and the conflict comes
 # back every time Dependabot rewrites it under a branch that was open.
 #
-# The driver itself is registered by scripts/setup-git-merge-driver.mjs, which runs on every
+# The driver itself is registered by tooling/setup-git-merge-driver.mjs, which runs on every
 # `pnpm install` (merge drivers live in each clone's LOCAL config and do not travel with the repo).
 #
 # `eol=lf` as well: the driver writes the file with LF, and without this git rewrites it with CRLF

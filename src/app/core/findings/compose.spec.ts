@@ -64,4 +64,14 @@ describe('composeFindings', () => {
 
         expect(chips(composed)).toEqual(['nothing stands out', 'zoneless']);
     });
+
+    it('without source maps there is no breakdown, so nothing vouches for it', () => {
+        const composed = composeFindings({
+            ...EMPTY,
+            base: [{ ...finding('nothing stands out', 'ok'), kind: 'clean' }],
+            fromBuild: [{ ...finding('no source maps', 'info'), kind: 'noSourceMaps' }],
+        });
+
+        expect(chips(composed)).toEqual(['no source maps']);
+    });
 });

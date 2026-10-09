@@ -1,5 +1,7 @@
 import { inject, Service } from '@angular/core';
 import { snapshotOf } from '../core/baseline/baseline';
+import { writeConfig } from '../core/config/loadline-config';
+import { criteriaToWrite } from '../core/config/merge-config';
 import { diagnosticsOf } from '../core/diagnostics/diagnostics';
 import { markdownTable } from '../core/export/markdown-table.utils';
 import { download } from '../shared/download.utils';
@@ -26,11 +28,21 @@ export class ExportService {
      * They were editable here and readable there and there was no way across: somebody tuned the
      * criteria on this page and their pipeline went on judging the build by the recommended ones.
      * The whole set is written, not only what was changed, so the file pins every threshold
-     * whatever unit the command ends up resolving; the name carries the unit it was written in.
+     * whatever unit the command ends up resolving; the name and `mode` carry the unit. Not when the
+     * file loaded here extends a base: then the base pins them, and only what changed is written.
+     *
+     * It is a `loadline.json` with only that block, like the situation export: renamed, it is the
+     * file; merged, it is the `criteria` of an existing one; and `--criteria` reads it as it is.
      */
     criteria(): void {
         const mode = this.store.mode();
-        download(`loadline-criteria-${mode}.json`, JSON.stringify(this.store.criteria(), null, 4), 'application/json');
+        // With a base, only what was changed: see `criteriaToWrite`.
+        const inherits = !!this.store.config()?.extends;
+        download(
+            `loadline-criteria-${mode}.json`,
+            writeConfig({ mode, criteria: criteriaToWrite(this.store.criteria(), mode, inherits) }),
+            'application/json',
+        );
     }
 
     /** The snapshot of what is shown, in the mode shown, as a file to keep next to the code. */

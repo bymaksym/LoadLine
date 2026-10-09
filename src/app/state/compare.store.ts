@@ -1,6 +1,6 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { analyze } from '../core/analysis/analysis';
-import { isMetafile } from '../core/analysis/metafile.types';
+import { metafileOf } from '../core/intake/webpack-stats';
 import { type Build, compareBuilds } from '../core/multi/compare-builds';
 import { I18nService } from './i18n.service';
 import { ReportStore } from './report.store';
@@ -46,8 +46,8 @@ export class CompareStore {
 
         for (const file of files) {
             try {
-                const parsed: unknown = JSON.parse(await file.text());
-                if (!isMetafile(parsed)) {
+                const parsed = metafileOf(JSON.parse(await file.text()));
+                if (!parsed) {
                     throw new Error('NO_OUTPUTS');
                 }
 

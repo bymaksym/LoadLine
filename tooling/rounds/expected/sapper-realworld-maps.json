@@ -1,0 +1,49 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 8608,
+        "rawBytes": 22245,
+        "files": 3
+    },
+    "firstTrip": {
+        "total": 9281,
+        "files": 6
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 1,
+        "serviceWorker": 1,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "article/[slug]: own 12223, shared 1175, total 22006",
+        "[p]: own 428, shared 6640, total 15676",
+        "index: own 336, shared 6640, total 15584",
+        "profile/[user]/[view]: own 696, shared 6145, total 15449",
+        "profile/[user]: own 692, shared 6145, total 15445",
+        "editor/[slug]: own 506, shared 3329, total 12443",
+        "editor: own 380, shared 3329, total 12317",
+        "settings: own 2219, shared 993, total 11820",
+        "register: own 1551, shared 993, total 11152",
+        "login: own 1488, shared 993, total 11089",
+        "profile: own 275, shared 0, total 8883"
+    ],
+    "deferred": [],
+    "shared": 7,
+    "workers": 0,
+    "onDemand": 0,
+    "data": 0,
+    "signals": [
+        "mid bootWaves: The first load takes 2 round trips before anything is painted",
+        "mid assetOrigin: The render-blocking stylesheets come from 3 hosts that are not the page's own",
+        "mid unstableChunk: 2 chunks mix dependencies with your own code: ≈12 kB is re-invalidated on every deploy",
+        "info cascadeShape: client/chunk.ea3ca6d4.js names 12 chunks and is imported by 15: touching any leaf moves the whole build",
+        "info theirs: 75 % of your first load is code you did not write",
+        "info sourceMaps: The build folder carries 21 source maps",
+        "info unhashable: 3 files carry no hash in the name",
+        "info sourceExposed: 31 files of your source can be reconstructed from the 21 source maps in this folder",
+        "info situationMissing: 4 unanswered questions would change what this report says"
+    ]
+}

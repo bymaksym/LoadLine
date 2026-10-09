@@ -8,25 +8,29 @@ How much of the bootstrap is npm and how much is your own code: two figures on o
 it the declared bootstrap with its rating and the rule it is rated by.
 -->
 <div class="card card--pad split">
-    <div class="split__row">
-        <span class="split__side">
-            <span aria-hidden="true" class="split__sq" data-zone="boot"></span>
-            {{ t.bootPackages }}<app-explain [text]="t.helpBootPackages" />
-            <b class="split__figure">{{ totals.pkgBytes | bytes }}</b>
-            <span class="split__sub">{{ pct(totals.pkgBytes) }} · {{ t.entriesCount(totals.pkgCount) }}</span>
+    @if (opaque()) {
+        <p class="split__raw">{{ t.bootSplitUnknown }}</p>
+    } @else {
+        <div class="split__row">
+            <span class="split__side">
+                <span aria-hidden="true" class="split__sq" data-zone="boot"></span>
+                {{ t.bootPackages }}<app-explain [text]="t.helpBootPackages" />
+                <b class="split__figure">{{ totals.pkgBytes | bytes }}</b>
+                <span class="split__sub">{{ pct(totals.pkgBytes) }} · {{ t.entriesCount(totals.pkgCount) }}</span>
+            </span>
+            <span class="split__side">
+                <span aria-hidden="true" class="split__sq" data-zone="own"></span>
+                {{ t.bootOwnCode }}<app-explain [text]="t.helpBootOwnCode" />
+                <b class="split__figure">{{ totals.ownBytes | bytes }}</b>
+                <span class="split__sub">{{ pct(totals.ownBytes) }} · {{ t.entriesCount(totals.ownCount) }}</span>
+            </span>
+        </div>
+        <!-- The bar, in words for whoever cannot see the two colours: it is the figures above, drawn. -->
+        <span class="split__bar" role="img" [attr.aria-label]="splitTitle()" [title]="splitTitle()">
+            <i class="split__seg" data-zone="boot" [style.width.%]="percent(totals.pkgBytes)"></i>
+            <i class="split__seg" data-zone="own" [style.width.%]="percent(totals.ownBytes)"></i>
         </span>
-        <span class="split__side">
-            <span aria-hidden="true" class="split__sq" data-zone="own"></span>
-            {{ t.bootOwnCode }}<app-explain [text]="t.helpBootOwnCode" />
-            <b class="split__figure">{{ totals.ownBytes | bytes }}</b>
-            <span class="split__sub">{{ pct(totals.ownBytes) }} · {{ t.entriesCount(totals.ownCount) }}</span>
-        </span>
-    </div>
-    <!-- The bar, in words for whoever cannot see the two colours: it is the figures above, drawn. -->
-    <span class="split__bar" role="img" [attr.aria-label]="splitTitle()" [title]="splitTitle()">
-        <i class="split__seg" data-zone="boot" [style.width.%]="percent(totals.pkgBytes)"></i>
-        <i class="split__seg" data-zone="own" [style.width.%]="percent(totals.ownBytes)"></i>
-    </span>
+    }
     <p class="split__total">
         {{ t.tileBoot }}
         <b class="split__boot">{{ store.analysis()?.bootBytes ?? 0 | bytes }}</b>
@@ -37,222 +41,235 @@ it the declared bootstrap with its rating and the rule it is rated by.
     The bar is raw bytes even when the report is compressed, and the figure above it is not: said
     here, or the two sides of the bar add up to three times the bootstrap printed under them.
     -->
-    @if (store.compressed()) {
+    @if (store.compressed() && !opaque()) {
         <p class="split__raw">{{ t.bootSplitRaw(totals.pkgBytes + totals.ownBytes | bytes) }}</p>
     }
 </div>
 
-<!-- Sixty-one rows and no way to look for one: the same field the other tables have. -->
-<div class="toolbar">
-    <div class="toolbar__group">
-        <input
-            class="field"
-            type="search"
-            [attr.aria-label]="t.filterBoot"
-            [placeholder]="t.filterBoot"
-            [value]="filter()"
-            (input)="search($any($event.target).value)"
-        />
-        <span aria-live="polite" class="toolbar__count">{{ t.shownRows(rows().length, allRows().length) }}</span>
-    </div>
-</div>
+<!-- Against a baseline: the same bootstrap as a map, each part coloured by how it moved since. -->
+@if (store.comparison()) {
+    <app-boot-diff />
+}
 
-<!-- Narrow, the table keeps its columns and scrolls sideways inside its card. -->
-<div class="scroller--tall boot-table">
-    <table>
-        <thead>
-            <!--
+<!-- Without source maps there are no rows to filter: the paragraph above says why. -->
+@if (!opaque()) {
+    <!-- Sixty-one rows and no way to look for one: the same field the other tables have. -->
+    <div class="toolbar">
+        <div class="toolbar__group">
+            <input
+                class="field"
+                name="filter-boot"
+                type="search"
+                [attr.aria-label]="t.filterBoot"
+                [placeholder]="t.filterBoot"
+                [value]="filter()"
+                (input)="search($any($event.target).value)"
+            />
+            <span aria-live="polite" class="toolbar__count">{{ t.shownRows(rows().length, allRows().length) }}</span>
+        </div>
+    </div>
+
+    <!-- Narrow, the table keeps its columns and scrolls sideways inside its card. -->
+    <div class="scroller--tall boot-table">
+        <table>
+            <thead>
+                <!--
             The bar sits right after the name. At the far end of the row it had some 700 px of empty
             cell in front of it and stopped reading as a comparison between rows.
             -->
-            <tr>
-                <th
-                    app-sort
-                    class="name-col"
-                    scope="col"
-                    [active]="order().key === 'name'"
-                    [dir]="order().dir"
-                    [help]="t.helpSource"
-                    [sortLabel]="t.sortByColumn"
-                    (pick)="pick('name')"
-                >
-                    {{ t.thSource }}
-                </th>
-                <th class="bar-col" scope="col"></th>
-                <th
-                    app-sort
-                    class="num"
-                    scope="col"
-                    [active]="order().key === 'bytes'"
-                    [dir]="order().dir"
-                    [help]="t.helpSize"
-                    [sortLabel]="t.sortByColumn"
-                    (pick)="pick('bytes')"
-                >
-                    {{ t.thSize }}
-                </th>
-                <th class="num" scope="col">%<app-explain [text]="t.helpBootPercent" /></th>
-                <th
-                    app-sort
-                    class="num"
-                    scope="col"
-                    [active]="order().key === 'exclusive'"
-                    [dir]="order().dir"
-                    [help]="t.helpExclusive"
-                    [sortLabel]="t.sortByColumn"
-                    (pick)="pick('exclusive')"
-                >
-                    {{ t.thExclusive }}
-                </th>
-                <th
-                    app-sort
-                    scope="col"
-                    [active]="order().key === 'importers'"
-                    [dir]="order().dir"
-                    [help]="t.helpImporters"
-                    [sortLabel]="t.sortByColumn"
-                    (pick)="pick('importers')"
-                >
-                    {{ t.thImporters }}
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (row of rows(); track row.name) {
-                @let isOpen = expanded() === row.name;
+                <tr>
+                    <th
+                        app-sort
+                        class="name-col"
+                        scope="col"
+                        [active]="order().key === 'name'"
+                        [dir]="order().dir"
+                        [help]="t.helpSource"
+                        [sortLabel]="t.sortByColumn"
+                        (pick)="pick('name')"
+                    >
+                        {{ t.thSource }}
+                    </th>
+                    <th class="bar-col" scope="col"></th>
+                    <th
+                        app-sort
+                        class="num"
+                        scope="col"
+                        [active]="order().key === 'bytes'"
+                        [dir]="order().dir"
+                        [help]="t.helpSize"
+                        [sortLabel]="t.sortByColumn"
+                        (pick)="pick('bytes')"
+                    >
+                        {{ t.thSize }}
+                    </th>
+                    <th class="num" scope="col">%<app-explain [text]="t.helpBootPercent" /></th>
+                    <th
+                        app-sort
+                        class="num"
+                        scope="col"
+                        [active]="order().key === 'exclusive'"
+                        [dir]="order().dir"
+                        [help]="t.helpExclusive"
+                        [sortLabel]="t.sortByColumn"
+                        (pick)="pick('exclusive')"
+                    >
+                        {{ t.thExclusive }}
+                    </th>
+                    <th
+                        app-sort
+                        scope="col"
+                        [active]="order().key === 'importers'"
+                        [dir]="order().dir"
+                        [help]="t.helpImporters"
+                        [sortLabel]="t.sortByColumn"
+                        (pick)="pick('importers')"
+                    >
+                        {{ t.thImporters }}
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (row of rows(); track row.name) {
+                    @let isOpen = expanded() === row.name;
 
-                <tr
-                    class="row-btn"
-                    role="button"
-                    tabindex="0"
-                    [attr.aria-expanded]="isOpen"
-                    [attr.data-key]="row.name"
-                    [class.row-btn--lazy]="row.fewImporters"
-                    (click)="toggle(row)"
-                    (keydown.enter)="toggle(row)"
-                    (keydown.space)="toggle(row); $event.preventDefault()"
-                >
-                    <td class="path">
-                        <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
-                        <span class="boot-name">{{ row.name }}</span>
-                        <!-- What the entry is, which is also what the colour of its bar says. -->
-                        @if (row.isProjectCode) {
-                            <span class="boot-type" [title]="t.helpBootOwnCode">{{ t.ownCodeRow }}</span>
-                        } @else {
-                            <span class="boot-type" [title]="t.helpBootPackages">{{ t.legBootPkg }}</span>
-                        }
-                        @if (row.isCommonJs) {
-                            <span class="tag tag--warn" [title]="t.helpCommonJs">{{ t.tagCommonJs }}</span>
-                        }
-                    </td>
-                    <td class="bar-cell">
-                        <span
-                            class="track"
-                            [class.track--bad]="row.sizeVerdict === 'bad'"
-                            [class.track--own]="row.isProjectCode"
-                        >
-                            <i [style.width.%]="row.percent"></i>
-                        </span>
-                    </td>
-                    <td class="num" [attr.data-v]="row.sizeVerdict">
-                        {{ row.bytes | bytes }}
-                        @if (row.sizeVerdict === 'bad') {
-                            <i aria-hidden="true" class="dot-v dot-v--after" data-v="bad"></i>
-                            <span class="sr-only">, {{ t.verdictBad }}.</span>
-                        }
-                    </td>
-                    <td class="num muted">{{ row.percent.toFixed(1) }} %</td>
-                    <!--
+                    <tr
+                        class="row-btn"
+                        role="button"
+                        tabindex="0"
+                        [attr.aria-expanded]="isOpen"
+                        [attr.data-key]="row.name"
+                        [class.row-btn--lazy]="row.fewImporters"
+                        (click)="toggle(row)"
+                        (keydown.enter)="toggle(row)"
+                        (keydown.space)="toggle(row); $event.preventDefault()"
+                    >
+                        <td class="path">
+                            <span aria-hidden="true" class="twist">{{ isOpen ? '−' : '+' }}</span>
+                            <span class="boot-name">{{ row.name }}</span>
+                            <!-- What the entry is, which is also what the colour of its bar says. -->
+                            @if (row.isProjectCode) {
+                                <span class="boot-type" [title]="t.helpBootOwnCode">{{ t.ownCodeRow }}</span>
+                            } @else {
+                                <span class="boot-type" [title]="t.helpBootPackages">{{ t.legBootPkg }}</span>
+                            }
+                            @if (row.isCommonJs) {
+                                <span class="tag tag--warn" [title]="t.helpCommonJs">{{ t.tagCommonJs }}</span>
+                            }
+                        </td>
+                        <td class="bar-cell">
+                            <span
+                                class="track"
+                                [class.track--bad]="row.sizeVerdict === 'bad'"
+                                [class.track--own]="row.isProjectCode"
+                            >
+                                <i [style.width.%]="row.percent"></i>
+                            </span>
+                        </td>
+                        <td class="num" [attr.data-v]="row.sizeVerdict">
+                            {{ row.bytes | bytes }}
+                            @if (row.sizeVerdict === 'bad') {
+                                <i aria-hidden="true" class="dot-v dot-v--after" data-v="bad"></i>
+                                <span class="sr-only">, {{ t.verdictBad }}.</span>
+                            }
+                        </td>
+                        <td class="num muted">{{ row.percent.toFixed(1) }} %</td>
+                        <!--
                     The figure that says whether the row above is worth acting on. When the two
                     agree the cell is quiet; when they do not, that gap IS the finding, so it is
                     the one that gets marked.
                     -->
-                    <td class="num">
-                        @if (row.exclusive < row.bytes) {
-                            <strong class="boot-excl">{{ row.exclusive | bytes }}</strong>
-                        } @else {
-                            <span class="muted">{{ row.exclusive | bytes }}</span>
-                        }
-                    </td>
-                    <td class="who">
-                        @if (row.importers === null) {
-                            <span class="muted" [title]="t.helpBootOwnCode">—</span>
-                        } @else if (row.importers === 0) {
-                            <span class="muted" [title]="t.helpImportersNone">{{ t.importersNone }}</span>
-                        } @else {
-                            {{ t.importersCount(row.importers) }}
-                            <!-- The finding, under the figure it is about: few importers, one of them lazy. -->
-                            @if (row.fewImporters) {
-                                <span class="who__flag">
-                                    <span aria-hidden="true">▲</span>
-                                    {{ t.importersLazyOnly(row.lazyScreens.length, row.importers) }}:
-                                    {{ row.lazyScreens.join(', ') }}<app-explain [text]="lazyImportersHelp()" />
-                                </span>
+                        <td class="num">
+                            @if (!importsKnown()) {
+                                <span class="muted" [title]="t.helpImportsUnknown">—</span>
+                            } @else if (row.exclusive < row.bytes) {
+                                <strong class="boot-excl">{{ row.exclusive | bytes }}</strong>
+                            } @else {
+                                <span class="muted">{{ row.exclusive | bytes }}</span>
                             }
-                        }
-                    </td>
-                </tr>
+                        </td>
+                        <td class="who">
+                            @if (!importsKnown()) {
+                                <span class="muted" [title]="t.helpImportsUnknown">—</span>
+                            } @else if (row.importers === null) {
+                                <span class="muted" [title]="t.helpBootOwnCode">—</span>
+                            } @else if (row.importers === 0) {
+                                <span class="muted" [title]="t.helpImportersNone">{{ t.importersNone }}</span>
+                            } @else {
+                                {{ t.importersCount(row.importers) }}
+                                <!-- The finding, under the figure it is about: few importers, one of them lazy. -->
+                                @if (row.fewImporters) {
+                                    <span class="who__flag">
+                                        <span aria-hidden="true">▲</span>
+                                        {{ t.importersLazyOnly(row.lazyScreens.length, row.importers) }}:
+                                        {{ row.lazyScreens.join(', ') }}<app-explain [text]="lazyImportersHelp()" />
+                                    </span>
+                                }
+                            }
+                        </td>
+                    </tr>
 
-                @if (isOpen) {
-                    <tr class="detail">
-                        <td colspan="6">
-                            <!--
+                    @if (isOpen) {
+                        <tr class="detail">
+                            <td colspan="6">
+                                <!--
                             Where the figures of the row above come from. It used to be three
                             `title` attributes on three cells, which is three explanations nobody
                             on a touch screen could reach and sixty-one rows' worth of them if they
                             had each been given a mark. The row already opens; this is what it says.
                             -->
-                            <p class="detail__figures">{{ rowFigures(row) }}</p>
-                            <div class="detail__grid" [class.detail__grid--single]="row.isProjectCode">
-                                @if (!row.isProjectCode) {
-                                    <div>
-                                        <h4 class="detail__title">{{ t.bootChain }}</h4>
-                                        <app-chain [none]="t.bootChainNone" [steps]="row.chain" />
+                                <p class="detail__figures">{{ rowFigures(row) }}</p>
+                                <div class="detail__grid" [class.detail__grid--single]="row.isProjectCode">
+                                    @if (!row.isProjectCode) {
+                                        <div>
+                                            <h4 class="detail__title">{{ t.bootChain }}</h4>
+                                            <app-chain [none]="t.bootChainNone" [steps]="row.chain" />
 
-                                        @if (row.importerFiles.length > 0) {
-                                            <h4 class="detail__title">{{ t.thImporters }}</h4>
-                                            <div class="chips">
-                                                @for (file of row.importerFiles; track file.path) {
-                                                    @if (file.screen) {
-                                                        <button
-                                                            class="chip chip--pick chip--screen"
-                                                            type="button"
-                                                            [title]="t.seeInScreens + ': ' + file.path"
-                                                            (click)="nav.go('screens', file.path)"
-                                                        >
-                                                            {{ file.path }}
-                                                        </button>
-                                                    } @else {
-                                                        <span class="chip">{{ file.path }}</span>
+                                            @if (row.importerFiles.length > 0) {
+                                                <h4 class="detail__title">{{ t.thImporters }}</h4>
+                                                <div class="chips">
+                                                    @for (file of row.importerFiles; track file.path) {
+                                                        @if (file.screen) {
+                                                            <button
+                                                                class="chip chip--pick chip--screen"
+                                                                type="button"
+                                                                [title]="t.seeInScreens + ': ' + file.path"
+                                                                (click)="nav.go('screens', file.path)"
+                                                            >
+                                                                {{ file.path }}
+                                                            </button>
+                                                        } @else {
+                                                            <span class="chip">{{ file.path }}</span>
+                                                        }
                                                     }
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                                <div>
-                                    <h4 class="detail__title">{{ t.contents }}</h4>
-                                    <app-path-tree [items]="row.files" />
-                                    <!--
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    <div>
+                                        <h4 class="detail__title">{{ t.contents }}</h4>
+                                        <app-path-tree [items]="row.files" />
+                                        <!--
                                     This tab only says what the entry weighs HERE. Whether it also
                                     lands in other chunks is a question only the search answers, and
                                     until now getting there meant retyping the name.
                                     -->
-                                    <p class="detail__more">
-                                        <button class="link-btn" type="button" (click)="nav.go('search', row.name)">
-                                            {{ t.seeInSearch }} →
-                                        </button>
-                                    </p>
+                                        <p class="detail__more">
+                                            <button class="link-btn" type="button" (click)="nav.go('search', row.name)">
+                                                {{ t.seeInSearch }} →
+                                            </button>
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
+                            </td>
+                        </tr>
+                    }
+                } @empty {
+                    <tr>
+                        <td class="empty" colspan="6">{{ t.treeNoMatch }}</td>
                     </tr>
                 }
-            } @empty {
-                <tr>
-                    <td class="empty" colspan="6">{{ t.noMatch }}</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+            </tbody>
+        </table>
+    </div>
+}

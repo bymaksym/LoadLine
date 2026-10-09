@@ -4,7 +4,7 @@ import { appConfig } from './app/app.config';
 import { setUnitSpace } from './app/core/format/format.utils';
 
 // A figure and its unit never part on the page: see `setUnitSpace`.
-setUnitSpace(' ');
+setUnitSpace('\u{202F}');
 
 try {
     await bootstrapApplication(App, appConfig);

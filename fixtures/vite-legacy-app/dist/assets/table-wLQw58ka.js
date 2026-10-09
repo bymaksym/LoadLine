@@ -1,0 +1,1 @@
+import{n as e}from"./index-zmN3oZ5D.js";var t=t=>`<table>${t.map(t=>`<tr><td>${e(t)}</td></tr>`).join(``)}</table>`;export{t};

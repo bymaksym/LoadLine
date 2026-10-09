@@ -39,6 +39,15 @@ const nameFromPath = (path: string): string | null => {
     return (parts[0]?.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]) ?? null;
 };
 
+/** One line of a JSON-lines file, or `null` for one that is not JSON. */
+const safeJson = (line: string): unknown => {
+    try {
+        return JSON.parse(line);
+    } catch {
+        return null;
+    }
+};
+
 /** The `version` of one lock entry, when the entry is an object carrying one. */
 const versionOf = (entry: unknown): string | null => asText(asRecord(entry)?.['version']);
 
@@ -155,14 +164,34 @@ export const readLock = (name: string, text: string): LockedPackage[] | null => 
  * Nothing here checks a version range against a version: an advisory is attributed to a package by
  * name, and the range is printed so whoever reads it can judge. Matching ranges properly needs a
  * semver implementation, and being approximately right about whether somebody is vulnerable is
- * worse than being explicit about what is and is not known.
+ * worse than being explicit about what is and is not known. The one exact comparison made is
+ * between installed versions, when the report names them: see `affectsShipped`.
  */
 export const readAudit = (text: string): Advisory[] | null => {
     let parsed: unknown;
     try {
         parsed = JSON.parse(text);
     } catch {
-        return null;
+        // `yarn audit --json` writes one object per line. The advisories in it are npm 6's, so they
+        // are gathered into npm 6's shape and read like one; yarn repeats an advisory once per path
+        // it is reached by, and the id keeps one of each.
+        const advisories: Record<string, unknown> = {};
+        for (const line of text.split('\n')) {
+            const entry = asRecord(safeJson(line));
+            const advisory =
+                entry?.['type'] === 'auditAdvisory' ? asRecord(asRecord(entry['data'])?.['advisory']) : null;
+            if (!advisory) {
+                continue;
+            }
+            const id = advisory['id'];
+            const key =
+                typeof id === 'number' || typeof id === 'string' ? String(id) : `#${Object.keys(advisories).length}`;
+            advisories[key] = advisory;
+        }
+        if (Object.keys(advisories).length === 0 && !text.includes('"auditSummary"')) {
+            return null;
+        }
+        parsed = { advisories };
     }
 
     // An audit report is an object. `null`, a list and a bare number are all valid JSON, and the
@@ -190,7 +219,7 @@ export const readAudit = (text: string): Advisory[] | null => {
             severity: severityOf(entry['severity']),
             title: asText(detail?.['title']) ?? name,
             url: asText(detail?.['url']),
-            range: asText(detail?.['range']),
+            range: asText(detail?.['range']) ?? asText(entry['range']),
             // npm's `fixAvailable` is either `false` or an object naming a package and a version
             // to move to — which is not the same as "this advisory is fixed in X". Rather than
             // reword it into something it does not say, it is left out.
@@ -204,16 +233,23 @@ export const readAudit = (text: string): Advisory[] | null => {
     for (const value of listed) {
         const entry = asRecord(value);
         const module = asText(entry?.['module_name']);
-        if (entry && module) {
-            found.push({
-                package: module,
-                severity: severityOf(entry['severity']),
-                title: asText(entry['title']) ?? module,
-                url: asText(entry['url']),
-                range: null,
-                fixedIn: null,
-            });
+        if (!entry || !module) {
+            continue;
         }
+        // pnpm writes this shape too, with what npm 6 left out: the range, what fixes it, and the
+        // versions actually installed. Read as `null`, the report printed no range at all.
+        const versions = (asArray(entry['findings']) ?? [])
+            .map(finding => asText(asRecord(finding)?.['version']))
+            .filter(version => version !== null);
+        found.push({
+            package: module,
+            severity: severityOf(entry['severity']),
+            title: asText(entry['title']) ?? module,
+            url: asText(entry['url']),
+            range: asText(entry['vulnerable_versions']),
+            fixedIn: asText(entry['patched_versions']),
+            ...(versions.length > 0 && { versions }),
+        });
     }
 
     // Neither key present means this JSON was not an audit report at all, which is not the same
@@ -222,6 +258,26 @@ export const readAudit = (text: string): Advisory[] | null => {
 };
 
 const RANK: Record<Severity, number> = { critical: 0, high: 1, moderate: 2, low: 3, info: 4 };
+
+/**
+ * The version of `pkg` a module path names, when pnpm laid it out: `.pnpm/devalue@6.0.2/…`.
+ * `null` in every other layout, and when the segment is some other package's.
+ */
+const PNPM_SEGMENT = /\.pnpm\/((?:@[^/+]+\+)?[^@/]+)@([^/_]+)/;
+const shippedVersionOf = (path: string, pkg: string): string | null => {
+    const match = PNPM_SEGMENT.exec(path);
+    return match?.[1]?.replace('+', '/') === pkg ? (match[2] ?? null) : null;
+};
+
+/**
+ * Whether the advisory is about the copy that ships. Only answered "no" when both sides name exact
+ * versions and they share none: an audit of a Nuxt app reported six advisories against
+ * `devalue <=5.9.2` as in the first load, raised them to `high` and failed `--fail-on high`, while
+ * the browser carried `devalue@6.0.2` and 5.9.2 was a copy only the server had. Anything less
+ * certain than that stays reported, which is the side to be wrong on.
+ */
+const affectsShipped = (advisory: Advisory, shipped: ReadonlySet<string> | undefined): boolean =>
+    !advisory.versions || !shipped || shipped.size === 0 || advisory.versions.some(version => shipped.has(version));
 
 export interface DepsInput {
     lock: LockedPackage[] | null;
@@ -238,6 +294,7 @@ export interface DepsInput {
  */
 export const readDeps = (input: DepsInput): DepsReport => {
     const shippedBytes = new Map<string, { bytes: number; inBoot: boolean }>();
+    const shippedVersions = new Map<string, Set<string>>();
     for (const module of input.modules) {
         if (!module.pkg) {
             continue;
@@ -246,24 +303,62 @@ export const readDeps = (input: DepsInput): DepsReport => {
         entry.bytes += module.bytes;
         entry.inBoot ||= module.places.some(place => input.boot.has(place.chunk));
         shippedBytes.set(module.pkg, entry);
+        const version = shippedVersionOf(module.path, module.pkg);
+        if (version) {
+            shippedVersions.set(module.pkg, (shippedVersions.get(module.pkg) ?? new Set()).add(version));
+        }
     }
+    const ships = (advisory: Advisory): boolean =>
+        shippedBytes.has(advisory.package) && affectsShipped(advisory, shippedVersions.get(advisory.package));
 
     const byName = new Map<string, LockedPackage[]>();
     const locked = input.lock ?? [];
+    const parents = new Map<string, Set<string>>();
     for (const entry of locked) {
         byName.set(entry.name, [...(byName.get(entry.name) ?? []), entry]);
+        const declared = Object.keys(entry.declares ?? {});
+        for (const dependency of declared) {
+            parents.set(dependency, (parents.get(dependency) ?? new Set()).add(entry.name));
+        }
     }
+
+    /**
+     * The shortest chain from something the project asked for to the package that pulls `name` in,
+     * walked up what each lock entry declares. Nothing filled `requiredBy`, so "each one comes with
+     * the dependency chain that pulls it" was printed over chains that were always empty. Empty
+     * still when the lock does not record what each entry declares (pnpm's does not here) or when
+     * nothing the project asked for is up the chain.
+     */
+    const chainOf = (name: string): string[] => {
+        const seen = new Set([name]);
+        const queue: string[][] = [[name]];
+        for (let path = queue.shift(); path; path = queue.shift()) {
+            const above = parents.get(path[0] ?? '') ?? [];
+            for (const parent of above) {
+                if (seen.has(parent)) {
+                    continue;
+                }
+                const longer = [parent, ...path];
+                if (input.direct.has(parent)) {
+                    return longer.slice(0, -1);
+                }
+                seen.add(parent);
+                queue.push(longer);
+            }
+        }
+        return byName.get(name)?.[0]?.requiredBy ?? [];
+    };
 
     const advisories = input.advisories ?? [];
     const shipped = advisories
-        .filter(advisory => shippedBytes.has(advisory.package))
+        .filter(advisory => ships(advisory))
         .map(advisory => {
             const where = shippedBytes.get(advisory.package);
             return {
                 ...advisory,
                 bytes: where?.bytes ?? 0,
                 inBoot: where?.inBoot ?? false,
-                chain: byName.get(advisory.package)?.[0]?.requiredBy ?? [],
+                chain: chainOf(advisory.package),
             };
         })
         .toSorted((a, b) => Number(b.inBoot) - Number(a.inBoot) || RANK[a.severity] - RANK[b.severity]);
@@ -272,14 +367,14 @@ export const readDeps = (input: DepsInput): DepsReport => {
         lockRead: input.lock !== null,
         auditRead: input.advisories !== null,
         shipped,
-        notShipped: advisories.filter(advisory => !shippedBytes.has(advisory.package)),
+        notShipped: advisories.filter(advisory => !ships(advisory)),
         transitive: [...shippedBytes]
             .filter(([name]) => input.direct.size > 0 && !input.direct.has(name))
             .map(([name, entry]) => ({
                 name,
                 bytes: entry.bytes,
                 inBoot: entry.inBoot,
-                chain: byName.get(name)?.[0]?.requiredBy ?? [],
+                chain: chainOf(name),
             }))
             .toSorted((a, b) => b.bytes - a.bytes),
         multipleVersions: [...byName]

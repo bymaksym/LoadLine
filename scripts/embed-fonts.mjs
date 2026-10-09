@@ -11,7 +11,7 @@
  * seven times that.
  *
  * Re-run it (`pnpm run fonts`) after replacing a `.woff2`. The output is generated: it is in
- * `.prettierignore` and `.stylelintignore`, and it is not edited by hand.
+ * `.prettierignore` and `.config/stylelintrc.mjs`, and it is not edited by hand.
  *
  * Usage: node scripts/embed-fonts.mjs
  */

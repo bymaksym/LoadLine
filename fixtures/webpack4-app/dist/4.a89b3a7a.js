@@ -1,0 +1,2 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[4],{2:function(n,e,t){"use strict";t.r(e),t.d(e,"render",(function(){return c}));var r=t(0);const c=()=>(t.e(3).then(t.bind(null,6)).then(n=>Object(r.b)(document.querySelector("#chart"),n.draw())),'<h1>Home</h1><div id="chart"></div>')}}]);
+//# sourceMappingURL=4.a89b3a7a.js.map

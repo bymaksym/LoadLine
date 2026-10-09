@@ -1,0 +1,131 @@
+{
+    "$comment": "Real applications Loadline is checked against, each pinned to a commit. Read by tooling/rounds/rounds.mjs; the expected reports are in expected/. From the rounds of 08/10/2026 (current apps) and 09/10/2026 (apps from before 2020).",
+    "apps": [
+        {
+            "name": "angular-realworld",
+            "repo": "gothinkster/angular-realworld-example-app",
+            "commit": "dd99ed2c",
+            "framework": "Angular 21.2, application builder (esbuild)",
+            "install": ["npm ci"],
+            "build": ["npx ng build --stats-json"],
+            "reports": [{ "name": "angular-realworld", "target": "dist/angular-conduit" }]
+        },
+        {
+            "name": "excalidraw",
+            "repo": "excalidraw/excalidraw",
+            "commit": "4c00f31",
+            "framework": "React 19 + Vite 5.0",
+            "install": ["yarn install --frozen-lockfile"],
+            "build": ["yarn --cwd excalidraw-app build:app"],
+            "notes": "47 MB, 116 chunks, workers, a PWA and 233 fonts. Built with source maps on in the round.",
+            "reports": [{ "name": "excalidraw", "target": "excalidraw-app/build" }]
+        },
+        {
+            "name": "vue3-realworld",
+            "repo": "mutoe/vue3-realworld-example-app",
+            "commit": "741c215",
+            "framework": "Vue 3.5 + Vite 8 (Rolldown)",
+            "install": ["pnpm install --frozen-lockfile"],
+            "build": ["pnpm build"],
+            "reports": [{ "name": "vue3-realworld", "target": "dist" }]
+        },
+        {
+            "name": "pocketbase-ui",
+            "repo": "pocketbase/pocketbase",
+            "commit": "58f605e",
+            "framework": "Svelte 4 + Vite 5.4, base './'",
+            "cwd": "ui",
+            "install": ["npm ci"],
+            "build": ["npm run build"],
+            "reports": [{ "name": "pocketbase-ui", "target": "ui/dist" }]
+        },
+        {
+            "name": "nuxt-movies",
+            "repo": "nuxt/movies",
+            "commit": "ce256d64",
+            "framework": "Nuxt 4.6 + Vite 8",
+            "install": ["pnpm install"],
+            "build": ["pnpm generate"],
+            "notes": "The round pinned Nuxt to 4.6 and set nitro.noExternals before it would generate.",
+            "reports": [{ "name": "nuxt-movies", "target": ".output/public" }]
+        },
+        {
+            "name": "sapper-realworld",
+            "repo": "sveltejs/realworld",
+            "commit": "c4f895c",
+            "framework": "Sapper + Svelte 3 (Rollup 1)",
+            "node": "12",
+            "install": ["npm ci"],
+            "build": [
+                "npx sapper export",
+                "node -e \"const fs = require('fs'); const file = 'rollup.config.js'; fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('output: config.client.output(),', 'output: { ...config.client.output(), sourcemap: true },'))\"",
+                "npx sapper export __sapper__/export-map"
+            ],
+            "notes": "The second export is the same app with sourcemap: true in rollup.config.js, for the report that names files. The folder is the argument: in Sapper 0.27 --output is where its own runtime is written.",
+            "reports": [
+                { "name": "sapper-realworld", "target": "__sapper__/export" },
+                { "name": "sapper-realworld-maps", "target": "__sapper__/export-map" }
+            ]
+        },
+        {
+            "name": "polymer-pwa-starter-kit",
+            "repo": "Polymer/pwa-starter-kit",
+            "commit": "ec8f066",
+            "framework": "LitElement + polymer-cli",
+            "node": "12",
+            "install": ["npm ci"],
+            "build": ["npx polymer build"],
+            "reports": [
+                { "name": "polymer-esm-bundled", "target": "build/esm-bundled" },
+                { "name": "polymer-es6-bundled", "target": "build/es6-bundled" },
+                { "name": "polymer-es5-bundled", "target": "build/es5-bundled" }
+            ]
+        },
+        {
+            "name": "stencil-app-starter",
+            "repo": "ionic-team/stencil-app-starter",
+            "commit": "afa1967",
+            "framework": "Stencil 1.8",
+            "install": ["npm ci"],
+            "build": ["npm run build"],
+            "notes": "Stencil 1.8 writes no source maps for a production build.",
+            "reports": [{ "name": "stencil-app-starter", "target": "www" }]
+        },
+        {
+            "name": "ember-realworld",
+            "repo": "gothinkster/ember-realworld",
+            "commit": "b393c0e9",
+            "framework": "Ember 3.9 + ember-auto-import",
+            "node": "12",
+            "install": ["npx yarn@1.22.22 install --frozen-lockfile"],
+            "build": ["npx ember build --environment=production"],
+            "notes": "The round also built it with sourcemaps: { enabled: true } in ember-cli-build.js.",
+            "reports": [{ "name": "ember-realworld", "target": "dist" }]
+        },
+        {
+            "name": "angular7-realworld",
+            "repo": "gothinkster/angular-realworld-example-app",
+            "commit": "7410c67",
+            "framework": "Angular 7.2, browser builder (webpack 4)",
+            "node": "12",
+            "install": ["npx yarn@1.22.22 install --frozen-lockfile"],
+            "build": ["npx ng build --prod --stats-json"],
+            "reports": [{ "name": "angular7-realworld", "target": "dist" }]
+        },
+        {
+            "name": "angular8-realworld",
+            "repo": "gothinkster/angular-realworld-example-app",
+            "commit": "7410c67",
+            "framework": "Angular 8.2, browser builder (webpack 4), differential loading",
+            "node": "12",
+            "install": [
+                "npm install",
+                "npx ng config cli.packageManager npm",
+                "npx ng update @angular/cli@8 @angular/core@8 --allow-dirty --force"
+            ],
+            "build": ["npx ng build --prod --stats-json"],
+            "notes": "The commit is Angular 7; the round moved it to 8 for differential loading, and ng update may ask for a hand. Installed with npm, as the round did: with yarn.lock there, ng update looks for yarn.",
+            "reports": [{ "name": "angular8-realworld", "target": "dist" }]
+        }
+    ]
+}

@@ -1,0 +1,2 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[1],{3:function(t,n,r){"use strict";r.r(n),r.d(n,"render",(function(){return c}));var e=r(5);const c=()=>"<h1>Orders</h1>"+Object(e.a)([12.5,99,1234.5])},5:function(t,n,r){"use strict";r.d(n,"a",(function(){return c}));var e=r(0);const c=t=>`<table>${t.map(t=>`<tr><td>${Object(e.a)(t)}</td></tr>`).join("")}</table>`}}]);
+//# sourceMappingURL=1.ea43e1c8.js.map

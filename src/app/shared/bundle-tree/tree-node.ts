@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { type TreeNode } from '@core/analysis/analysis.types';
-import { deliveryOf } from '@core/analysis/delivery';
-import { filesOfChunk } from '@core/analysis/path-tree';
+import { deliveryOf } from '@core/analysis/screens/delivery';
+import { filesOfChunk } from '@core/analysis/views/path-tree';
 import { I18nService } from '@state/i18n.service';
 import { ReportStore } from '@state/report.store';
 import { ExplainComponent } from '../explain/explain';

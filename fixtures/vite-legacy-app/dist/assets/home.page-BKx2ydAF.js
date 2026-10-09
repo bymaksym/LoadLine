@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/chart.widget-DUnwTIRm.js","assets/index-zmN3oZ5D.js"])))=>i.map(i=>d[i]);
+import{r as e,t}from"./index-zmN3oZ5D.js";var n=()=>(t(()=>import(`./chart.widget-DUnwTIRm.js`).then(t=>e(document.querySelector(`#chart`),t.draw())),__vite__mapDeps([0,1])),`<h1>Home</h1><div id="chart"></div>`);export{n as render};

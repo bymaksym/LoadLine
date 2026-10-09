@@ -12,10 +12,17 @@
 import { type Analysis } from '../src/app/core/analysis/analysis.types';
 import { checkBoot, isSameBoot } from '../src/app/core/analysis/invariant';
 import { type Metafile } from '../src/app/core/analysis/metafile.types';
+import { ERROR_TEXT, type ErrorStrings } from './text/text-errors';
 
 export interface SelfCheckResult {
     ok: boolean;
     report: string;
+    /**
+     * `false` when the check could not run at all — no page to compare against. That is the files
+     * not being usable, exit 2, not the two readers disagreeing, exit 1: a pipeline told "the build
+     * changed shape" for a missing `--dist` goes looking in the wrong place.
+     */
+    ran: boolean;
 }
 
 const list = (chunks: readonly string[]): string => chunks.map(chunk => `    ${chunk}`).join('\n');
@@ -24,13 +31,13 @@ export const selfCheck = (
     meta: Metafile,
     analysis: Analysis,
     announced: ReadonlySet<string> | null,
+    t: ErrorStrings = ERROR_TEXT.en,
 ): SelfCheckResult => {
     if (!announced) {
         return {
             ok: false,
-            report:
-                'Self-check needs the index.html of the build: it is the second, independent answer.\n' +
-                'Pass the build folder as the target, or add --dist pointing at it.',
+            ran: false,
+            report: t.selfNoPage,
         };
     }
 
@@ -41,66 +48,56 @@ export const selfCheck = (
     if (!check) {
         return {
             ok: false,
-            report:
-                'Self-check could not run: the index.html of the build names no chunk of it.\n' +
-                'Either the page belongs to another build, or the output shape changed enough that\n' +
-                'nothing lines up — which is the thing this check is for.',
+            ran: false,
+            report: t.selfNoChunk,
         };
     }
 
     if (isSameBoot(check)) {
-        const passed = `Self-check passed: the import graph and index.html agree on all ${check.agreed} bootstrap chunks.`;
+        const passed = t.selfPassed(check.agreed);
         if (check.onlyInPage.length > 0) {
             // Said, not swallowed: these are bytes of the first load that no figure of the report
             // accounts for, and knowing which they are is the difference between "fine" and "fine
             // as far as anything here can tell".
             return {
                 ok: true,
+                ran: true,
                 report: [
                     passed,
                     '',
-                    `It also announces ${check.onlyInPage.length} chunk(s) the import graph cannot place:`,
+                    t.selfUnplaced(check.onlyInPage.length),
                     list(check.onlyInPage),
-                    'Usually a dynamic import whose path is built at run time — VitePress writes one per',
-                    'page — which no reader of the files can follow. Too few to be the build changing shape.',
+                    t.selfUnplacedWhy,
                 ].join('\n'),
             };
         }
         if (check.preloadedRoutes.length === 0) {
-            return { ok: true, report: passed };
+            return { ok: true, ran: true, report: passed };
         }
 
         // Said out loud rather than dropped: these chunks really are fetched with the first load of
         // this page, and a build that prerenders one page per route is a different kind of build.
         return {
             ok: true,
+            ran: true,
             report: [
                 passed,
                 '',
-                `This page also announces ${check.preloadedRoutes.length} chunk(s) the graph attributes to a screen:`,
+                t.selfPreloaded(check.preloadedRoutes.length),
                 list(check.preloadedRoutes),
-                'That is a build with one page per route — index.html is the home route, not a shell —',
-                'so those are preloaded route chunks and not part of what every screen pays.',
+                t.selfPreloadedWhy,
             ].join('\n'),
         };
     }
 
-    const parts = [
-        'Self-check FAILED: the two ways of working out the bootstrap disagree.',
-        '',
-        `Agreed on ${check.agreed} chunk(s).`,
-    ];
+    const parts = [t.selfFailed, '', t.selfAgreed(check.agreed)];
     if (check.onlyInGraph.length > 0) {
-        parts.push('', 'Called bootstrap by the import graph, never reached from index.html:', list(check.onlyInGraph));
+        parts.push('', t.selfOnlyGraph, list(check.onlyInGraph));
     }
     if (check.onlyInPage.length > 0) {
-        parts.push('', 'Reached from index.html, not called bootstrap by the import graph:', list(check.onlyInPage));
+        parts.push('', t.selfOnlyPage, list(check.onlyInPage));
     }
-    parts.push(
-        '',
-        'One of the two readers is wrong about this build. Every per-screen figure is measured',
-        'against the bootstrap, so they are all suspect until this passes.',
-    );
+    parts.push('', t.selfSuspect);
 
-    return { ok: false, report: parts.join('\n') };
+    return { ok: false, ran: true, report: parts.join('\n') };
 };

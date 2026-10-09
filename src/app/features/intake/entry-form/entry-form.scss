@@ -1,0 +1,12 @@
+/* The entry script, asked for where the page names none this reads. */
+.entry {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+    align-items: center;
+
+    &__label {
+        font-size: var(--fs-note);
+        color: var(--muted);
+    }
+}

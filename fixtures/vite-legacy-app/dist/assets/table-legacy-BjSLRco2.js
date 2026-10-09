@@ -1,0 +1,1 @@
+(function(){System.register([`./index-legacy-DmXOc-8M.js`],function(e,t){var n;return{setters:[function(e){n=e.n}],execute:function(){e(`t`,function(e){return`<table>${e.map(function(e){return`<tr><td>${n(e)}</td></tr>`}).join(``)}</table>`})}}})})();

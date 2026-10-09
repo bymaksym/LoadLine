@@ -1,0 +1,50 @@
+{
+    "refused": null,
+    "mode": "gzip",
+    "boot": {
+        "bytes": 866933,
+        "rawBytes": 2832527,
+        "files": 2
+    },
+    "firstTrip": {
+        "total": 960234,
+        "files": 7
+    },
+    "serverOutputs": 0,
+    "offPage": {
+        "legacy": 0,
+        "serviceWorker": 0,
+        "server": 0,
+        "ignored": 0
+    },
+    "screens": [
+        "CodeMirrorEditor: own 95778, shared 0, total 962711",
+        "sw: own 9639, shared 0, total 876572",
+        "qrcode.chunk: own 4351, shared 0, total 871284",
+        "bug-issue-template: own 164, shared 0, total 867097"
+    ],
+    "deferred": [],
+    "shared": 0,
+    "workers": 2,
+    "onDemand": 0,
+    "data": 56,
+    "signals": [
+        "mid bigFile: 6 files of yours take ≈119 kB of the bootstrap, each above ≈6 kB",
+        "mid dupes: 9 packages shipped more than once",
+        "mid heavy: CodeMirrorEditor includes 94 kB that nothing else uses",
+        "mid packageBarrel: @excalidraw/mermaid-to-excalidraw ships 23 files (≈17 kB) and only one of them is imported from outside",
+        "mid fonts: 12.58 MB of fonts: 233 files across 10 families",
+        "mid unreferencedAssets: 685 kB in 10 files named by neither the HTML, nor the CSS, nor any chunk",
+        "mid unstableChunk: 2 chunks mix dependencies with your own code: ≈260 kB is re-invalidated on every deploy",
+        "mid devLeftovers: One development leftover in the build",
+        "info unreachable: 1 chunk (834 B) that nothing reaches from the entry point",
+        "info cascadeShape: assets/index-BFFDxRTc.js names 68 of 116 chunks and is imported by 1: a change stops there",
+        "info sourceMaps: The build folder carries 59 source maps",
+        "info media: 808 kB across 20 image or video files, 1 of them asked for by the page",
+        "info unhashable: 11 files carry no hash in the name",
+        "info secrets: 1 string shaped like a secret that is not one",
+        "info sourceExposed: 702 files of your source can be reconstructed from the 115 source maps in this folder",
+        "info thirdParty: ≈21 kB of your first load is analytics, ads, support chat or error capture",
+        "info situationMissing: 2 unanswered questions would change what this report says"
+    ]
+}

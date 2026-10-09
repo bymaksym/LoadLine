@@ -14,6 +14,16 @@ loadline.html
 # The compiled half of the Vite fixture. It is a bundler's output, byte for byte: reformatting it
 # would move the columns its source maps point at and change the sizes the tests assert.
 fixtures/vite-app/dist
+fixtures/vite5-app/dist
+fixtures/vite-relative-app/dist
+fixtures/vite-router-app/dist
+fixtures/webpack4-app/dist
+fixtures/webpack5-app/dist
+# webpack's own stats, as webpack wrote them.
+fixtures/webpack4-app/stats.json
+fixtures/webpack5-app/stats.json
+fixtures/vite-legacy-app/dist
+fixtures/rollup-amd-app/dist
 
 # Generated from the .woff2 files by scripts/embed-fonts.mjs: one base64 line per family.
 src/styles/_fonts.scss
@@ -26,3 +36,7 @@ CHANGELOG.md
 # rewriting it would make the test fail on whitespace nobody chose.
 fixtures/sample-report.json
 
+
+# Written by cli/config-files.spec.ts from the code that reads loadline.json, for the same reason.
+loadline.schema.json
+docs/CONFIG-REFERENCE.md

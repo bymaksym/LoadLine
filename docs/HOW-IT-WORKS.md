@@ -104,6 +104,23 @@ Three more rules joined them:
 - **Data is not a screen.** `import('./locales/ru-RU.json')` produces a lazy entry exactly like a
   route does. Excalidraw lazy-loads fifty languages, and its table came out with sixty-one rows for
   an application with one screen. Data entries are listed separately.
+- **Where the code has a route table, the table decides.** Read from a build folder, the chunks still
+  carry the router's table, because its keys are the router's API and no minifier renames them: an
+  object with a `path` and a `component`, `loadComponent`, `loadChildren`, `lazy`, `getComponent` or
+  `asyncComponent` whose value imports the chunk (`core/build-text/route-table.ts`); a router that
+  uses another word is named in `build.routeKeys`. Stencil's loader lists its components the same
+  way — the id of each chunk and the tag it defines — and is read as its table: components named by
+  their tag, and the polyfills it fetches for old browsers, which it does not list, no screens.
+  Sapper's manifest has none of those shapes — a list of components, `{js:()=>import("./index.e902f999.js")}`,
+  and a list of routes, each a regular expression and its page by place in the first list — and is
+  read too: the expression gives the path, its groups named by the route's parameters
+  (`/profile/[user]/[view]`). Without it, a Sapper build without source maps had seven screens called
+  `index`, told apart by their hashes. With two routes found, a lazy chunk
+  a route imports is a screen, named after the route when there is no source map to name it, and one
+  no route imports is not: Nuxt without maps listed fourteen language files and its i18n config as
+  screens named after hashes, and PocketBase listed seventeen documentation tabs. Without a table,
+  every lazy chunk stays a screen as before, and the report says it found none — a stats file has
+  no code to look in, so it says nothing then.
 
 ### 2.4 Splitting the cost
 
@@ -140,7 +157,14 @@ report is in compressed figures. To keep the two units from being confused, the 
 its raw size under the compressed one, and the head of its file tree says `raw` and how much of the
 chunk is unattributed. Those bytes are the bundler's own code — module wrapper, banners — which
 belongs to no input file. The sum of the files plus that remainder is the raw size on the row, when
-the two measurements agree, which is checked rather than assumed (§3.23). Other tools
+the two measurements agree, which is checked rather than assumed (§3.23).
+
+A signal that puts a figure from inside a chunk in a sentence gives it in the report's unit anyway, at
+the ratio the bytes around it compress by and with `≈`: "≈80 kB of dependencies" for the chunks that
+mix them with your code, the share of the chunk's own compressed size; packages against your own code
+in the first load, at the ratio the bootstrap compresses by. Given raw, a gzip report said "283 kB
+re-invalidated" and "268 kB of packages" over an 87 kB bootstrap, and the first of those was being
+compared against a threshold in gzip. Other tools
 (`esbuild-visualizer`, Sonda) show the raw figure as the chunk's headline, which is why their numbers
 look nothing like Loadline's until both are read in the same unit.
 
@@ -220,7 +244,7 @@ chunks, the question none of them answers is whether the build is **well divided
 
 That is not a property of any row. More chunks is not better and fewer is not better: what matters is
 that what a screen needs at once arrives in few pieces and what it may never need stays apart. So it
-is measured on the distribution (`core/analysis/shape.ts`), with two numbers per zone:
+is measured on the distribution (`core/analysis/screens/shape.ts`), with two numbers per zone:
 
 - **Concentration**: how much of a zone sits in its largest chunk. Fifteen shared chunks where one
   holds 93 % is a different situation from fifteen even ones, and a list of fifteen rows hides it.
@@ -271,6 +295,11 @@ name is discovered by parsing, which is another trip. So the figure only exists 
 was loaded with that page; without it, Loadline says "not known" rather than printing a number derived
 from the wrong thing. The page is read with regular expressions rather than `DOMParser`, so the
 command and the browser read it the same way.
+
+The command's **whole first trip** — everything downloaded before anything appears — counts those
+late chunks too. Read off `index.html` alone it left them out, and a real Angular build printed "the
+whole first trip is 133 kB" under a 464 kB bootstrap: the 346 kB missing was the very chunk that made
+the first load take two trips. Late or not, it arrives before the first paint.
 
 ---
 
@@ -336,6 +365,11 @@ moved nothing.
 Only a copy that actually weighs something in some chunk counts: a version resolved but tree-shaken
 away is not paid twice.
 
+The version comes from the pnpm directory name, which carries more than the version: the peers it was
+resolved against, or a hash of them — `@angular+material@22.1.6_2ffb4168…` — and, on a name too long
+for the disk, a cut — `@angular+platform-browser@2_49839d…`. Only a whole `x.y.z` at its head is taken;
+the cut one is given no version rather than `2`.
+
 ### 3.5 Expensive screen
 
 **Fires when** a screen carries more than 6× the median of its own code, and over 100 kB.
@@ -348,13 +382,35 @@ _inside_ the screen — a viewer, an editor, a chart — it belongs in a deferre
 These fire only with a baseline loaded: the previous build's `stats.json`, a Loadline export, or the
 whole previous build folder. Both measurements are always compared in the same mode — a bare previous
 `stats.json` is compared raw even if the report is compressed, and the table says so. For compressed
-against compressed, give the previous folder with its `stats.json` inside.
+against compressed, give the previous folder: with its `stats.json` (or `browser-stats.json`) inside, or
+without one, in which case its graph is read from its chunks as the build on screen is. The page used
+to refuse a previous folder without `stats.json`, which left every Vite build without a way to be
+compared there, and it did not know the name Angular gives that file from 22.2 on.
 
-- **The bootstrap has grown** — by 10 % and 10 kB or more, editable under Criteria.
+- **The bootstrap has grown** — by 10 % and 10 kB or more, editable under Criteria. It also says
+  **where the growth comes from**: the packages and the folders of your own code that entered, left,
+  grew or shrank in the bootstrap, biggest first, up to five. The delta alone answered "how much";
+  the question on a merge request is "what did I add", and before this it was answered by opening
+  two reports side by side. The weights are raw bytes per package, shown in the report's unit at the
+  ratio the bootstrap compresses by — `≈`, like every saving. A move under 512 raw bytes is left
+  out as noise. Own folders are compared only when both snapshots record them; against an export
+  older than that, the list is packages only, and says so, rather than reading every folder of the
+  project as new.
 - **A package has entered the bootstrap** — an npm package that was not in the baseline's. Project
   folders do not count: they change with every commit.
 - **A screen has grown** — shared + own is compared, **without the bootstrap**. Comparing totals, a
-  bigger bootstrap would flag all twenty screens at once.
+  bigger bootstrap would flag all twenty screens at once. Each screen it names also says **where its
+  growth comes from**, by the bootstrap's rules: the packages and own folders that moved in the
+  chunks that screen loads beyond the bootstrap, up to three per screen, raw weights shown at the
+  ratio _that screen_ compresses by. "`reports` +120 kB" sent the person to open two reports;
+  "`xlsx` ≈+118 kB (new)" is the answer. It needs both snapshots to carry the screen's breakdown:
+  against an older export, or a build that did not say what is inside its chunks, the screen is
+  named without causes rather than with every package of it read as new.
+
+The bootstrap follows the same rule. A snapshot of a folder read without source maps records an
+empty list of packages next to a bootstrap of 200 kB: not "nothing", "not known". Against one, the
+growth is given without causes and no package is said to have entered — before, a real build reported
+`@angular/core` as new against its own previous version.
 
 ⚠️ **One trap remains**: when a near-global shared chunk grows, every screen loading it goes up by the
 same amount — in one real app, 19 screens at "+247 kB". So when most screens grow by about the same
@@ -542,6 +598,9 @@ file — `0fPdmq0U.js` rather than `orders` — and there is no breakdown by pac
 entry point. Everything else comes out in full. It exists because two real builds, elk and immich,
 neither of which publishes maps, came out as a page of hashes with nothing to explain them.
 
+With it, "nothing stands out" is not said: that card vouches for the breakdown — no package shipped
+twice — and there is no breakdown to vouch for.
+
 ### 3.18 What the report cannot reach
 
 **Fires when** some JavaScript of the build is imported by nothing reachable from the entry point, by
@@ -573,7 +632,16 @@ single-page application is nearly everything. It does not grow with depth; it ju
 this build — which chunk names the most others, and how many name it — and reported as LOW, MID or
 HIGH with the reason. LOW is the runtime-chunk shape, which is what webpack emits and what largely
 avoids the problem, with the caveat that usually gets dropped: that chunk changes on every deploy and
-has to be tiny and inlined, or the cost comes straight back.
+has to be tiny and inlined, or the cost comes straight back. That caveat is for a chunk of the first
+load: when the small chunk holding the names is lazy, as in Angular RealWorld, it comes with the
+screen that needs it, there is no page to inline it into, and the advice is to keep it small.
+
+**A name without a hash stops it.** The cascade travels through names that change, and a chunk written
+as `index.js` changes its content on every edit below it and never its name. Solid's Rollup template
+ships exactly that, and the report said "touching any leaf moves the whole build" of a build where the
+eight chunks importing `index.js` never change for it. Those edges are not followed. One large file
+naming most of the build while few chunks carry its name is then its own shape, and said as such: a
+change stops at that file, and what it costs is the file.
 
 **With a baseline it stops being a model.** Two builds diffed by file name _are_ the delta a browser
 would pay. The changed files split into the ones where the edit landed and the ones that only moved
@@ -754,6 +822,31 @@ file itself. On the same Angular 22 probe, the graph walk over the metafile alon
 against a 222 555-byte bootstrap (**+26 %**); with the maps alongside it, 221 555 (**−0.45 %**). It
 does not fire on chunks a map covered, because for those there is nothing left to drift.
 
+### 3.24 What `loadline.json` forbids
+
+**Fires when** a rule of `forbidden` matches a file of the build: a package by name, or files of the
+project by path, anywhere in the build or — with `"in": "bootstrap"` — in the first load. One signal
+per rule, `high` whatever the size.
+
+Every other signal is this tool's opinion of a build. This one is the team's, written down, and the
+tool only says where it is broken and which import breaks it. That is why the size does not decide
+the severity: a 2 kB locale of `moment` breaks "no moment" exactly as much as the whole library, and
+a threshold under which a forbidden package passes would be a second rule nobody wrote.
+
+**Declarative, not code.** The obvious alternative was the ESLint model — rules as plugins somebody
+installs. A plugin cannot run in the page, which is one offline HTML file, so the page and the
+command would judge the same `loadline.json` differently, which is the disagreement the file exists
+to end. A rule over data the analysis already has — every file, its package and its zone — runs in
+both. Patterns are `*` and nothing more, matched by hand like the ones of `build`: a regular
+expression built from somebody's text is one more thing that can hang on a bundle of megabytes.
+
+**An ordinary signal, on purpose.** Its key is the rule as written, so an exception is an entry in
+`accepted` with a reason and a date, and failing on it is `failOn` or `failOnSignals`. dependency-cruiser
+and Statoscope, the closest prior art, give their rules a severity of their own; here that would have
+been a second, smaller version of the gates and of `accepted` living inside one block. Statoscope's
+`restricted-packages` looks at the whole compilation: "never in the first load" is the part none of
+them says.
+
 ---
 
 ## 4. Traps found while building it
@@ -806,7 +899,8 @@ which keeps its `path`; only `providers` and `loadComponent` move down to the ch
 ## 5. Data format
 
 Loadline reads the [esbuild metafile](https://esbuild.github.io/api/#metafile), written by Angular
-with `--stats-json` and by plain esbuild with its metafile option. The keys it uses:
+with `--stats-json` and by plain esbuild with its metafile option, and webpack's `stats.json`,
+translated into one (below). The keys it uses:
 
 | Key                                | What for                                                                          |
 | ---------------------------------- | --------------------------------------------------------------------------------- |
@@ -838,30 +932,157 @@ module bundle carries its graph in the code that ships:
   so the entry ends up imported by its own children: there is no "chunk nobody imports" to find. Only
   `index.html` can name it. It does so in one of two ways — a `<script src>`, or an `import()` inside
   an inline script, which is how SvelteKit starts its application.
-- **A folder of webpack or Turbopack chunks is refused.** Those builds have entry chunks and no graph:
+- **A folder of webpack or Turbopack chunks is refused, and its stats file read instead.** Those builds have entry chunks and no graph:
   their imports are numbers the loader resolves at run time. Read as ES modules, a Next.js export came
   out as one bootstrap of seven files, zero screens and "nothing stands out" — confident, detailed and
-  false. A folder whose entry carries that runtime **and** where nothing imports anything lazily is
-  named for what it is. Both halves are needed: the marker alone would refuse an ES bundle carrying
-  one webpack-built dependency, and no lazy edges alone is an ordinary application with every route
-  eager.
+  false. Before webpack 5 the runtime was called `webpackJsonp` (Create React App 1 to 3, Vue CLI), and
+  until it was known a webpack 4 build of three lazy routes read as one bootstrap of 1 kB and no
+  screens; `fixtures/webpack4-app` is that build. A webpack build of one chunk writes no runtime and is
+  still read: it has no graph to lose. A folder whose entry carries that runtime, where nothing imports anything lazily **and** where
+  another chunk registers with it is named for what it is. All three are needed: the marker alone
+  would refuse an ES bundle carrying one webpack-built dependency, no lazy edges alone is an ordinary
+  application with every route eager, and a runtime with nothing to load is ember-auto-import's
+  inside an Ember `vendor.js`, which was refused as Next.js.
+- **Before ES modules the graph is still in the files, as strings.** AMD writes `define(["./a.js"], …)`
+  and SystemJS `System.register(["./a.js"], …)`: both are read as static edges, with `.js` tried when
+  the id leaves it off, as RequireJS and Rollup's `amd` output do. A page may start the application
+  from `data-main` or from a string in an inline script (`s.src="/client/client.1180.js"`, Sapper's
+  way) rather than a tag, and both count. Polymer's AMD build read as a 2 kB loader, zero screens
+  and 1.1 MB "in no figure here", and Sapper's was refused with "no index.html" next to its page.
+- **Last, a chunk nothing imports but something names.** A loader older than `import()`, or one that
+  builds the file name at run time, keeps the names as plain strings: Stencil lists components as
+  `"p-w91mnxr1"` and loads `./${id}.entry.js`. A chunk no edge reaches, whose name — or, when it
+  looks like a hash, the part before its first dot — appears as a string in a chunk the application
+  reaches, is taken as loaded on demand by it. It only ever touches what nothing else reached, so
+  a build whose chunks are all reached reads exactly as before, and a plain word (`index`, `vendor`)
+  is never a name. A Stencil app went from zero screens and 33 of 36 chunks unaccounted for to its
+  components.
+- **What no screen downloads is left out and counted**, the way the server side is: what only a
+  `<script nomodule>` (or the `catch` of an inline loader) reaches is the copy for old browsers, and
+  a service worker — registered in the page or the code — runs beside the page with what it
+  imports. Counted, a Stencil bootstrap was 48 kB of which 42 were its SystemJS fallback.
+- **When the rules are wrong, `build` in `loadline.json` says it**: `entries`, `ignore`, `screens` and
+  `page`, file names with `*` ([Configuring Loadline](CONFIG.md#when-it-reads-your-build-wrong)). Every
+  rule here is a guess about how some tool writes a folder, and a tool that does something new will
+  get past them; the way through should not be a release. The page asks for `entries` where the
+  folder was refused, and the command takes it as `--entry`.
+- **A folder comes in four ways, and all of them read the stats file inside it first.** Dropped,
+  chosen with the button, picked with the API that keeps it, or read again after a rebuild: webpack
+  writes its `stats.json` inside the folder it builds, and only the drop looked for it — the same
+  folder chosen with the button was refused with "put the stats file in the folder", where it was.
+  And a drop the browser will not list is said: Chrome, on a page opened from the disk, hands over
+  the folder and fails to read what is inside it, and the drop did nothing and said nothing. The
+  button reads the same folder there.
+- **The same file under two names is a copy that travels or a copy that is stored.** Two names with
+  one content are two cache entries when the page or the code asks for both — Sapper links `main.css`
+  and its runtime loads `chunk.css`. When it asks for one or none, the second copy is never
+  downloaded and costs the deploy, not the visit: Stencil writes its global stylesheet as `app.css`
+  and again under a hash, the page asks for neither, and the report said a visitor downloads both.
 - **Without `.js.map` the report loses the inside of each chunk**, and nothing else.
+- **With them it still does not know who imports what.** A map says which source wrote each stretch
+  of a chunk; the `import` statements between those sources were erased by the bundler. So the chain
+  from the entry to a package, its exclusive weight, the files importing it, and what `--what-if`
+  would save are "not known" for a folder read alone — not "nobody imports it" and "0 B", which is
+  what a real build printed for `@angular/material`, 92 kB of its bootstrap. The `stats.json` has
+  the edges.
+- **Without maps, a screen is named the way the bundler named its chunk.** Rollup, Vite and esbuild
+  name a chunk after the module it starts at and append an eight-character hash, so `Article-BZRh73np.js`
+  is the screen `Article`. A real Vue build had its table read `Article-BZRh73np` under a signal saying
+  every row was a hash nobody could read. A name that is only a hash (`0fPdmq0U.js`), or Angular's
+  `chunk-`, stays what it is, and that signal is for those.
+- **"No source maps" is said of the folder only when no chunk of the bootstrap has one.** Vite writes no
+  map for the 84 bytes of `plugin-vue:export-helper`, and a folder with sixteen maps was announced as
+  having none, with every saving "not known". One chunk missing its map is named, with its weight.
+  Nor is a chunk with nothing of yours in it unknown: esbuild puts its runtime helpers in a chunk whose
+  `inputs` is `{}`, and an Angular build read with its `stats.json` was told it had no source maps.
+- **A chunk is named after the module it starts at, not its template.** Angular names every chunk
+  `chunk-<hash>.js`, so the name says nothing, and the last source in the map is taken — the bundler
+  writes the module a chunk exists for last. Angular lists a component's template after the
+  component, so that was `orders.page.html`: templates and stylesheets are skipped.
+- **Angular's own maps point outside `node_modules/@angular`.** Its packages are built with Bazel,
+  and a file of `@angular/forms` comes out as `node_modules/.pnpm/k8-fastbuild-ST-…/bin/packages/forms/…`
+  (`bin/src/material/…` for the components repository). Read as a path, that is a package called
+  `.pnpm`; it is read as `@angular/forms`, and never as a second installed copy of it.
 
 The preload lists are the one place a bundler's own behaviour changes a figure. Vite does not wait for
 a lazy chunk to arrive and be parsed before fetching what it imports — it bakes the list into the call
 and asks for the whole set at once. Angular does not. Without reading those lists, every screen of a
 Vite application would be counted one round trip deeper than it is.
 
+### webpack's `stats.json`
+
+Refused on purpose until 09/10/2026, with "Statoscope does it better". It is also what nearly every
+application written before 2020 can produce — Angular up to 16, Create React App, Vue CLI, Gatsby,
+Nuxt 2, Rspack — and their folders cannot be read, so for them the refusal was the whole answer.
+The stats file has the three things the metafile has, in another shape, and
+`core/intake/webpack-stats.ts` translates it:
+
+| webpack                              | metafile                                                    |
+| ------------------------------------ | ----------------------------------------------------------- |
+| `modules[]` and `chunks[].modules[]` | `inputs`, with the edges taken from each module's `reasons` |
+| `chunks[].files` and `assets[].size` | `outputs`, one per file the browser downloads               |
+| `entrypoints[].chunks`               | static edges: the files an entry starts with                |
+| `chunks[].origins`                   | lazy edges: which file asked for the chunk, and where       |
+
+- **A lazy chunk group is one screen.** Every chunk sharing an origin — the `import()` at one place in
+  one file — is fetched at once by `__webpack_require__.e`. The one holding the module asked for is
+  the lazy entry; the others (the vendors `splitChunks` moved out, a chunk two routes share) travel
+  with it, statically, and in the same round trip (`fetchedWith`, which plays the part of Vite's
+  preload list).
+- **⚠️ A module's `size` is its source, before minification.** An Angular 8 main chunk is 2.9 MB of
+  modules in a file of 560 kB. The per-file weights are those sizes shared out in proportion to what
+  the file weighs, so they add up to the file: an estimate, since minification does not shrink every
+  file by the same factor. A source map in the folder replaces it with a measurement, as for any build.
+- **A concatenated module is taken apart.** webpack 4 writes "`./src/main.ts + 20 modules` imports
+  rxjs", and taken at its word `main.ts` was a barrel of 26 re-exports holding 546 kB. The file that
+  wrote the import is found by what it wrote — a relative path that resolves, a package named in its
+  source — or by the module webpack says imported it first; with none of them the edge is left out.
+  webpack 5 names the file itself (`resolvedModule`).
+- **What is no file is left out**: `multi …` entries, `external "React"`, ignored modules. webpack's
+  own runtime is filed under `node_modules/webpack`, and the loaders in front of a name, the query of
+  a Vue component's part and the `./` are dropped, so the names are the metafile's.
+- **The stats file sits inside the folder it describes** when webpack writes it there — Angular 8's
+  `dist/stats-es2015.json`, Create React App's `build/bundle-stats.json`, Vue CLI's `dist/report.json`
+  — and the command and the page both read it with that folder, so the figures stay compressed.
+
+`fixtures/webpack4-app` and `fixtures/webpack5-app` hold up the translation: the application of
+`vite-app` comes out with the same three screens and the same deferred widget.
+
+### Yours or theirs
+
+Every rule that tells your code from a dependency asks one function (`core/format/ownership.ts`),
+where there used to be a dozen `includes('node_modules')`. A file is a dependency when it sits under
+`node_modules/`, with one convention read: Sapper keeps an application's own modules in
+`src/node_modules/` so they import by name, and the RealWorld app's `api.js` and `utils.js` came out
+as packages, Sapper's runtime as a package called `@sapper/app.mjs`. `build.own` and
+`build.dependencies` of `loadline.json` say the rest — a monorepo's `packages/ui` as the package `ui`,
+code of yours that a tool put under `node_modules/`. Like the language of the figures, it is set once
+from outside, by the command when it reads the file and by the page when one is dropped, because a
+path is named from everywhere in the report.
+
+### What wrote the build
+
+The advice names a setting, and a setting belongs to a tool: an Ember build was told to write
+`sourcemap: true` in a Vite config it does not have, and that its `console.log` calls might be
+Angular's. The tool is in what is read already (`core/analysis/tool.ts`): the reader that translated a
+webpack stats file or found Stencil's list of components says so (`Metafile.builtBy`), the page names
+Sapper, Nuxt, SvelteKit, Ember and Polymer, a chunk names Vite (its preload helper) and Angular (the
+`ng-version` its runtime sets), and with source maps the packages name the framework. A metafile
+nobody else wrote is esbuild's. The command prints it in its lead and in `builtWith`, and the advice
+on source maps, on splitting the dependencies out and on whose a `console.log` is uses it; when
+nothing says, the advice names Vite and Angular, as before.
+
 ### What is not a metafile
 
-Three files are commonly believed to be "the stats of my build". "Could not read it" would be a lie
-about all three: the file is fine, it is another format, and Loadline says which.
+Two files are commonly believed to be "the stats of my build". "Could not read it" would be a lie
+about both: the file is fine, it is another format, and Loadline says which.
 
-| What                       | Where it comes from                                      | Why it is not read                                            |
-| -------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
-| webpack `stats.json`       | Angular's `browser` builder (up to v16), Next.js, Rspack | Different shape: `chunks`/`modules`/`assets` arrays           |
-| Vite `manifest.json`       | `build.manifest: true`                                   | Not needed: the folder itself says the same thing, and better |
-| `rollup-plugin-visualizer` | its `--json` output                                      | A drawn tree, not the build's own record                      |
+| What                       | Where it comes from    | Why it is not read                                            |
+| -------------------------- | ---------------------- | ------------------------------------------------------------- |
+| Vite `manifest.json`       | `build.manifest: true` | Not needed: the folder itself says the same thing, and better |
+| `rollup-plugin-visualizer` | its `--json` output    | A drawn tree, not the build's own record                      |
+
+A webpack `stats.json` written with `chunks` or `assets` off is refused too: it has nothing to analyse.
 
 The Vite manifest was the obvious thing to read and it aged badly in a few months: with Rolldown as
 the default it is a compatibility layer somebody has to switch on, while the folder is always there
@@ -869,7 +1090,7 @@ and needs nobody to maintain a format.
 
 ### Two build shapes that are not a plain SPA
 
-Both were analysed wrongly at first, and both are becoming more common (`core/analysis/entries.ts`).
+Both were analysed wrongly at first, and both are becoming more common (`core/analysis/screens/entries.ts`).
 
 **Server-side rendering writes one metafile with both sides in it.** Nobody downloads the server
 bundle and it is usually the bigger of the two, so "the entry that reaches the most" would pick it and
@@ -942,6 +1163,28 @@ report says so when they have.
 An answer nobody recognises becomes "unanswered" plus a line to print, the same as an acceptance with
 no reason: an answer is the only thing in this file that can move a colour, so it is the one mistake
 that would otherwise change a verdict silently.
+
+### One file shared by many repositories
+
+`extends` follows what every tool with shared configuration agrees on — semantic-release, ESLint,
+Renovate, TypeScript, Biome, Stylelint: left to right, the last one wins, the file that extends goes
+last, and a path is read from the file that writes it. Where they disagree is lists, and the choice
+here is **lists add up**, with Biome and webpack, against TypeScript, where a list in the child
+replaces the base's whole. "I set `include` and lost the base's" is the best-known surprise of
+`tsconfig.json`, and the lists of this file — packages, acceptances, forbidden rules — are things a
+repository adds to. Renovate decides per option, which is the one shape nobody can predict without
+reading its source. Taking something of the base away, which adding cannot do, already has a way that
+carries a reason: an acceptance.
+
+Three things were left out, each for a reason. **No URLs**: a base fetched at run time needs network
+in CI and can change under a build without a commit; a package is pinned by the lock file. **No name
+prefix** (`eslint-config-`, `commitlint-config-`): one more rule to learn, and a name that is not the
+one in `package.json`. **No plugins**: see 3.24.
+
+The page has no disk, so it cannot follow `extends`. It says so above the report and applies only
+what the dropped file says; `--print-config` writes the joined file for it. Two keys do not join:
+`situation`, which is one team's answers with its name on them, and `mode`, which a file cannot change
+under a base that wrote its sizes in another unit.
 
 ---
 
@@ -1016,6 +1259,23 @@ next to its module: `analysis.ts` computes, `analysis.types.ts` says what comes 
 reading order — a module opens on its first function instead of two hundred lines of declarations.
 Types that never leave their file stay in it, and so does the input contract of a component.
 
+**No two folders of `core/` import each other in a loop.** Loadline reports import cycles between
+folders, and run on its own build it found one: seven folders — `intake`, `analysis`, `assets`,
+`caching`, `baseline`, `findings`, `config` — each reaching the others. Two small readers kept the loop
+closed: `index-html.ts` and `route-table.ts` lived in `intake/`, which reads a dropped folder with
+everything else, while `assets/` and `analysis/` needed them. They import nothing of the analysis, so
+they moved to `core/build-text/` — what a build writes in its own text, read by every layer above it —
+and the loop opened. The last edge, `situation/` borrowing three sentences from `config/`, went the
+same way: those sentences live next to the code that says them.
+
+**No folder holds more than twenty files.** Past that a folder is scrolled rather than read, so the
+big ones are split by what their files are about: `core/analysis/` into `graph/`, `screens/`,
+`sourcemap/` and `views/`; `core/findings/` into the signals read from the bundle (`bundle/`), from the
+rest of the build folder (`folder/`) and from what somebody hands over (`supplied/`), with their words
+in `text/`; `cli/` into `read/`, `render/` and `text/`. Four modules sharing a prefix get a folder of
+that name for the same reason. `tooling/check-folders.mjs` holds both lines, and the exceptions it
+allows say why.
+
 **Three path aliases, one per layer**, declared in `tsconfig.json`: `@core/*`, `@shared/*` and
 `@state/*`, for imports that would otherwise climb. Siblings and one level up stay relative.
 `features/` has no alias on purpose: inside a screen everything is a sibling, and an alias there would
@@ -1060,10 +1320,11 @@ question none of them answers, and leaves out things several of them do well.
 - **Line-level duplication across chunks** (Bundle Buddy). Loadline works at file and package level.
   Not started on purpose: comparing everything with everything is expensive inside the browser, and
   the typical finding — a copied utility — usually weighs little.
-- **Webpack** (Statoscope, webpack-bundle-analyzer, bundle-stats). Loadline reads an esbuild metafile
-  or a folder of ES modules, and webpack is neither: it resolves imports at run time through
-  `__webpack_require__`, so there is nothing in the shipped file to read. That leaves out Angular 16
-  and earlier, Next.js and Create React App.
+- **Webpack's own detail** (Statoscope, webpack-bundle-analyzer, bundle-stats). Loadline reads
+  webpack's `stats.json` as a metafile since 09/10/2026, so its questions — the first load, the screens,
+  what each one adds — are answered for webpack builds too. What it does not read is everything
+  webpack-specific those tools show: module ids, chunk-group internals, the minified size of each
+  module measured in the bundle rather than shared out. Next.js with Turbopack writes no stats file.
 
 ### 7.3 One finding worth keeping
 

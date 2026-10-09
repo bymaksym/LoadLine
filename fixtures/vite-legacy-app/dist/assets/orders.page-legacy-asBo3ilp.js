@@ -1,0 +1,1 @@
+(function(){System.register([`./table-legacy-BjSLRco2.js`],function(e,t){var n;return{setters:[function(e){n=e.t}],execute:function(){e(`render`,function(){return`<h1>Orders</h1>${n([12.5,99,1234.5])}`})}}})})();

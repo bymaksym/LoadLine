@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkloadline_webpack5_fixture=self.webpackChunkloadline_webpack5_fixture||[]).push([[72],{72(e,t,a){var l=a(775);a.d(t,["t",0,e=>`<table>${e.map(e=>`<tr><td>${(0,l.T)(e)}</td></tr>`).join("")}</table>`])}}]);
+//# sourceMappingURL=72.70ecc369.js.map

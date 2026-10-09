@@ -20,8 +20,8 @@
  */
 
 import { baseName } from '../format/format.utils';
-import { wavesFrom } from './delivery';
 import { type Metafile } from './metafile.types';
+import { wavesFrom } from './screens/delivery';
 
 /** Chunk names, in a fixed order: what is being read is a diff, and a diff has to be stable. */
 const byName = (a: string, b: string): number => a.localeCompare(b);

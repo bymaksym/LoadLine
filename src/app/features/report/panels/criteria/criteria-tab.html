@@ -33,6 +33,13 @@
         } @else if (mode === 'gzip') {
             <span class="mode-note__warn">{{ t.criteriaBrotliMissing }}</span>
         }
+        <!--
+        A loadline.json that extends others is applied here only in part: the thresholds would just
+        differ from the terminal's, with nothing to say why. Next to the export, which changes too.
+        -->
+        @if (store.config()?.extends; as bases) {
+            <span class="mode-note__warn" [title]="t.configExtendsHelp">{{ t.configExtends(bases.join(', ')) }}</span>
+        }
     </p>
     <div class="toolbar__group">
         <span class="toolbar__count">{{ custom ? t.criteriaStatusCustom(custom) : t.criteriaStatusRec }}</span>
@@ -101,6 +108,7 @@
                                     min="0"
                                     type="number"
                                     [attr.aria-label]="name + ' — ' + t.critOkUpTo"
+                                    [name]="field.key"
                                     [value]="toField(c[field.key], field.unit)"
                                     (change)="set(field.key, field.unit, $event)"
                                 />
@@ -112,6 +120,7 @@
                                     min="0"
                                     type="number"
                                     [attr.aria-label]="name + ' — ' + t.critBadAbove"
+                                    [name]="pair"
                                     [value]="toField(c[pair], field.unit)"
                                     (change)="set(pair, field.unit, $event)"
                                 />
@@ -126,6 +135,7 @@
                                     type="number"
                                     [attr.aria-label]="name"
                                     [max]="field.unit === 'pct' ? 100 : null"
+                                    [name]="field.key"
                                     [value]="toField(c[field.key], field.unit)"
                                     (change)="set(field.key, field.unit, $event)"
                                 />

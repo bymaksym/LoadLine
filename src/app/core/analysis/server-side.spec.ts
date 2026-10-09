@@ -16,8 +16,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { analyze } from './analysis';
-import { browserSide } from './entries';
 import { type Metafile } from './metafile.types';
+import { browserSide } from './screens/entries';
 
 /** One build, both sides, flat names: the shape Angular 22 writes with SSR on. */
 const BOTH_SIDES: Metafile = {
