@@ -192,3 +192,29 @@ jobs:
 
             - name: And its tests pass
               run: pnpm run test:cli
+
+    # The Action in this repository (action.yml), run the way a workflow of someone else runs it:
+    # `uses:` on a real build, with this checkout's command instead of the one on npm.
+    action:
+        name: The GitHub Action in this repository
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 24
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: The command compiles
+              run: pnpm run build:cli
+
+            - uses: ./
+              with:
+                  path: fixtures/vite-app/dist
+                  version: local
+                  args: --max-boot 350kB

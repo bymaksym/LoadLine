@@ -38,6 +38,7 @@ const ROOT_FILES = new Set([
     'CLAUDE.md',
     'LICENSE',
     'README.md',
+    'action.yml',
     'angular.json',
     'eslint.config.js',
     'eslint.typed.config.js',

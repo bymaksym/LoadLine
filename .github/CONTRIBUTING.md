@@ -81,7 +81,8 @@ wrong reason.
 - **The product at the root, not configs**: `loadline.html` (the page) and `loadline.schema.json`
   (the schema of `loadline.json`, which users point `$schema` at as
   `unpkg.com/@bymaksym/loadline/loadline.schema.json`). Both are generated and published with the
-  package, and a move would break every link to them.
+  package, and a move would break every link to them. And `action.yml`, the GitHub Action:
+  `uses: bymaksym/LoadLine@vX` reads it at the root and nowhere else.
 
 `pnpm run config:check` (in `check` and CI) asks each tool that would fall back to its defaults
 which config it is reading, and fails on a file at the root that is not on its list.

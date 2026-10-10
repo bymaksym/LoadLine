@@ -142,6 +142,24 @@ jobs:
             - run: npx @bymaksym/loadline@1 dist/my-app --format summary --max-boot 350kB
 ```
 
+Or the Action in this repository, which runs the same check and adds the full report to the job
+summary. It runs the Loadline version it was released with, so pinning the Action pins the tool:
+
+<!-- x-release-please-start-version -->
+
+```yaml
+- uses: actions/checkout@v7
+- uses: actions/setup-node@v7
+  with: { node-version: 22 }
+- run: npm ci && npm run build
+- uses: bymaksym/LoadLine@v1.2.0
+  with:
+      path: dist/my-app
+      args: --max-boot 350kB # anything the command takes
+```
+
+<!-- x-release-please-end -->
+
 **GitLab CI** — `.gitlab-ci.yml`:
 
 ```yaml

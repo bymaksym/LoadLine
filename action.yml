@@ -1,0 +1,60 @@
+name: Loadline
+description: What each screen of your app actually downloads, checked on every pull request — fails when the first load goes over your limit.
+author: bymaksym
+branding:
+  icon: bar-chart-2
+  color: blue
+
+inputs:
+  path:
+    description: The build to read — the root of an Angular build (dist/<app>), or any build folder that holds its index.html (Vite, Rollup, esbuild…).
+    required: true
+  version:
+    description: The Loadline version to run. By default, the one this Action was released with, so pinning the Action (by tag or SHA) pins the tool. An npm version to run another; "local" runs this checkout's build.
+    default: ''
+  args:
+    description: Anything the command takes, e.g. "--max-boot 350kB" or "--config loadline.json".
+    default: ''
+  summary:
+    description: Also add the full report, in Markdown, to the job summary.
+    default: 'true'
+  working-directory:
+    description: Where to run it (loadline.json is read from here).
+    default: '.'
+
+runs:
+  using: composite
+  steps:
+    # The version is decided once, for both steps: the Action's own unless one is given.
+    - name: Resolve the version
+      id: resolve
+      shell: bash
+      run: |
+        if [ -z "$VERSION" ]; then VERSION=$(node -p "require(process.env.GITHUB_ACTION_PATH + '/package.json').version"); fi
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      env:
+        VERSION: ${{ inputs.version }}
+    # --no-cache: this run must not become the "last run" the step below compares against.
+    - name: Report in the job summary
+      if: inputs.summary == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ "$VERSION" = "local" ]; then cmd=(node "$GITHUB_ACTION_PATH/bin/loadline.js"); else cmd=(npx --yes "@bymaksym/loadline@$VERSION"); fi
+        # shellcheck disable=SC2086 # ARGS is a list of arguments on purpose
+        "${cmd[@]}" "$BUILD" --format markdown --no-cache $ARGS >> "$GITHUB_STEP_SUMMARY" || true
+      env:
+        VERSION: ${{ steps.resolve.outputs.version }}
+        BUILD: ${{ inputs.path }}
+        ARGS: ${{ inputs.args }}
+    - name: Check the build
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ "$VERSION" = "local" ]; then cmd=(node "$GITHUB_ACTION_PATH/bin/loadline.js"); else cmd=(npx --yes "@bymaksym/loadline@$VERSION"); fi
+        # shellcheck disable=SC2086 # ARGS is a list of arguments on purpose
+        "${cmd[@]}" "$BUILD" --format summary $ARGS
+      env:
+        VERSION: ${{ steps.resolve.outputs.version }}
+        BUILD: ${{ inputs.path }}
+        ARGS: ${{ inputs.args }}
