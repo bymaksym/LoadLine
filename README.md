@@ -152,7 +152,7 @@ summary. It runs the Loadline version it was released with, so pinning the Actio
 - uses: actions/setup-node@v7
   with: { node-version: 22 }
 - run: npm ci && npm run build
-- uses: bymaksym/LoadLine@v1.2.0
+- uses: bymaksym/LoadLine@v1.2.1
   with:
       path: dist/my-app
       args: --max-boot 350kB # anything the command takes
