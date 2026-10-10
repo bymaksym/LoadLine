@@ -1,5 +1,5 @@
-name: Loadline
-description: What each screen of your app actually downloads, checked on every pull request — fails when the first load goes over your limit.
+name: Loadline weight per screen
+description: What each screen of your web app downloads, checked on every pull request against your limits.
 author: bymaksym
 branding:
   icon: bar-chart-2
