@@ -8,6 +8,13 @@ is numbers, so a release that moves one silently is indistinguishable from a reg
 `1.0.0`, a minor bump may change the command's flags or its output. The page and the command share
 their analysis, so a change to one is a change to both unless an entry says otherwise.
 
+## [1.2.0](https://github.com/bymaksym/LoadLine/compare/v1.1.0...v1.2.0) (2026-10-10)
+
+
+### Features
+
+* a GitHub Action, so Loadline can be listed in the Marketplace ([11b402b](https://github.com/bymaksym/LoadLine/commit/11b402b674d5b3a4d0737fb05306ddea6f70d053))
+
 ## [1.1.0](https://github.com/bymaksym/LoadLine/compare/v1.0.0...v1.1.0) (2026-10-09)
 
 
