@@ -27,6 +27,30 @@ const write = (path: string, file: Record<string, unknown>): void => {
     writeFileSync(path, JSON.stringify({ tool: 'loadline', version: 1, ...file }));
 };
 
+describe('readLoadlineConfig · where an unnamed file is found', () => {
+    /** A repository that keeps its tool configurations in `.config/` had its gates ignored without a word. */
+    it('looks in .config/ when the working directory has none', async () => {
+        const repo = scratch();
+        write(join(repo, '.config/loadline.json'), { gates: { maxBoot: '350kB' } });
+
+        const read = await readLoadlineConfig(null, repo);
+
+        expect(read.config?.gates?.maxBoot).toBe(350 * 1024);
+        expect(read.name).toBe('.config/loadline.json');
+    });
+
+    it('prefers the one at the root when both are there', async () => {
+        const repo = scratch();
+        write(join(repo, 'loadline.json'), { gates: { maxBoot: '100kB' } });
+        write(join(repo, '.config/loadline.json'), { gates: { maxBoot: '350kB' } });
+
+        const read = await readLoadlineConfig(null, repo);
+
+        expect(read.config?.gates?.maxBoot).toBe(100 * 1024);
+        expect(read.name).toBe('loadline.json');
+    });
+});
+
 describe('readLoadlineConfig · extends', () => {
     it('follows a package, from the folder of the file that names it', async () => {
         const repo = scratch();
