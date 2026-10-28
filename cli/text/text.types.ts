@@ -36,6 +36,17 @@ export interface CliStrings {
     htmlInsideBuild: (folder: string) => string;
     /** What was found inside a build root, for the lead line. */
     located: (files: string) => string;
+    /** "Budgets: 468 kB of 650 kB": the initial load against the budget `angular.json` sets. */
+    budgetStanding: (d: {
+        current: string;
+        limit: string;
+        over: boolean;
+        /** Whether `limit` is the warning; otherwise it is the error. */
+        warning: boolean;
+        /** The error, when `limit` is the warning and there is one. */
+        error: string | null;
+        config: string;
+    }) => string;
     /** The other builds a project folder held, when the newest was taken. */
     alsoFound: (folders: string) => string;
     /** The last run and this one are the same build, as far as the figures go. */

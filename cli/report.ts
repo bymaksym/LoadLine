@@ -31,6 +31,7 @@ import { buildForbiddenFindings } from '../src/app/core/findings/supplied/forbid
 import { buildSituationFindings } from '../src/app/core/findings/supplied/situation';
 import { baseName, setNumberLang } from '../src/app/core/format/format.utils';
 import { UI } from '../src/app/core/i18n/ui';
+import { budgetStanding } from '../src/app/core/project/budget-advice';
 import { projectNameOf } from '../src/app/core/project/project-name';
 import { scanBuild } from '../src/app/core/scan/scan';
 import { EMPTY_SITUATION } from '../src/app/core/situation/situation';
@@ -276,6 +277,7 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
                 input.graph ? pkg => importersInSources(input.maps ?? [], pkg) : null,
             ),
         ),
+        budgetStanding: budgetStanding(input.context, analysis.initialRawBytes),
         projectName: projectNameOf({
             packageName: input.context.pkg?.name ?? input.packageName,
             angularProject: input.context.angular?.project,

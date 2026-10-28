@@ -10,6 +10,7 @@ import { type Criteria, type Mode } from '../src/app/core/criteria/criteria.type
 import { type DepsReport } from '../src/app/core/deps/deps.types';
 import { type Finding } from '../src/app/core/findings/finding.types';
 import { type Lang } from '../src/app/core/i18n/ui-strings';
+import { type BudgetStanding } from '../src/app/core/project/budget-advice';
 import { type ScanReport } from '../src/app/core/scan/scan.types';
 import { type DeferResult } from '../src/app/core/whatif/defer';
 import { type WhyResult } from '../src/app/core/whatif/why';
@@ -22,8 +23,14 @@ export interface CliReport {
      * packages, every screen, every hashed file name and the signals raised. `--export` writes it.
      */
     snapshot: Snapshot;
-    /** From `package.json` or `angular.json`. `null` without `--project`. */
+    /** What the app is called, in the one order `projectNameOf` gives. `null` when nothing names it. */
     projectName: string | null;
+    /**
+     * Where the initial load stands against the budget `angular.json` sets. `null` without
+     * `--project`, or when no configuration has one. Printed when the budget signals have nothing to
+     * say, so a project whose budgets pass still shows that they were read.
+     */
+    budgetStanding: BudgetStanding | null;
     mode: Mode;
     /** The unit as words, for the lead line: "gzip-compressed", "raw". */
     unit: string;
