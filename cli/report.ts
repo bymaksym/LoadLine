@@ -33,7 +33,7 @@ import { baseName, setNumberLang } from '../src/app/core/format/format.utils';
 import { UI } from '../src/app/core/i18n/ui';
 import { budgetStanding } from '../src/app/core/project/budget-advice';
 import { projectNameOf } from '../src/app/core/project/project-name';
-import { scanBuild } from '../src/app/core/scan/scan';
+import { generatedOf, scanBuild } from '../src/app/core/scan/scan';
 import { EMPTY_SITUATION } from '../src/app/core/situation/situation';
 import { simulateDefer } from '../src/app/core/whatif/defer';
 import { importersInSources } from '../src/app/core/whatif/source-importers';
@@ -172,6 +172,7 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
                   modules: analysis.modules,
                   boot: new Set(analysis.bootChunks),
                   maps: input.maps ?? [],
+                  generated: generatedOf(analysis),
               })
             : null;
     const deps = readDeps({

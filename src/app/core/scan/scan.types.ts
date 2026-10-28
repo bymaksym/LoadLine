@@ -55,10 +55,10 @@ export interface Leftover {
      */
     attributed: boolean;
     /**
-     * Of `where`, the files the build copied as they are rather than generated: not minified, in a
-     * build that minifies the rest. `public/firebase-messaging-sw.js`
-     * is one. They are the project's own files by definition, and calling them "chunks without a
-     * source map" sent somebody to turn on source maps for a file no bundler touches.
+     * Of `where`, the scripts the bundler did not write — copied in as they are, from `public/` or an
+     * assets folder — when it listed what it wrote. `public/firebase-messaging-sw.js` is one, and
+     * calling it a "chunk without a source map" sent somebody to turn on maps for a file no bundler
+     * touches. Whose code it is stays unknown: it may be a library copied in.
      */
     copied: string[];
 }

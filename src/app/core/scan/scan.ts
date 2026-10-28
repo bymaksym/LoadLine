@@ -265,16 +265,16 @@ const leftoversOf = (
     texts: ReadonlyMap<string, string>,
     modules: readonly ModuleEntry[],
     readerFor: (chunk: string) => Reader | null,
+    generated: ReadonlySet<string> | null,
 ): Leftover[] => {
     const found: Leftover[] = [];
 
-    // A file copied into the build as it is: not minified, in a build that minifies its chunks.
-    // What `public/` holds — a service worker, a configuration script — and the project's own code
-    // whatever a source map would say, because no bundler wrote it. The name is no help: a
-    // hyphenated `firebase-messaging-sw.js` reads as hashed to every pattern a bundler's hash fits.
-
-    const minifies = [...texts].some(([name, text]) => isScript(name) && isMinified(text));
-    const copied = (chunk: string, text: string): boolean => minifies && isScript(chunk) && !isMinified(text);
+    // A file in the folder the bundler did not write: copied as it is, from `public/` or an assets
+    // folder — a service worker, a configuration script. Only known where the bundler listed what it
+    // wrote (a metafile, webpack's stats); a folder read on its own cannot tell, and says nothing.
+    // Whose code it is stays unknown without a map: it may be the project's, or a library somebody
+    // copied in. What changes is that it is not called a chunk.
+    const copied = (chunk: string): boolean => !!generated && isScript(chunk) && !generated.has(chunk);
 
     /**
      * How many of a marker's matches in one chunk are the project's own, and whether that could be
@@ -287,9 +287,6 @@ const leftoversOf = (
         );
         if (hits.length === 0) {
             return { count: 0, attributed: true };
-        }
-        if (copied(chunk, text)) {
-            return { count: hits.length, attributed: true };
         }
 
         const reader = readerFor(chunk);
@@ -318,7 +315,7 @@ const leftoversOf = (
 
             count += hits.count;
             where.push(chunk);
-            if (copied(chunk, text)) {
+            if (copied(chunk)) {
                 copies.push(chunk);
             }
         }
@@ -455,14 +452,26 @@ export interface ScanInput {
     boot: ReadonlySet<string>;
     /** The `.js.map` files, with their text. Empty when the folder carried none. */
     maps: readonly { name: string; text: string }[];
+    /**
+     * The scripts the bundler says it wrote, by file name: a metafile's or webpack's outputs. Absent
+     * when the folder was read on its own, which cannot tell a chunk from a file copied in.
+     */
+    generated?: ReadonlySet<string> | null;
 }
+
+/**
+ * The scripts the bundler wrote, by file name, when it said so: every chunk of a metafile or of
+ * webpack's stats. `null` for a folder read on its own, where every script found is a chunk.
+ */
+export const generatedOf = (analysis: { readFrom: string; allChunks: readonly string[] }): Set<string> | null =>
+    analysis.readFrom === 'folder' ? null : new Set(analysis.allChunks.map(chunk => baseName(chunk)));
 
 export const scanBuild = (input: ScanInput): ScanReport => {
     const readerFor = mapReaders(input.texts, input.maps);
 
     return {
         secrets: findSecrets(input.texts, envOwners(input.modules, readerFor)),
-        leftovers: leftoversOf(input.texts, input.modules, readerFor),
+        leftovers: leftoversOf(input.texts, input.modules, readerFor, input.generated ?? null),
         licences: licencesOf(input.texts),
         thirdParty: thirdPartyOf(input.modules, input.boot),
         exposure: exposureOf(input.maps),

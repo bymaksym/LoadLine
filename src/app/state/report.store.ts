@@ -74,7 +74,7 @@ import {
 import { type ProjectContext } from '../core/project/project-context.types';
 import { projectNameOf } from '../core/project/project-name';
 import { SAMPLE_CSS, SAMPLE_NAME, SAMPLE_PAGE, SAMPLE_STATS } from '../core/sample/sample-build';
-import { scanBuild } from '../core/scan/scan';
+import { generatedOf, scanBuild } from '../core/scan/scan';
 import { type ScanReport } from '../core/scan/scan.types';
 import { clearSession, loadSession, saveSession } from '../core/session/persistence';
 import { type StoredSession } from '../core/session/persistence.types';
@@ -468,6 +468,7 @@ export class ReportStore {
             modules: analysis.modules,
             boot: new Set(analysis.bootChunks),
             maps: this.buildMaps(),
+            generated: generatedOf(analysis),
         });
     });
 

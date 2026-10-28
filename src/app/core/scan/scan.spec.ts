@@ -154,11 +154,29 @@ describe('scanBuild · the rest of what the text says', () => {
             modules: [],
             boot: new Set(),
             maps: [],
+            // What the metafile says the bundler wrote: the service worker is not among it.
+            generated: new Set(['main-AB12CD34.js']),
         }).leftovers.find(item => item.kind === 'consoleLogs');
 
         expect(leftover?.count).toBe(1);
         expect(leftover?.copied).toEqual(['firebase-messaging-sw.js']);
-        expect(leftover?.attributed).toBe(true);
+    });
+
+    /** A folder read on its own cannot tell a chunk from a copied file, and does not guess. */
+    it('calls nothing copied when the bundler did not list what it wrote', () => {
+        const leftover = scanBuild({
+            texts: new Map([
+                [
+                    'service-worker.js',
+                    ['self.addEventListener("fetch", () => {', '    console.log(1);', '});'].join('\n'),
+                ],
+            ]),
+            modules: [],
+            boot: new Set(),
+            maps: [],
+        }).leftovers.find(item => item.kind === 'consoleLogs');
+
+        expect(leftover?.copied).toEqual([]);
     });
 
     it('does not call a build a development build because a chunk mentions one', () => {
