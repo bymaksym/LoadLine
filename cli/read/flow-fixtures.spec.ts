@@ -1,15 +1,17 @@
 /**
- * The flow diagram on every real build in `fixtures/`: Vite in four shapes, Rollup's AMD, webpack 4
- * and 5. The model is tested on made-up metafiles next to it; these are the bundlers' own outputs,
- * read the way the command reads them, in raw bytes and in gzip, where a package's share of a chunk
- * is scaled by the ratio its chunk compresses by — the place a column that does not add up would
- * show first.
+ * The flow diagram on every build in `fixtures/` that has one: Vite in four shapes, Rollup's AMD,
+ * webpack 4 and 5, and Metro's web export with its sectioned source map. `expo-native-app` is
+ * refused before there is a flow, and `pnpm9-lock` is a lockfile, not a build. The model is tested
+ * on made-up metafiles next to it; these are the bundlers' own outputs, read the way the command
+ * reads them, in raw bytes and in gzip, where a package's share of a chunk is scaled by the ratio
+ * its chunk compresses by — the place a column that does not add up would show first.
  */
 
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { analyze } from '../../src/app/core/analysis/analysis';
 import { type Analysis } from '../../src/app/core/analysis/analysis.types';
+import { resolveSplits } from '../../src/app/core/analysis/sourcemap/sourcemap';
 import { flowOf } from '../../src/app/core/analysis/views/flow/flow';
 import { EN } from '../../src/app/core/i18n/en';
 import { exists, readDist, readStats } from './read-build';
@@ -23,6 +25,7 @@ const FIXTURES = [
     'rollup-amd-app',
     'webpack4-app',
     'webpack5-app',
+    'metro-sectioned-map',
 ];
 
 const analyses = async (fixture: string): Promise<Analysis[]> => {
@@ -36,9 +39,11 @@ const analyses = async (fixture: string): Promise<Analysis[]> => {
     if (!meta) {
         throw new Error(`${fixture}: no graph`);
     }
+    // The packages inside a chunk from its source map, where there is one, as `buildReport` does.
+    const exact = resolveSplits(dist.splits, Object.keys(meta.inputs));
     return [
-        analyze(meta, null, null, dist.announced, null, undefined, dist.graph?.parallel, dist.graph?.routes),
-        analyze(meta, dist.gzip, null, dist.announced, null, undefined, dist.graph?.parallel, dist.graph?.routes),
+        analyze(meta, null, exact, dist.announced, null, undefined, dist.graph?.parallel, dist.graph?.routes),
+        analyze(meta, dist.gzip, exact, dist.announced, null, undefined, dist.graph?.parallel, dist.graph?.routes),
     ];
 };
 
@@ -65,5 +70,20 @@ describe.each(FIXTURES)('the flow of %s', fixture => {
             );
             expect(model.takeaway, 'no sentence under the diagram').not.toBeNull();
         }
+    });
+});
+
+/**
+ * Metro's one bundle is split by package only through its sectioned map (an index map with nothing
+ * at its root). Read as a folder without maps, the left column would be one "bundler code" bar.
+ */
+describe('the flow of a Metro build with a sectioned map', () => {
+    it('names the packages its sections hold', async () => {
+        const [raw] = await analyses('metro-sectioned-map');
+        const packages = flowOf(raw!)
+            .sources.filter(node => node.kind === 'package')
+            .map(node => node.label);
+
+        expect(packages).toEqual(expect.arrayContaining(['react', 'expo-router']));
     });
 });
