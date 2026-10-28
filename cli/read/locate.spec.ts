@@ -233,7 +233,7 @@ describe('--html', () => {
  */
 describe('locateBuild · a native Expo app', () => {
     const APP = join(process.cwd(), 'fixtures', 'expo-native-app');
-    const refusal = async (target: string): Promise<string> =>
+    const refusal = (target: string): Promise<string> =>
         locateBuild(target, null)
             .then(() => 'read')
             .catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
