@@ -74,6 +74,19 @@ export const formatBytesApart = (actual: number, limit: number): [string, string
  */
 export const formatCount = (value: number): string => numbers.counts.format(value);
 
+/**
+ * A share as a percentage that never rounds to a whole it is not: 0.9979 is "99.7", not "100", and
+ * 0.002 is "0.2", not "0". A chunk said to be "100 % dependencies" reads as one that never changes,
+ * when the 0.2 % left is exactly what makes it download again on every deploy.
+ */
+export const formatShare = (ratio: number): string => {
+    const whole = Math.round(ratio * 100);
+    if (whole >= 100 && ratio < 1) {
+        return numbers.counts.format(Math.min(99.9, Math.floor(ratio * 1000) / 10));
+    }
+    return whole <= 0 && ratio > 0 ? numbers.counts.format(Math.max(0.1, Math.ceil(ratio * 1000) / 10)) : String(whole);
+};
+
 /** Last segment of a path: `chunk-ABC.js`, `login.page.ts`. */
 export const baseName = (path: string): string => path.split('/').pop() ?? path;
 

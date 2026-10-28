@@ -37,6 +37,7 @@ export const TEXT = {
         // a Spanish sentence.
         andMore: (count: number) => `y ${count} más`,
         inPage: 'la pide la página',
+        ownInChunk: (size: string) => `${size} tuyos`,
         each: 'cada uno',
         fileCount: (count: number) => `${count} ${count === 1 ? 'fichero' : 'ficheros'}`,
         packageBarrelRow: (files: number, entries: number, size: string, inBoot: boolean) =>
@@ -494,7 +495,9 @@ export const TEXT = {
         unstableChunk: (d: {
             count: number;
             name: string;
-            pct: number;
+            pct: string;
+            own: string;
+            vendor: string;
             size: string;
             inBoot: boolean;
             list: string;
@@ -503,9 +506,9 @@ export const TEXT = {
             chip: 'chunk que mezcla lo que cambia con lo que no',
             title:
                 d.count === 1
-                    ? `${d.name} es ${d.pct} % código de terceros y se invalida con cada cambio tuyo`
+                    ? `${d.name} es ${d.pct} % código de terceros: ${d.own} tuyos hacen que sus ${d.vendor} se vuelvan a descargar en cada despliegue`
                     : `${d.count} chunks mezclan dependencias y código tuyo: ${d.size} se reinvalidan en cada despliegue`,
-            body: `Las dependencias no cambian en meses y tu código cambia a diario. Un chunk que junta las dos cosas cambia de hash cada vez que tocas una línea, y todo lo que lleva dentro de terceros se vuelve a descargar para nada.${
+            body: `Las dependencias no cambian en meses y tu código cambia a diario. Un chunk que junta las dos cosas cambia de hash cada vez que tocas una línea, y todo lo que lleva dentro de terceros se vuelve a descargar para nada. Lo que mueve el hash es la parte tuya, por pequeña que sea: en ${mono(d.name)} son ${d.own}.${
                 d.inBoot ? ' Y está en el bootstrap, así que lo paga toda visita de vuelta.' : ''
             } ${d.list}.`,
             fix: `Sepáralos: ${webpackSplit(d.tool, 'es')}en Rollup y Vite con una regla de ${mono('manualChunks')} que mande todo lo de ${mono('node_modules')} a su propio chunk; el application builder de Angular no tiene esa regla ni una opción para ella: separa por quién importa qué, así que un servicio tuyo que importan todas las pantallas acaba en el mismo chunk que el framework —lo que hay que buscar es justo eso, un fichero tuyo que importa todo el mundo, y lo que lo saca es importarlo desde menos sitios—. Ojo con el extremo contrario: un único chunk de vendor gigantesco se invalida entero cuando actualizas una sola librería, así que lo que se busca es separar por frecuencia de cambio, no por origen.`,
@@ -1085,6 +1088,7 @@ export const TEXT = {
         rootScreen: 'the root',
         andMore: (count: number) => `and ${count} more`,
         inPage: 'asked for by the page',
+        ownInChunk: (size: string) => `${size} of yours`,
         each: 'each',
         fileCount: (count: number) => `${count} ${count === 1 ? 'file' : 'files'}`,
         packageBarrelRow: (files: number, entries: number, size: string, inBoot: boolean) =>
@@ -1536,7 +1540,9 @@ export const TEXT = {
         unstableChunk: (d: {
             count: number;
             name: string;
-            pct: number;
+            pct: string;
+            own: string;
+            vendor: string;
             size: string;
             inBoot: boolean;
             list: string;
@@ -1545,9 +1551,9 @@ export const TEXT = {
             chip: 'chunk mixing what changes with what does not',
             title:
                 d.count === 1
-                    ? `${d.name} is ${d.pct} % third-party code and is invalidated by every change of yours`
+                    ? `${d.name} is ${d.pct} % third-party code: ${d.own} of yours make its ${d.vendor} download again on every deploy`
                     : `${d.count} chunks mix dependencies with your own code: ${d.size} is re-invalidated on every deploy`,
-            body: `Dependencies do not change for months and your code changes daily. A chunk holding both gets a new hash every time you touch a line, and everything third-party inside it is downloaded again for nothing.${
+            body: `Dependencies do not change for months and your code changes daily. A chunk holding both gets a new hash every time you touch a line, and everything third-party inside it is downloaded again for nothing. What moves the hash is your part, however small: in ${mono(d.name)} it is ${d.own}.${
                 d.inBoot ? ' And it is in the bootstrap, so every returning visit pays for it.' : ''
             } ${d.list}.`,
             fix: `Split them: ${webpackSplit(d.tool, 'en')}in Rollup and Vite with a ${mono('manualChunks')} rule sending everything from ${mono('node_modules')} to its own chunk. Angular's application builder has no such rule and no option for one: it splits by what imports what, so a service of yours imported by every screen lands in the same chunk as the framework — the case to look for is exactly that, a file of yours that everything imports, and what moves it out is importing it from fewer places. Watch the opposite extreme: one enormous vendor chunk is invalidated whole when a single library is updated, so what is wanted is a split by how often things change, not by where they came from.`,

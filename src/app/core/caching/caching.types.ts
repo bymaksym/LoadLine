@@ -35,6 +35,11 @@ export interface UnstableChunk {
      * report is compressed, because what is inside a chunk is only ever measured raw.
      */
     vendorBytes: number;
+    /**
+     * Bytes of the project's own code inside it, raw as they are in the chunk. The part that moves
+     * the hash: 189 bytes of it make 87 kB of dependencies download again on every deploy.
+     */
+    ownBytes: number;
     /** Whether `vendorBytes` is that estimate: a compressed report. In a raw one it is exact. */
     estimated: boolean;
     /** Whether it is part of the bootstrap, which is when everybody pays for the invalidation. */

@@ -317,6 +317,14 @@ describe('unstableChunks · what mixes the daily with the monthly', () => {
         expect(Math.round((worst?.vendorRatio ?? 0) * 100)).toBe(80);
     });
 
+    /** espaciot-app: 87 kB of dependencies and 189 bytes of its own, read as "100 %". */
+    it('keeps the own bytes, which are what makes the chunk download again', () => {
+        const [worst] = unstableChunks([chunk('chunk-AB12.js', 89_000, 189, true)], 0.25);
+
+        expect(worst?.ownBytes).toBe(189);
+        expect(worst?.vendorRatio).toBeLessThan(1);
+    });
+
     it('leaves a pure vendor chunk alone: that is the right answer, not the problem', () => {
         // Its hash does not move when the project changes, which is the entire point of splitting.
         expect(unstableChunks([chunk('vendor-B2.js', 900 * KB, 0)], 0.25)).toEqual([]);
