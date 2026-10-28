@@ -1138,6 +1138,13 @@ every project. A reclassified entry is remembered with the session.
 | `package.json`                             | `scripts` (to follow the pipeline's commands), `zone.js` and `@angular/core`                                                                     |
 | `.gitlab-ci.yml` / GitHub workflow         | Commands containing `ng build` or a build script, with the job they live in                                                                      |
 
+A source map is read in either shape the specification allows: a regular map, with `sources` and
+`mappings` at its root, or an **index map** — `sections`, each with an offset and a map of its own —
+which is what Metro writes (an Expo export's map came in 2,290 sections). The sections are joined
+into one map where the JSON is read, so every reader sees the same thing. A section that points at
+another file (`url`) is not fetched, and a map that cannot be read is said to be there in a format
+Loadline does not read, never counted as no map.
+
 The page's "Export analysis" button and the command's `--export` write the same file. That matters
 more than it sounds: a `stats.json` is the only baseline a build can produce on its own, and Vite,
 Rollup, SvelteKit, Nuxt, Astro and Solid do not write one — so before `--export` the only way to get a

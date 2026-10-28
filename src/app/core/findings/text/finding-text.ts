@@ -291,10 +291,16 @@ export const TEXT = {
             } Las cifras de arriba —el arranque, cada pantalla, las idas y vueltas— salen del fichero y son exactas. Las que se miden <strong>dentro</strong> de un chunk —el reparto por paquete, la columna exclusiva, lo que ahorraría un ${mono('--what-if')}— salen de esta suma, así que van un ${d.off} % ${d.high ? 'altas' : 'bajas'}.`,
             fix: `Compila con source maps —${mapsOn(d.tool, 'es')}— y suelta la carpeta: cuando hay ${mono('.map')} el reparto se mide sobre el fichero generado y esta diferencia desaparece. No hace falta desplegarlos. Mientras tanto, léelas como una cota superior: el orden de la lista es correcto —todas están infladas igual— y la cifra absoluta no lo es.`,
         }),
-        sourceMaps: (d: { count: number; tool?: BuildTool }) => ({
+        sourceMaps: (d: { count: number; tool?: BuildTool; unread?: number }) => ({
             chip: 'source maps en la carpeta',
-            title: `La carpeta de build trae ${d.count === 1 ? '1 source map' : `${d.count} source maps`}`,
-            body: 'Un source map reconstruye tu fuente a partir de lo compilado. No pesa en la descarga —el navegador solo lo pide si abres las herramientas—, pero si esta carpeta es la que subes, cualquiera que conozca la URL tiene tu código.',
+            title: `La carpeta de build trae ${d.count === 1 ? '1 source map' : `${d.count} source maps`}${
+                d.unread && d.unread === d.count ? ' en un formato que Loadline no lee' : ''
+            }`,
+            body: `Un source map reconstruye tu fuente a partir de lo compilado. No pesa en la descarga —el navegador solo lo pide si abres las herramientas—, pero si esta carpeta es la que subes, cualquiera que conozca la URL tiene tu código.${
+                d.unread
+                    ? ` ${d.unread === d.count ? (d.count === 1 ? 'Este está' : 'Están') : `${d.unread} de ellos están`} en un formato que Loadline no lee —ni JSON con ${mono('sources')} y ${mono('mappings')}, ni un mapa por secciones con cada mapa dentro—, así que lo que hay dentro de esos chunks no sale de ellos: las cifras de dentro son aproximadas.`
+                    : ''
+            }`,
             fix: `Con ${mapsHidden(d.tool, 'es')} se generan sin enlazarlos desde el bundle, que es lo que quieres para subirlos a tu herramienta de errores. Que el bundle deje de enlazarlos no impide que el servidor los siga sirviendo: si los .map acaban en el servidor, siguen ahí para quien conozca la URL.`,
         }),
         clean: (d: { unit: string }) => ({
@@ -1362,10 +1368,16 @@ export const TEXT = {
             } The figures above — the bootstrap, each screen, the round trips — come from the file and are exact. The ones measured <strong>inside</strong> a chunk — the breakdown by package, the exclusive column, what a ${mono('--what-if')} would save — come from this sum, so they read ${d.off} % ${d.high ? 'high' : 'low'}.`,
             fix: `Build with source maps — ${mapsOn(d.tool, 'en')} — and drop the folder: with ${mono('.map')} files the split is measured on the generated file itself and this difference goes away. They do not have to be deployed. Until then, read those figures as an upper bound: the order of the list is right — all of them are inflated by the same ratio — and the absolute number is not.`,
         }),
-        sourceMaps: (d: { count: number; tool?: BuildTool }) => ({
+        sourceMaps: (d: { count: number; tool?: BuildTool; unread?: number }) => ({
             chip: 'source maps in the folder',
-            title: `The build folder carries ${d.count === 1 ? '1 source map' : `${d.count} source maps`}`,
-            body: 'A source map reconstructs your source from the compiled output. It does not weigh on the download — the browser only asks for it if you open the tools — but if this is the folder you deploy, anybody who knows the URL has your code.',
+            title: `The build folder carries ${d.count === 1 ? '1 source map' : `${d.count} source maps`}${
+                d.unread && d.unread === d.count ? ' in a format Loadline does not read' : ''
+            }`,
+            body: `A source map reconstructs your source from the compiled output. It does not weigh on the download — the browser only asks for it if you open the tools — but if this is the folder you deploy, anybody who knows the URL has your code.${
+                d.unread
+                    ? ` ${d.unread === d.count ? (d.count === 1 ? 'This one is' : 'They are') : `${d.unread} of them are`} in a format Loadline does not read — neither JSON with ${mono('sources')} and ${mono('mappings')}, nor an index map with each map inside its section — so what is inside those chunks does not come from them: the figures inside are approximate.`
+                    : ''
+            }`,
             fix: `With ${mapsHidden(d.tool, 'en')} they are generated without being linked from the bundle, which is what you want in order to upload them to your error tool. The bundle no longer linking them does not stop the server from serving them: if the .map files end up on the server, they are still there for whoever knows the URL.`,
         }),
         clean: (d: { unit: string }) => ({

@@ -22,6 +22,7 @@
  */
 
 import { type Metafile, type MetafileImport, type MetafileOutput } from '../analysis/metafile.types';
+import { parseSourceMap } from '../analysis/sourcemap/index-map';
 import {
     bytesBySource,
     isSourceMap,
@@ -477,7 +478,7 @@ const mapOf = async (
     }
 
     try {
-        const parsed: unknown = JSON.parse(await file.text());
+        const parsed = parseSourceMap(await file.text());
         return isSourceMap(parsed) ? parsed : null;
     } catch {
         // A truncated map costs the breakdown of one chunk, not the report.

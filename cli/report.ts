@@ -18,7 +18,7 @@ import { RECOMMENDED } from '../src/app/core/criteria/criteria';
 import { type Criteria, type Mode } from '../src/app/core/criteria/criteria.types';
 import { readDeps } from '../src/app/core/deps/deps';
 import { unitScale } from '../src/app/core/findings/actions';
-import { buildFolderFindings, mapCount } from '../src/app/core/findings/bundle/shipped';
+import { buildFolderFindings, mapCount, unreadMapCount } from '../src/app/core/findings/bundle/shipped';
 import { composeFindings } from '../src/app/core/findings/compose';
 import { type Finding } from '../src/app/core/findings/finding.types';
 import { buildComparisonFindings, buildContextFindings, buildFindings } from '../src/app/core/findings/findings';
@@ -202,6 +202,7 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
                 // too: counted as chunks with a split, a stylesheet's map or one that did not parse
                 // dropped out, and two cards gave 43 and 44 for the same folder.
                 sourceMaps: mapCount(input.maps ?? [], input.splits?.size ?? 0),
+                unreadMaps: unreadMapCount(input.maps ?? [], chunk => !!input.splits?.has(chunk)),
                 derived: !!input.graph,
                 screens: analysis.screens.map(s => s.label),
                 drift: analysis.splitDrift,

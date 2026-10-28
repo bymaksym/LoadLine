@@ -15,6 +15,7 @@ import { type ModuleEntry } from '../../src/app/core/analysis/analysis.types';
 import { checkBoot, isSameBoot } from '../../src/app/core/analysis/invariant';
 import { resolveSplits } from '../../src/app/core/analysis/sourcemap/sourcemap';
 import { readDeps } from '../../src/app/core/deps/deps';
+import { scanBuild } from '../../src/app/core/scan/scan';
 import { readDepsFiles, readDist } from './read-build';
 
 const FOLDER = join(process.cwd(), 'fixtures', 'vite-app', 'dist');
@@ -242,5 +243,38 @@ describe('readDepsFiles on a pnpm 9 lock file', () => {
         expect(chain('idb')).toEqual(['firebase', '@firebase/app']);
         expect(chain('ms')).toEqual(['@microsoft/teams-js', 'debug']);
         expect(report.declared.size).toBe(0);
+    });
+});
+
+/**
+ * Zaporeak's web export, shaped after Metro: one bundle of `__d(…)` modules and an index map with a
+ * section per module, nothing at its root. Read as "this folder carries no source maps" before; the
+ * one `console.log` that is the project's own (`src/core/logger.ts`) could not be told from React's.
+ */
+describe('readDist on a Metro build with a sectioned map', () => {
+    const METRO = join(process.cwd(), 'fixtures', 'metro-sectioned-map', 'dist');
+
+    it('splits the bundle by source file through the sections', async () => {
+        const dist = await readDist(METRO, true);
+        const split = dist.splits?.get('entry-3f9a1c2b7d4e5f60.js');
+
+        expect([...(split?.keys() ?? [])].toSorted((a, b) => a.localeCompare(b))).toEqual([
+            'node_modules/expo-router/entry.js',
+            'node_modules/react/cjs/react.production.min.js',
+            'src/app/index.tsx',
+            'src/core/logger.ts',
+        ]);
+    });
+
+    it('counts only the console.log that is the project’s own', async () => {
+        const dist = await readDist(METRO, true);
+        const leftover = scanBuild({
+            texts: dist.texts ?? new Map(),
+            modules: [],
+            boot: new Set(),
+            maps: dist.maps ?? [],
+        }).leftovers.find(item => item.kind === 'consoleLogs');
+
+        expect(leftover).toMatchObject({ count: 1, attributed: true });
     });
 });

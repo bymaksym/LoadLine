@@ -9,6 +9,7 @@
  */
 
 import { type ModuleEntry } from '../analysis/analysis.types';
+import { parseSourceMap } from '../analysis/sourcemap/index-map';
 import { isSourceMap, projectRootsOf, segmentsOf, sourceAt, sourcePathOf } from '../analysis/sourcemap/sourcemap';
 import { baseName, packageOf } from '../format/format.utils';
 import { isOwnFile } from '../format/ownership';
@@ -146,7 +147,7 @@ const mapReaders = (
         const map = maps.find(entry => entry.name === `${chunk}.map`);
         let reader: Reader | null = null;
         try {
-            const parsed: unknown = map ? JSON.parse(map.text) : null;
+            const parsed = map ? parseSourceMap(map.text) : null;
             if (isSourceMap(parsed)) {
                 const segments = segmentsOf(parsed);
                 // Line starts once, so resolving a position is a binary search rather than a
@@ -407,7 +408,7 @@ export const exposureOf = (maps: readonly { name: string; text: string }[]): Sou
             // Both fields are checked entry by entry rather than asserted whole: the assertion
             // made a map with one non-string in `sources` throw on the first `.includes`, and the
             // catch below then dropped everything that map knew instead of the one bad entry.
-            const parsed = asRecord(JSON.parse(map.text));
+            const parsed = asRecord(parseSourceMap(map.text));
             return {
                 sources: (asArray(parsed?.['sources']) ?? []).map(source => asText(source)),
                 contents: asArray(parsed?.['sourcesContent']) ?? [],
