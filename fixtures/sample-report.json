@@ -307,28 +307,10 @@
       "effort": "refactor"
     },
     {
-      "kind": "dupes",
-      "title": "1 package shipped more than once",
-      "saving": 0,
-      "effort": "config"
-    },
-    {
       "kind": "heavy",
       "title": "3 screens carry far more code of their own than the rest, worst of them reports with 429 kB",
       "saving": 0,
       "effort": "import"
-    },
-    {
-      "kind": "bootWaves",
-      "title": "The first load takes 2 round trips before anything is painted",
-      "saving": 0,
-      "effort": "config"
-    },
-    {
-      "kind": "slowScreens",
-      "title": "dashboard takes 3 round trips to be complete: 450 ms of pure waiting",
-      "saving": 0,
-      "effort": "refactor"
     },
     {
       "kind": "unstableChunk",
@@ -337,10 +319,28 @@
       "effort": "config"
     },
     {
+      "kind": "dupes",
+      "title": "1 package shipped more than once",
+      "saving": 0,
+      "effort": "config"
+    },
+    {
+      "kind": "bootWaves",
+      "title": "The first load takes 2 round trips before anything is painted",
+      "saving": 0,
+      "effort": "config"
+    },
+    {
       "kind": "unhashable",
       "title": "1 file carries no hash in the name",
       "saving": 0,
       "effort": "config"
+    },
+    {
+      "kind": "slowScreens",
+      "title": "dashboard takes 3 round trips to be complete: 450 ms of pure waiting",
+      "saving": 0,
+      "effort": "refactor"
     },
     {
       "kind": "cascadeShape",
