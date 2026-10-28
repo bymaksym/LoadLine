@@ -303,6 +303,51 @@ the first load take two trips. Late or not, it arrives before the first paint.
 
 ---
 
+### 2.10 Where the bytes go
+
+The screens table says what each screen weighs and the bootstrap tab what the first load holds.
+Neither answers the question a heavy screen raises next: _which package_ makes it heavy, and does
+that package cost every screen or only some? That question is about a path (package → chunk →
+screen), and the Flow tab draws those paths (`core/analysis/views/flow/`).
+
+**Three columns.**
+
+- **Left:** each package, plus your own code as one node. Each node is as tall as what it weighs in
+  the build.
+- **Middle:** where those bytes live. The bootstrap comes first; every screen downloads it before
+  anything. Then the shared chunks, ranked by size × screens. Last, every screen's own chunks.
+- **Right:** each screen with its first trip, split into bootstrap + shared + own, the same three
+  figures as the screens table.
+
+A ribbon's width is bytes, and its colour is where those bytes live.
+
+**Two scales, on purpose.** The left and middle columns count each byte once: `chart.js` is 224 kB
+however many screens load it. The right column counts each byte once per screen that downloads it.
+On one scale, the right column of a build with twelve screens would be about ten times taller than
+the left one. So the screens get a scale of their own: their heights compare with each other and
+with nothing else. Each middle node shares its height out among the screens that download it, and
+the bootstrap leaves in as many equal ribbons as there are screens. The page says this under the
+legend.
+
+**A package inside a chunk is its raw share.** It is the treemap's `≈` figure. The bytes the
+metafile gives to no file form one node, the bundler's code. That way every chunk is fully counted
+and the columns add up; the tests check this on every fixture, raw and gzip. A folder read without
+its source maps describes nothing inside its chunks, so those bytes form a node called "not broken
+down". The first version put them under the bundler's name, which put a whole build there.
+
+**Readable at any size.** Past 12 packages, 8 shared chunks or 12 screens, the rest fold into one
+node per column that lists what it holds. The columns are ordered with a barycentre pass (two
+sweeps between the middle and the screens, then the packages), and the folded nodes stay at the
+bottom. A test checks the order crosses no more ribbons than sorting by weight.
+
+**The sentence on top** is worked out, not written. The first case that applies wins:
+
+1. A package that more screens download than import it, through the bootstrap or a shared chunk.
+   "Import" means your own files import it directly, and that is all the sentence claims.
+2. What makes the heaviest screen heavy, beyond the bootstrap.
+3. The heaviest part of the bootstrap, when no screen adds anything to it.
+4. Without source maps, the heaviest screen and its three parts.
+
 ## 3. The signals
 
 A number on its own is not a problem. What turns data into something worth touching is context: how
