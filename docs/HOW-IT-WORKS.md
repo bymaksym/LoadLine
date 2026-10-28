@@ -814,13 +814,25 @@ shared chunk, `metafile: true`, `minify: true` — comes out at **0.9892**, and 
 **0.9975**: the deficit is the per-chunk wrapper, in the direction the overhead predicts. Whatever
 moves the figure sits between esbuild's metafile and the folder Angular writes, on some of its builds.
 
-**Why it is a signal and not a correction.** Scaling the breakdown down by the ratio would make the
-totals reconcile and would be a model: it assumes every file moved by the same proportion, and nothing
-here measures whether it did. There is an exact answer available instead, and the signal's fix is to
-go and get it — build with source maps and drop the folder, and the split is measured on the generated
-file itself. On the same Angular 22 probe, the graph walk over the metafile alone totals 280 153 bytes
-against a 222 555-byte bootstrap (**+26 %**); with the maps alongside it, 221 555 (**−0.45 %**). It
-does not fire on chunks a map covered, because for those there is nothing left to drift.
+**A signal, and since 28/10/2026 a correction too.** This section used to stop at the signal:
+scaling the breakdown down by the ratio would make the totals reconcile and would be a model, assuming
+every file moved by the same proportion. Two things changed that. The cause was found — Angular's
+chunk optimizer bundles the chunks again after esbuild and shares each chunk's length out in
+proportion, before the last minification — which is exactly a same-proportion move. And leaving the
+figures as they were made the report contradict itself on every card but this one: espaciot-app
+without maps read "Bootstrap 117 kB" over "≈117 kB of packages against ≈30 kB of your own" (147),
+and one package was 53 kB in one card and 72 kB in another. Scaled to the file, the same build gives
+93 + 24; built with maps, it measures 93 + 25.
+
+So a chunk whose parts add up to **more** than the file, past the same 5 % and kibibyte, has them
+scaled down to it (`chunkScalesOf`), and every card's figures add up. Never up: parts short of the
+file are the wrapper and the runtime, which belong to nobody's file, and sharing them out would be
+inventing them. This card still fires, saying the metafile was off and by how much, because the
+scaled figures are a proportion and the exact answer is still one flag away — build with source maps
+and drop the folder, and the split is measured on the generated file itself. On the same Angular 22
+probe, the graph walk over the metafile alone totals 280 153 bytes against a 222 555-byte bootstrap
+(**+26 %**); with the maps alongside it, 221 555 (**−0.45 %**). It does not fire on chunks a map
+covered, because for those there is nothing left to drift.
 
 ### 3.24 What `loadline.json` forbids
 

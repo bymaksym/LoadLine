@@ -40,7 +40,7 @@ import {
     routedName,
     wavesThrough,
 } from './screens/route-files';
-import { splitDriftOf } from './sourcemap/split-drift';
+import { chunkScalesOf, splitDriftOf } from './sourcemap/split-drift';
 import { toolOf } from './tool';
 
 interface FileEntry {
@@ -171,6 +171,10 @@ export const analyze = (
     const travelsTogether = (imp: { kind: string; external?: boolean }) =>
         !imp.external && imp.kind !== 'dynamic-import';
 
+    // A chunk whose parts do not add up to it has them scaled to it: see `chunkScalesOf`.
+    const scales = chunkScalesOf(outputs, exact);
+    const scaled = (chunk: string, bytes: number): number => Math.round(bytes * (scales.get(chunk) ?? 1));
+
     /**
      * How many bytes of a file are inside a chunk. The metafile's figure is already the minified
      * one; the source map of that chunk, when the folder brought it, is preferred simply because
@@ -178,7 +182,9 @@ export const analyze = (
      */
     const bytesIn = (chunk: string, input: string): number => {
         const measured = exact?.get(baseName(chunk))?.get(input);
-        return typeof measured === 'number' ? measured : (outputs[chunk]?.inputs?.[input]?.bytesInOutput ?? 0);
+        return typeof measured === 'number'
+            ? measured
+            : scaled(chunk, outputs[chunk]?.inputs?.[input]?.bytesInOutput ?? 0);
     };
 
     /**
@@ -193,7 +199,7 @@ export const analyze = (
         }
 
         const inside = outputs[chunk]?.inputs;
-        return inside ? (inside[input]?.bytesInOutput ?? 0) : null;
+        return inside ? scaled(chunk, inside[input]?.bytesInOutput ?? 0) : null;
     };
 
     /** Files of a chunk with their bytes, skipping the empty ones. */

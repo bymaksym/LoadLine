@@ -591,9 +591,11 @@ module.exports = defineConfig([
         // for the advice. Reading both is in `intake/webpack-stats.ts` and `tool.ts`.
         // Raised to 620 on 28/10/2026 (espaciot-app round): the walk behind `chainTo` remembers
         // which files it reached through an `import()`, so a chain says where it leaves the bootstrap.
+        // Raised to 625 the same day: a chunk whose parts add up to more than it has them scaled to
+        // it (`chunkScalesOf`, in `split-drift.ts`), so every card's figures add up to the file.
         files: ['src/app/core/analysis/analysis.ts'],
         rules: {
-            'max-lines': ['error', { max: 620, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 625, skipBlankLines: true, skipComments: true }],
         },
     },
     {

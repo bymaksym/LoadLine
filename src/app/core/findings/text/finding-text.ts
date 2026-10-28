@@ -288,8 +288,12 @@ export const TEXT = {
                 d.angular
                     ? '<strong>La causa es el optimizador de chunks de Angular</strong>: después de esbuild vuelve a empaquetar los chunks con Rolldown y reescribe el peso de cada fichero como la longitud de ese paso repartida en proporción, antes de la minificación final. Por eso las partes suman más que el fichero, y en la misma proporción en todos. No son las hojas de estilos de los componentes: esas van dentro del JavaScript y ya están en el peso del fichero.'
                     : '<strong>Por qué difieren no se sabe desde aquí</strong> —algo cambió la salida después de escribirlo— y no hace falta saberlo para leer la consecuencia.'
-            } Las cifras de arriba —el arranque, cada pantalla, las idas y vueltas— salen del fichero y son exactas. Las que se miden <strong>dentro</strong> de un chunk —el reparto por paquete, la columna exclusiva, lo que ahorraría un ${mono('--what-if')}— salen de esta suma, así que van un ${d.off} % ${d.high ? 'altas' : 'bajas'}.`,
-            fix: `Compila con source maps —${mapsOn(d.tool, 'es')}— y suelta la carpeta: cuando hay ${mono('.map')} el reparto se mide sobre el fichero generado y esta diferencia desaparece. No hace falta desplegarlos. Mientras tanto, léelas como una cota superior: el orden de la lista es correcto —todas están infladas igual— y la cifra absoluta no lo es.`,
+            } Las cifras de arriba —el arranque, cada pantalla, las idas y vueltas— salen del fichero y son exactas. Las que se miden <strong>dentro</strong> de un chunk —el reparto por paquete, la columna exclusiva, lo que ahorraría un ${mono('--what-if')}— salen de esta suma, que va un ${d.off} % ${d.high ? 'alta' : 'baja'}. ${
+                d.high
+                    ? '<strong>En este informe están escaladas al peso de cada chunk</strong>: cada fichero conserva su parte y las partes vuelven a sumar el fichero, así que cuadran con las cifras de arriba en todas las fichas. Son un reparto proporcional, no una medida: aproximadas en lo que el reparto se desvíe.'
+                    : 'Por debajo no se escalan: lo que falta suele ser código que no es de ningún fichero —el runtime del bundler, un envoltorio— y repartirlo sería inventárselo.'
+            }`,
+            fix: `Compila con source maps —${mapsOn(d.tool, 'es')}— y suelta la carpeta: cuando hay ${mono('.map')} el reparto se mide sobre el fichero generado y esta diferencia desaparece. No hace falta desplegarlos. Mientras tanto, el orden de la lista es correcto${d.high ? ' y las cifras escaladas, una buena aproximación' : ''}.`,
         }),
         sourceMaps: (d: { count: number; tool?: BuildTool; unread?: number }) => ({
             chip: 'source maps en la carpeta',
@@ -1365,8 +1369,12 @@ export const TEXT = {
                 d.angular
                     ? "<strong>The cause is Angular's chunk optimizer</strong>: after esbuild it bundles the chunks again with Rolldown and rewrites each file's weight as that pass's length shared out in proportion, before the final minification. That is why the parts add up to more than the file, and by the same factor in every chunk. It is not the component stylesheets: those are inside the JavaScript and already in the file's weight."
                     : '<strong>Why they differ cannot be told from here</strong> — something changed the output after it was written — and it does not have to be known to read the consequence.'
-            } The figures above — the bootstrap, each screen, the round trips — come from the file and are exact. The ones measured <strong>inside</strong> a chunk — the breakdown by package, the exclusive column, what a ${mono('--what-if')} would save — come from this sum, so they read ${d.off} % ${d.high ? 'high' : 'low'}.`,
-            fix: `Build with source maps — ${mapsOn(d.tool, 'en')} — and drop the folder: with ${mono('.map')} files the split is measured on the generated file itself and this difference goes away. They do not have to be deployed. Until then, read those figures as an upper bound: the order of the list is right — all of them are inflated by the same ratio — and the absolute number is not.`,
+            } The figures above — the bootstrap, each screen, the round trips — come from the file and are exact. The ones measured <strong>inside</strong> a chunk — the breakdown by package, the exclusive column, what a ${mono('--what-if')} would save — come from this sum, which is ${d.off} % ${d.high ? 'high' : 'low'}. ${
+                d.high
+                    ? "<strong>In this report they are scaled to each chunk's weight</strong>: each file keeps its share and the shares add up to the file again, so they agree with the figures above on every card. They are a proportion, not a measurement: approximate by as much as the share is off."
+                    : "Short is not scaled: what is missing is usually code that is nobody's file — the bundler's runtime, a wrapper — and sharing it out would be making it up."
+            }`,
+            fix: `Build with source maps — ${mapsOn(d.tool, 'en')} — and drop the folder: with ${mono('.map')} files the split is measured on the generated file itself and this difference goes away. They do not have to be deployed. Until then, the order of the list is right${d.high ? ' and the scaled figures are a good approximation' : ''}.`,
         }),
         sourceMaps: (d: { count: number; tool?: BuildTool; unread?: number }) => ({
             chip: 'source maps in the folder',
