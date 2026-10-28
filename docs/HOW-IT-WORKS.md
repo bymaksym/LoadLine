@@ -1146,6 +1146,14 @@ baseline for any of them was to open a browser and press a button, which a pipel
 The pipeline file is read without a YAML parser, line by line, which is why every command found is
 shown in the Project tab with what it resolves to: if the heuristic gets it wrong, it shows.
 
+**The name at the top of the report** comes from one order, whatever else was passed: the page's
+`<title>` in `index.html`, then the `name` of a `package.json` (the one `--project` names, or the
+nearest one above the build), then the Angular project, then the build folder's own name. The title
+is first because it is in the build: a package name is only known with `--project` or when the
+build sits inside its repository, and the same build copied to a temporary folder was called by its
+title without the flag and by its package with it. A title left as a generator wrote it (`Vite +
+React + TS`, `React App`) names a template, and is skipped.
+
 ### How `loadline.json` is allowed to grow
 
 The file is `version: 1`, and the rule is that **every addition is an optional block and the version
