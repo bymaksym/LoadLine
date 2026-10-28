@@ -122,6 +122,12 @@ export interface Finding {
      * which is what `totalSaving` does.
      */
     sources?: string[];
+    /**
+     * The card's own advice is that nothing can be done from this project: every duplicated copy is
+     * pinned a major apart by its parent, and the fix is to wait for that parent. Kept so "what to
+     * fix first" can put it after what can be fixed, rather than first because it is cheap.
+     */
+    unfixable?: boolean;
 }
 
 /** What a `bootLazy` signal says about a package: where it enters the bootstrap and where its screen is loaded from. */
@@ -187,13 +193,21 @@ export interface DupesData {
     viaDependency: boolean;
     inBoot: boolean;
     /**
-     * Parents pinning a copy to an exact version a major away from the other copy, as HTML. Forcing
-     * one resolution there is a breaking change inside that parent, so the override is no advice.
-     * `null` when nothing is pinned that way, or nobody gave the ranges.
+     * What to do, package by package, as three groups that each name their packages (HTML). The fix
+     * used to be one sentence for the whole card: with `idb` pinned a major apart, it said "this
+     * cannot be deduplicated" and nothing about `tslib`, which could.
+     *
+     * `apart`: copies a parent pins to an exact version a major away from the other copy. Forcing one
+     * resolution there is a breaking change inside that parent, so the override is no advice.
      */
-    pinnedApart?: string | null;
-    /** Parents pinning a copy exactly, on the same major: an override may work, and needs testing. */
-    pinnedSame?: string | null;
+    apart: { packages: string; parents: string } | null;
+    /**
+     * A copy a dependency brings: forced with an override. `pinnedSame` names the parents pinning a
+     * copy exactly on the same major, where the override may work and needs testing.
+     */
+    override: { packages: string; pinnedSame: string | null } | null;
+    /** Both copies through dependencies the project asks for: aligned in `package.json`. */
+    align: string | null;
 }
 
 /** One CommonJS package, with where it lands and who brings it. */

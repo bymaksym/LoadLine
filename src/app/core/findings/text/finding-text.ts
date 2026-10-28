@@ -128,15 +128,23 @@ export const TEXT = {
                     ? ' Una de las copias está en el bootstrap, así que ese peso de más lo descarga todo el mundo.'
                     : ''
             } ${d.list}`,
-            fix: d.pinnedApart
-                ? `<strong>No se puede deduplicar desde tu proyecto</strong>: ${d.pinnedApart} fija su copia a una versión exacta, y la otra va por otra versión mayor. Forzar una sola con ${mono('overrides')} o ${mono('resolutions')} es meter un cambio de versión mayor dentro de ${d.pinnedApart}, que no se ha publicado contra esa versión. Lo razonable es aceptar la señal y esperar a que ${d.pinnedApart} se actualice${d.pinnedSame ? `; lo de ${d.pinnedSame} va en la misma versión mayor y ahí un override sí puede valer, probándolo` : ''}.`
-                : d.viaDependency
-                  ? `Al menos una de las copias no la pides tú: la importa otra dependencia, así que alinear tu ${mono('package.json')} no basta. Fuerza la resolución con ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) o ${mono('resolutions')} (yarn), y comprueba que la versión que dejas vale para las dos${
-                        d.pinnedSame
-                            ? `: ${d.pinnedSame} fija su copia a una versión exacta, así que el override cambia una dependencia que esa librería no ha probado`
-                            : ` —pasa ${mono('--lock')} y el informe dirá si alguna está fijada a versión exacta—`
-                    }.`
-                  : `Las dos copias entran por dependencias que pides tú directamente: alinea las versiones en ${mono('package.json')} y vuelve a medir.`,
+            fix: [
+                d.apart
+                    ? `<strong>${d.apart.packages}: no se puede deduplicar desde tu proyecto</strong>. ${d.apart.parents} fija su copia a una versión exacta, y la otra va por otra versión mayor. Forzar una sola con ${mono('overrides')} o ${mono('resolutions')} es meter un cambio de versión mayor dentro de ${d.apart.parents}, que no se ha publicado contra esa versión. Lo razonable es aceptar la señal y esperar a que ${d.apart.parents} se actualice.`
+                    : '',
+                d.override
+                    ? `${d.override.packages}: al menos una de las copias no la pides tú; la importa otra dependencia, así que alinear tu ${mono('package.json')} no basta. Fuerza la resolución con ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) o ${mono('resolutions')} (yarn), y comprueba que la versión que dejas vale para las dos${
+                          d.override.pinnedSame
+                              ? `: ${d.override.pinnedSame} fija su copia a una versión exacta de la misma versión mayor, así que el override cambia una dependencia que esa librería no ha probado`
+                              : ` —pasa ${mono('--lock')} y el informe dirá si alguna está fijada a versión exacta—`
+                      }.`
+                    : '',
+                d.align
+                    ? `${d.align}: las dos copias entran por dependencias que pides tú directamente; alinea las versiones en ${mono('package.json')} y vuelve a medir.`
+                    : '',
+            ]
+                .filter(sentence => sentence !== '')
+                .join(' '),
         }),
         heavy: (d: { count: number; label: string; own: string; median: string; list: string }) => ({
             chip: d.count === 1 ? 'pantalla cara' : 'pantallas caras',
@@ -1184,15 +1192,23 @@ export const TEXT = {
             body: `You pay the weight twice because two dependencies ask for incompatible ranges.${
                 d.inBoot ? ' One of the copies is in the bootstrap, so everybody downloads that extra weight.' : ''
             } ${d.list}`,
-            fix: d.pinnedApart
-                ? `<strong>This cannot be deduplicated from your project</strong>: ${d.pinnedApart} pins its copy to an exact version, and the other copy is on another major. Forcing a single one with ${mono('overrides')} or ${mono('resolutions')} puts a major version change inside ${d.pinnedApart}, which was never released against it. The sensible move is to accept the signal and wait for ${d.pinnedApart} to update${d.pinnedSame ? `; the one under ${d.pinnedSame} is on the same major, and an override may work there, once tested` : ''}.`
-                : d.viaDependency
-                  ? `At least one copy is not one you asked for: another dependency imports it, so aligning your ${mono('package.json')} is not enough. Force the resolution with ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) or ${mono('resolutions')} (yarn), and check that the version you keep works for both${
-                        d.pinnedSame
-                            ? `: ${d.pinnedSame} pins its copy to an exact version, so the override changes a dependency that library has not been tested with`
-                            : ` — pass ${mono('--lock')} and the report will say whether any of them is pinned to an exact version`
-                    }.`
-                  : `Both copies come in through dependencies you ask for directly: align the versions in ${mono('package.json')} and measure again.`,
+            fix: [
+                d.apart
+                    ? `<strong>${d.apart.packages}: this cannot be deduplicated from your project</strong>. ${d.apart.parents} pins its copy to an exact version, and the other copy is on another major. Forcing a single one with ${mono('overrides')} or ${mono('resolutions')} puts a major version change inside ${d.apart.parents}, which was never released against it. The sensible move is to accept the signal and wait for ${d.apart.parents} to update.`
+                    : '',
+                d.override
+                    ? `${d.override.packages}: at least one copy is not one you asked for; another dependency imports it, so aligning your ${mono('package.json')} is not enough. Force the resolution with ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) or ${mono('resolutions')} (yarn), and check that the version you keep works for both${
+                          d.override.pinnedSame
+                              ? `: ${d.override.pinnedSame} pins its copy to an exact version on the same major, so the override changes a dependency that library has not been tested with`
+                              : ` — pass ${mono('--lock')} and the report will say whether any of them is pinned to an exact version`
+                      }.`
+                    : '',
+                d.align
+                    ? `${d.align}: both copies come in through dependencies you ask for directly; align the versions in ${mono('package.json')} and measure again.`
+                    : '',
+            ]
+                .filter(sentence => sentence !== '')
+                .join(' '),
         }),
         heavy: (d: { count: number; label: string; own: string; median: string; list: string }) => ({
             chip: d.count === 1 ? 'expensive screen' : 'expensive screens',

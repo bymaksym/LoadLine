@@ -210,7 +210,7 @@
       "chip": "duplicate copies",
       "title": "1 package shipped more than once",
       "body": "You pay the weight twice because two dependencies ask for incompatible ranges. One of the copies is in the bootstrap, so everybody downloads that extra weight. date-fns — version 3.6.0 · 28 kB · in the bootstrap. Comes in through src/main.ts › src/app/app.ts › src/app/core/http/api.service.ts › date-fns; your own code imports it in src/app/core/http/api.service.ts, src/app/features/orders/orders.page.ts. copy nested inside ag-grid-community · 23 kB · in a shared chunk. Comes in through src/main.ts › src/app/app.config.ts › src/app/app.routes.ts › src/app/features/orders/orders.page.ts › src/app/shared/grid/grid.ts › ag-grid-community › date-fns; ag-grid-community imports it.",
-      "fix": "At least one copy is not one you asked for: another dependency imports it, so aligning your package.json is not enough. Force the resolution with pnpm.overrides, overrides (npm) or resolutions (yarn), and check that the version you keep works for both — pass --lock and the report will say whether any of them is pinned to an exact version."
+      "fix": "date-fns: at least one copy is not one you asked for; another dependency imports it, so aligning your package.json is not enough. Force the resolution with pnpm.overrides, overrides (npm) or resolutions (yarn), and check that the version you keep works for both — pass --lock and the report will say whether any of them is pinned to an exact version."
     },
     {
       "kind": "heavy",
