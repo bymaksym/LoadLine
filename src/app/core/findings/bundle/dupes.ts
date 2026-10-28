@@ -10,11 +10,10 @@
 
 import { type Analysis } from '../../analysis/analysis.types';
 import { type Declared, pinsOf } from '../../deps/pins';
-import { chainSteps } from '../../format/format.utils';
 import { type Lang } from '../../i18n/ui-strings';
 import { formatSaving, unitScale } from '../actions';
 import { type Finding } from '../finding.types';
-import { chainHtml, mono } from '../text/finding-html';
+import { chainHtmlOf, mono } from '../text/finding-html';
 import { TEXT } from '../text/finding-text';
 
 export const buildDupesFindings = (analysis: Analysis, lang: Lang, declared: Declared | null): Finding[] => {
@@ -56,7 +55,7 @@ export const buildDupesFindings = (analysis: Analysis, lang: Lang, declared: Dec
                         under: copy.under,
                         size: formatSaving(copy.bytes, scale),
                         zone: text.dupeZone[copy.zone],
-                        chain: copy.chain ? chainHtml(chainSteps(copy.chain)) : null,
+                        chain: copy.chain ? chainHtmlOf(copy.chain, analysis.lazyStep) : null,
                         own: copy.importers.length > 0 ? copy.importers.map(file => mono(file)).join(', ') : null,
                         via: copy.viaPackages.length > 0 ? copy.viaPackages.map(pkg => mono(pkg)).join(', ') : null,
                         pinned: pin ? { parent: mono(pin.parent), range: mono(pin.range) } : null,

@@ -535,22 +535,30 @@ export const analyze = (
      * question asked of a file that is only inside one screen.
      */
     const cameFrom = new Map<string, string | null>();
+    // The files that walk reached through an `import()` rather than a static import. A chain that
+    // crosses one is not "in the bootstrap" past that step: `teams.service.ts` loading
+    // `@microsoft/teams-js` with `await import` read as `main.ts › … › teams.service.ts ›
+    // @microsoft/teams-js`, exactly like a package everybody downloads first.
+    const reachedLazily = new Set<string>();
     if (mainSource && inputs[mainSource]) {
         cameFrom.set(mainSource, null);
         const pending = [mainSource];
-        const visit = (from: string, path: string): void => {
+        const visit = (from: string, path: string, lazy: boolean): void => {
             if (cameFrom.has(path)) {
                 return;
             }
 
             cameFrom.set(path, from);
+            if (lazy) {
+                reachedLazily.add(path);
+            }
             pending.push(path);
         };
 
         for (const file of pending) {
             const imports = (inputs[file]?.imports ?? []).filter(imp => !imp.external);
             for (const imp of imports) {
-                visit(file, imp.path);
+                visit(file, imp.path, !travelsTogether(imp));
             }
         }
     }
@@ -853,6 +861,7 @@ export const analyze = (
         ownFilesInBoot,
         modules,
         chainTo,
+        lazyStep: path => reachedLazily.has(path),
         // From the maps only when a map covers something the application reaches. Polymer ships maps
         // for its polyfill bundles alone, and the report opened with "weight per file read from the
         // source maps" right above "no source maps in this folder".

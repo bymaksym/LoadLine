@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { chainHtmlOf, mono } from '../findings/text/finding-html';
 import { analyze } from './analysis';
 import { type Metafile } from './metafile.types';
 
@@ -244,6 +245,25 @@ describe('analyze', () => {
             'node_modules/pdf/index.js',
         ]);
         expect(result.chainTo('node_modules/nothing/index.js')).toBeNull();
+    });
+
+    /**
+     * espaciot-app: `teams.service.ts` loads `@microsoft/teams-js` with `await import`, and the
+     * chain read as if the package were in the bootstrap. The step an `import()` enters is marked.
+     */
+    it('says which step of the chain an import() reaches, and marks it in the text', () => {
+        const result = analyze(meta, null);
+        const chain = result.chainTo('node_modules/pdf/index.js') ?? [];
+
+        expect(chain.filter(step => result.lazyStep?.(step))).toEqual(['src/app/a.page.ts']);
+        expect(chainHtmlOf(chain, result.lazyStep)).toBe(
+            [
+                mono('src/main.ts'),
+                mono('src/app/app.routes.ts'),
+                `${mono('import()')} › ${mono('src/app/a.page.ts')}`,
+                mono('pdf'),
+            ].join(' › '),
+        );
     });
 
     it('says where the weight of each file was measured', () => {

@@ -589,9 +589,11 @@ module.exports = defineConfig([
         // Raised to 615 on 09/10/2026 (webpack stats, the tool): what webpack says travels together
         // stands in for a folder's preload lists, and the tool that wrote the build is handed on
         // for the advice. Reading both is in `intake/webpack-stats.ts` and `tool.ts`.
+        // Raised to 620 on 28/10/2026 (espaciot-app round): the walk behind `chainTo` remembers
+        // which files it reached through an `import()`, so a chain says where it leaves the bootstrap.
         files: ['src/app/core/analysis/analysis.ts'],
         rules: {
-            'max-lines': ['error', { max: 615, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 620, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -705,9 +707,10 @@ module.exports = defineConfig([
         // Raised to 590 on 08/10/2026 for two more out of an Angular 22 build installed with pnpm:
         // a directory name carrying its peer suffix or cut short, and Angular's own source maps
         // pointing outside the installed package.
+        // Raised to 605 on 28/10/2026 for the chain that crosses an `import()`, marked where it does.
         files: ['src/app/core/analysis/analysis.spec.ts'],
         rules: {
-            'max-lines': ['error', { max: 590, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 605, skipBlankLines: true, skipComments: true }],
         },
     },
     {
