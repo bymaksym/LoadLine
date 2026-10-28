@@ -9,7 +9,7 @@ import { type Zone } from '../../analysis.types';
 export interface FlowSource {
     /** The package name, or one of the reserved ids in `FLOW_IDS`. */
     id: string;
-    kind: 'package' | 'own' | 'unattributed' | 'rest';
+    kind: 'package' | 'own' | 'unattributed' | 'unknown' | 'rest';
     /** The package name. Empty for the reserved kinds, which the page names in its language. */
     label: string;
     /** What it weighs in the build, in the report's unit, counted once whoever downloads it. */
@@ -99,7 +99,7 @@ export type FlowTakeaway =
           bytes: number;
           where: 'boot' | 'shared';
           /** The labels of the screens whose files import it. */
-          needers: string[];
+          importers: string[];
           /** How many screens download it. */
           downloads: number;
       }
@@ -114,7 +114,9 @@ export type FlowTakeaway =
           where: 'shared' | 'own';
           downloads: number;
       }
-    | { kind: 'boot'; source: string; own: boolean; bytes: number; boot: number; screens: number };
+    | { kind: 'boot'; source: string; own: boolean; bytes: number; boot: number; screens: number }
+    /** Nothing inside the chunks is named (no source maps): the heaviest screen and its three parts. */
+    | { kind: 'screen'; screen: string; total: number; boot: number; shared: number; own: number };
 
 export interface FlowModel {
     /** Each column top to bottom, already in the order that crosses the fewest ribbons. */

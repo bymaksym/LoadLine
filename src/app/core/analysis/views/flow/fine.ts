@@ -18,6 +18,8 @@ import { type Analysis, type TreeNode, type Zone } from '../../analysis.types';
 export const FLOW_IDS = {
     own: '#own',
     unattributed: '#unattributed',
+    /** A chunk the build does not break down: a folder read without its source maps. */
+    unknown: '#unknown',
     morePackages: '#more-packages',
     boot: '#boot',
     moreShared: '#more-shared',
@@ -35,7 +37,7 @@ export interface ChunkFlow {
     zone: Zone;
     bytes: number;
     screens: number;
-    /** Source key (a package name, `FLOW_IDS.own` or `FLOW_IDS.unattributed`) → bytes in the report's unit. */
+    /** Source key (a package name or one of `FLOW_IDS`) → bytes in the report's unit. */
     parts: Map<string, number>;
     /** Screen sources downloading it. Every screen for the bootstrap. */
     downloadedBy: readonly string[];
@@ -60,9 +62,15 @@ export const add = <K>(map: Map<K, number>, key: K, bytes: number): void => {
  *
  * When the parts add up to more than the file, which Angular's chunk optimizer does (§3.23), each
  * one's share is still its share of the sum: the chunk is never made to weigh more than it does.
+ *
+ * A chunk with no parts at all is not bundler code: it is one nobody described, which is what a
+ * folder read without its source maps gives. Calling it the bundler's put a whole build there.
  */
 const partsOf = (chunk: TreeNode): Map<string, number> => {
     const parts = new Map<string, number>();
+    if (chunk.children.length === 0) {
+        return chunk.bytes > 0 ? new Map([[FLOW_IDS.unknown, chunk.bytes]]) : parts;
+    }
     const raw = chunk.rawBytes ?? chunk.bytes;
     const named = chunk.children.reduce((sum, child) => sum + child.bytes, 0);
     const scale = named > 0 ? chunk.bytes / Math.max(raw, named) : 0;

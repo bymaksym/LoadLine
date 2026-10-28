@@ -250,7 +250,7 @@ describe('the takeaway', () => {
             own: false,
             bytes: 200_000,
             where: 'boot',
-            needers: ['reports'],
+            importers: ['reports'],
             downloads: 3,
         });
     });
@@ -269,6 +269,22 @@ describe('the takeaway', () => {
         };
 
         expect(flowOf(analyze(meta, null)).takeaway?.kind).not.toBe('misplaced');
+    });
+
+    /**
+     * A folder read without its source maps names nothing inside its chunks. The first version of
+     * this called all of it "bundler code", which put the whole build under the bundler's name.
+     */
+    it('calls a chunk nobody describes "not broken down", and says what the heaviest screen is made of', () => {
+        const meta = vendorChunk();
+        for (const output of Object.values(meta.outputs)) {
+            output.inputs = {};
+        }
+        const model = flowOf(analyze(meta, null));
+
+        expect(model.sources.map(node => node.kind)).toEqual(['unknown']);
+        expect(model.takeaway).toMatchObject({ kind: 'screen' });
+        expect(() => expectBalanced(model)).not.toThrow();
     });
 
     it('falls back to the heaviest part of the bootstrap when no screen adds anything', () => {

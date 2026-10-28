@@ -83,6 +83,7 @@ const sourcesOf = (
     }
     idOf.set(FLOW_IDS.own, FLOW_IDS.own);
     idOf.set(FLOW_IDS.unattributed, FLOW_IDS.unattributed);
+    idOf.set(FLOW_IDS.unknown, FLOW_IDS.unknown);
 
     const node = (id: string, kind: FlowSource['kind'], keys: readonly string[]): FlowSource => {
         const reach = reachOf(fine, keys);
@@ -103,6 +104,7 @@ const sourcesOf = (
         ...shown.map(key => node(key, 'package', [key])),
         node(FLOW_IDS.own, 'own', [FLOW_IDS.own]),
         node(FLOW_IDS.unattributed, 'unattributed', [FLOW_IDS.unattributed]),
+        node(FLOW_IDS.unknown, 'unknown', [FLOW_IDS.unknown]),
         ...(folded.length > 0 ? [node(FLOW_IDS.morePackages, 'rest', folded)] : []),
     ].filter(source => source.bytes > 0);
     return { sources, idOf };

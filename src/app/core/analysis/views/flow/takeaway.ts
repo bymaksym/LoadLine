@@ -4,7 +4,8 @@
  *
  * In order of how much it changes a plan: a package carried to screens whose code does not import
  * it, then what makes the heaviest screen heavy, then — when every screen is the same bootstrap and
- * little else — the heaviest part of that.
+ * little else — the heaviest part of that. A build whose chunks name nothing inside them (a folder
+ * without source maps) still gets the heaviest screen and its three parts.
  */
 
 import { type Analysis, type ModulePlace } from '../../analysis.types';
@@ -65,13 +66,13 @@ const misplacedOf = (analysis: Analysis, fine: Fine, build: number): Misplaced |
         if (RESERVED.has(key) || bytes < build * TAKEAWAY_MIN_SHARE) {
             continue;
         }
-        const needers = importersOf(analysis, key, placesOf);
-        if (needers === null || needers === 'all') {
+        const importers = importersOf(analysis, key, placesOf);
+        if (importers === null || importers === 'all') {
             continue;
         }
         const downloads = reachCount(fine.reach.get(key), n);
-        const waste = bytes * (downloads - needers.size);
-        if (downloads <= needers.size || waste <= worst) {
+        const waste = bytes * (downloads - importers.size);
+        if (downloads <= importers.size || waste <= worst) {
             continue;
         }
         worst = waste;
@@ -81,7 +82,9 @@ const misplacedOf = (analysis: Analysis, fine: Fine, build: number): Misplaced |
             own: false,
             bytes,
             where: (fine.bootBytes.get(key) ?? 0) > 0 ? 'boot' : 'shared',
-            needers: [...needers].map(source => labelOf.get(source) ?? source).toSorted((a, b) => a.localeCompare(b)),
+            importers: [...importers]
+                .map(source => labelOf.get(source) ?? source)
+                .toSorted((a, b) => a.localeCompare(b)),
             downloads,
         };
     }
@@ -109,7 +112,7 @@ const driverOf = (analysis: Analysis, fine: Fine): Extract<FlowTakeaway, { kind:
     }
 
     const [top] = [...added]
-        .filter(([key]) => key !== FLOW_IDS.unattributed)
+        .filter(([key]) => key !== FLOW_IDS.unattributed && key !== FLOW_IDS.unknown)
         .toSorted((a, b) => b[1].shared + b[1].own - (a[1].shared + a[1].own));
     if (!top) {
         return null;
@@ -128,6 +131,21 @@ const driverOf = (analysis: Analysis, fine: Fine): Extract<FlowTakeaway, { kind:
     };
 };
 
+/** When nothing inside the chunks is named, all there is to say is what the heaviest screen is made of. */
+const screenOf = (analysis: Analysis): FlowTakeaway | null => {
+    const heaviest = analysis.screens[0];
+    return heaviest
+        ? {
+              kind: 'screen',
+              screen: heaviest.label,
+              total: heaviest.total,
+              boot: heaviest.boot,
+              shared: heaviest.shared,
+              own: heaviest.own,
+          }
+        : null;
+};
+
 export const takeawayOf = (analysis: Analysis, fine: Fine): FlowTakeaway | null => {
     let build = 0;
     for (const bytes of fine.bytes.values()) {
@@ -142,7 +160,9 @@ export const takeawayOf = (analysis: Analysis, fine: Fine): FlowTakeaway | null 
         return lead;
     }
 
-    const [boot] = [...fine.bootBytes].filter(([key]) => key !== FLOW_IDS.unattributed).toSorted((a, b) => b[1] - a[1]);
+    const [boot] = [...fine.bootBytes]
+        .filter(([key]) => key !== FLOW_IDS.unattributed && key !== FLOW_IDS.unknown)
+        .toSorted((a, b) => b[1] - a[1]);
     return boot
         ? {
               kind: 'boot',
@@ -152,5 +172,5 @@ export const takeawayOf = (analysis: Analysis, fine: Fine): FlowTakeaway | null 
               boot: analysis.bootBytes,
               screens: analysis.screens.length,
           }
-        : null;
+        : screenOf(analysis);
 };
