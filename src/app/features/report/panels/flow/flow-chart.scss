@@ -123,10 +123,7 @@
         }
     }
 
-    /*
-       Labels sit over the ribbons in the middle column; a halo in the colour of the surface keeps
-       them readable on any ribbon without a box behind each one.
-    */
+    /* Labels sit over the ribbons in the middle column, each on its plate. */
     &__name,
     &__figure {
         font-family: var(--font-data);
@@ -142,18 +139,32 @@
         fill: var(--muted);
     }
 
-    /* The copy of a label drawn first: as thick as a halo and the colour of the surface. */
-    &__halo &__name,
-    &__halo &__figure {
+    /* Over everything else and never in the pointer's way: the node's hit boxes are under it. */
+    &__labels {
+        pointer-events: none;
+    }
+
+    /* Behind a label: the surface itself, so a ribbon stops at its edge instead of crossing its letters. */
+    &__plate {
         fill: var(--surface);
-        stroke: var(--surface);
-        stroke-linejoin: round;
-        stroke-width: 4;
+    }
+
+    /*
+       The ink of a node out of the path looked at recedes, on a plate that does not: faint, and
+       still readable.
+    */
+    &__label {
+        transition: opacity 0.15s ease;
+
+        &--dim {
+            opacity: 0.45;
+        }
     }
 
     @media (prefers-reduced-motion: reduce) {
         &__ribbon,
-        &__node {
+        &__node,
+        &__label {
             transition: none;
         }
     }

@@ -38,6 +38,10 @@ const CHAR = 7.3;
 const LABEL_PAD = 16;
 /** A label further than this from its bar's middle gets a line to it. */
 const LEADER_MIN = 4;
+/** Room around a label's two lines on its plate: the first line's capitals and the last's descenders. */
+const PLATE_PAD = 3;
+const PLATE_ABOVE = 13;
+const PLATE_BELOW = 16;
 
 interface DrawnNode {
     id: string;
@@ -59,6 +63,11 @@ interface DrawnNode {
      * tall enough to cover its neighbour's label, and a click on the neighbour pinned this one.
      */
     hits: { x: number; y: number; w: number; h: number }[];
+    /**
+     * The box behind the label in the surface's colour, so no ribbon or band runs through its
+     * letters. Monospace, so its width is counted in characters, as the label's room is.
+     */
+    plate: { x: number; y: number; w: number; h: number };
     /** From the label to its bar, when the label had to move away from it. `null` when it sits beside it. */
     leader: { x1: number; y1: number; x2: number; y2: number } | null;
     aria: string;
@@ -184,8 +193,6 @@ export class FlowChartComponent {
 
     protected readonly svgHeight = computed(() => this.plotHeight() + HEAD);
     protected readonly head = HEAD;
-    /** Each label is drawn twice, its halo under it: see the template. */
-    protected readonly layers = ['halo', 'ink'] as const;
 
     /** Where each column's bar starts: the left after its labels, the middle a little left of centre, the right before its labels. */
     protected readonly columns = computed((): [number, number, number] => {
@@ -263,6 +270,14 @@ export class FlowChartComponent {
                             ? { x1: labelX + 4, y1: blockY, x2: node.x - 2, y2: nearest }
                             : { x1: labelX - 4, y1: blockY, x2: node.x + NODE_W + 2, y2: nearest }
                         : null;
+                const shown = clip(figure, room);
+                const plateW = Math.max(name.length, shown.length) * CHAR + 2 * PLATE_PAD;
+                const plate = {
+                    x: column === 0 ? labelX - plateW + PLATE_PAD : labelX - PLATE_PAD,
+                    y: labelY - PLATE_ABOVE - PLATE_PAD,
+                    w: plateW,
+                    h: PLATE_ABOVE + PLATE_BELOW + PLATE_PAD,
+                };
                 drawn.push({
                     id: node.id,
                     column,
@@ -272,11 +287,12 @@ export class FlowChartComponent {
                     zone: column === 1 ? (zoneOf.get(node.id) ?? null) : null,
                     name,
                     fullName,
-                    figure: clip(figure, room),
+                    figure: shown,
                     labelX,
                     labelY,
                     anchor: column === 0 ? 'end' : 'start',
                     hits: [barBox, labelBox],
+                    plate,
                     leader,
                     aria: `${fullName}, ${aria}`,
                 });

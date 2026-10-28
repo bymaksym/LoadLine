@@ -98,33 +98,48 @@ does. Every node is a button; the ribbons are a picture of the figures the butto
                         [attr.x]="node.x"
                         [attr.y]="node.y"
                     />
-                    <!--
-                    The label twice: first in the surface's colour with a thick stroke, a halo that
-                    keeps it readable over the ribbons, then in ink on top. One text with
-                    paint-order would do, and that property is not widely available yet.
-                    -->
-                    @for (layer of layers; track layer) {
-                        <g [class.flow__halo]="layer === 'halo'">
-                            <text
-                                class="flow__name"
-                                [attr.text-anchor]="node.anchor"
-                                [attr.x]="node.labelX"
-                                [attr.y]="node.labelY - 3"
-                            >
-                                {{ node.name }}
-                            </text>
-                            <text
-                                class="flow__figure"
-                                [attr.text-anchor]="node.anchor"
-                                [attr.x]="node.labelX"
-                                [attr.y]="node.labelY + 12"
-                            >
-                                {{ node.figure }}
-                            </text>
-                        </g>
-                    }
                 </g>
             }
+
+            <!--
+            The labels, in a layer of their own over every ribbon, band and bar: a middle label sits
+            on the ribbons, and inside its node it was dimmed with it, so a lit band ran through it.
+            All the plates first, in the surface's colour and never dimmed, then all the ink, which
+            alone takes the dimming: a plate never covers a neighbour's letters. The pointer goes
+            through to the node's hit boxes under them.
+            -->
+            <g aria-hidden="true" class="flow__labels">
+                @for (node of nodes(); track node.id) {
+                    <rect
+                        class="flow__plate"
+                        rx="3"
+                        [attr.height]="node.plate.h"
+                        [attr.width]="node.plate.w"
+                        [attr.x]="node.plate.x"
+                        [attr.y]="node.plate.y"
+                    />
+                }
+                @for (node of nodes(); track node.id) {
+                    <g class="flow__label" [class.flow__label--dim]="isDim(node.id)">
+                        <text
+                            class="flow__name"
+                            [attr.text-anchor]="node.anchor"
+                            [attr.x]="node.labelX"
+                            [attr.y]="node.labelY - 3"
+                        >
+                            {{ node.name }}
+                        </text>
+                        <text
+                            class="flow__figure"
+                            [attr.text-anchor]="node.anchor"
+                            [attr.x]="node.labelX"
+                            [attr.y]="node.labelY + 12"
+                        >
+                            {{ node.figure }}
+                        </text>
+                    </g>
+                }
+            </g>
         </g>
     </svg>
 </div>
