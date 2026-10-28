@@ -105,7 +105,8 @@ export const summaryText = (input: SummaryInput): string => {
         '',
         `${words.boot}: ${bootLine}`,
         ...(input.since ? [input.since] : []),
-        ...(input.firstTrip === null ? [] : [`${words.trip}: ${formatBytes(input.firstTrip)}`]),
+        // Not a first trip of 0 B under a bootstrap of 985 kB: that is no page having been read.
+        ...(input.firstTrip === null || input.firstTrip <= 0 ? [] : [`${words.trip}: ${formatBytes(input.firstTrip)}`]),
         `${words.screens}: ${analysis.screens.length}`,
         ...(worst ? [`${words.worst}: ${worst.label} — ${formatBytes(worst.total)}`] : []),
         // The ones worth a look, out of all of them: "Signals: 2" next to another format's 7

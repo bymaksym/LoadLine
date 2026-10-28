@@ -1123,6 +1123,17 @@ line carries a **count as a screen** button, as every row of the table carries a
 telling a screen from a piece of one is partly done by reading file names, and no set of names fits
 every project. A reclassified entry is remembered with the session.
 
+### What is refused by name: a native app
+
+An Expo export for Android or iOS — a `metadata.json` naming those platforms, bundles under
+`_expo/static/js/android/` or `ios/`, Hermes bytecode (`.hbc`, or any file starting with its magic
+number) — is refused with exit code `2` and the code `NATIVE_APP` in `--format json`, saying what it
+is. So is the project folder of an Expo app with no web build in it. Loadline weighs what a browser
+downloads per screen; a native app arrives installed from a store, and read as a web build it gave a
+985 kB bootstrap with no screens, a first trip of 0 B and nine seconds on slow 4G for something
+nobody downloads that way. What a native bundle holds is what Expo Atlas shows. A web export
+(`expo export --platform web`) is a web build and is read as one.
+
 ### The other files, all optional
 
 | File                                       | What is read                                                                                                                                     |

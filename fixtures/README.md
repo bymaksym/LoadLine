@@ -108,6 +108,16 @@ it holds up is the sections joined into one map — the split per source file �
 traced to the project's own `src/core/logger.ts`, apart from React's. The bundle and the map are
 kept as written: the offsets point at lines of the bundle.
 
+## `expo-native-app/`
+
+**Synthetic**: the skeleton of an Expo app exported for Android and iOS — `package.json` with `expo`
+and a `bundle` script and no `build`, `app.json`, and `dist/` as `expo export` writes it:
+`metadata.json` naming both platforms, one bundle per platform under `_expo/static/js/<platform>/`
+as Hermes bytecode (the real magic number, then filler), and an image under `assets/` named by its
+hash with no extension. It is here to be **refused by name** from the three places a real one was
+pointed at — the project, `dist/` and the `.hbc` — instead of being told to `npm run build`, asked
+whether it is `browser/`, or read as a JSON that will not parse.
+
 ## `pnpm9-lock/`
 
 **Written by hand**, unlike the builds above: a `pnpm-lock.yaml` in pnpm 9's format

@@ -77,7 +77,7 @@ const portableName = (target: string): string => {
  */
 const codeOf = (error: unknown): string => {
     if (error instanceof InputError) {
-        return 'input';
+        return error.code;
     }
     return error instanceof Error && /^[A-Z][A-Z_]+$/.test(error.message) ? error.message : 'unexpected';
 };

@@ -9,11 +9,72 @@
  * `dist/<app>`, the command now finds both on its own and says which it found.
  */
 
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { open, readdir, readFile, stat } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 import { scriptsIn } from '../../src/app/core/build-text/index-html';
 import { STATS_NAMES } from '../../src/app/core/intake/dist-files';
+import {
+    isExpoPackage,
+    isHermesBytecode,
+    type NativeExport,
+    nativeExportOf,
+} from '../../src/app/core/intake/native-export';
 import { InputError } from './read-build';
+
+/** The code `--format json` gives a native app, apart from `input`: a script can tell it from a typo. */
+const NATIVE_APP = 'NATIVE_APP';
+
+/**
+ * Whether a folder is a native Expo export (`native-export.ts`): its `metadata.json`, the bundles
+ * under `_expo/static/js/<platform>/` and any `.hbc` at its root. Three reads at most, nothing walked.
+ */
+const nativeIn = async (folder: string): Promise<NativeExport | null> => {
+    const metadata = await readFile(join(folder, 'metadata.json'), 'utf8').catch(() => null);
+    const scripts = join(folder, '_expo', 'static', 'js');
+    const platforms = await readdir(scripts).catch(() => [] as string[]);
+    const paths: string[] = [];
+    for (const platform of platforms) {
+        const files = await readdir(join(scripts, platform)).catch(() => [] as string[]);
+        paths.push(...files.map(file => `_expo/static/js/${platform}/${file}`));
+    }
+    const root = await readdir(folder).catch(() => [] as string[]);
+    paths.push(...root.filter(name => /\.hbc$/i.test(name)));
+    return nativeExportOf(paths, metadata);
+};
+
+/** The first bytes of a file, for its magic number. Empty when it cannot be read. */
+const headOf = async (path: string): Promise<Uint8Array> => {
+    const file = await open(path, 'r').catch(() => null);
+    if (!file) {
+        return new Uint8Array();
+    }
+    try {
+        const head = new Uint8Array(8);
+        const { bytesRead } = await file.read(head, 0, head.length, 0);
+        return head.subarray(0, bytesRead);
+    } finally {
+        await file.close();
+    }
+};
+
+/** Refuses a native Expo export, a Hermes bundle or an Expo project without a web build, by name. */
+const refuseNative = async (target: string, dist: string | null): Promise<void> => {
+    if (await isFile(target)) {
+        if (/\.hbc$/i.test(target) || isHermesBytecode(await headOf(target))) {
+            throw new InputError(
+                t => t.nativeApp(target, { kind: 'bundle', platforms: [], evidence: basename(target) }),
+                NATIVE_APP,
+            );
+        }
+        return;
+    }
+    for (const folder of [target, dist]) {
+        const native = folder && (await isDirectory(folder)) ? await nativeIn(folder) : null;
+        if (folder && native) {
+            throw new InputError(t => t.nativeApp(folder, { kind: 'export', ...native }), NATIVE_APP);
+        }
+    }
+};
 
 /**
  * The stats files' names that mark a folder as a build. Vue CLI's `report.json` is looked for only
@@ -186,6 +247,7 @@ const buildsUnder = async (project: string): Promise<string[]> => {
  * @param dist   `--dist`, when it was given. Anything typed by hand wins: nothing is looked up then.
  */
 export const locateBuild = async (target: string, dist: string | null): Promise<Located> => {
+    await refuseNative(target, dist);
     // The page of the build named instead of its folder: what was meant is the folder it sits in,
     // and reading the HTML as a stats file answered "is not valid JSON".
     if (!dist && /\.html?$/i.test(target) && (await isFile(target))) {
@@ -231,6 +293,19 @@ export const locateBuild = async (target: string, dist: string | null): Promise<
                 found: located.found.length > 0 ? located.found : [newest],
                 ...(others.length > 0 && { others }),
             };
+        }
+        // An Expo app has no web build to find unless it was exported for the web: its `dist/` is
+        // the native export, and the advice to "npm run build" named a script these apps do not have.
+        const exported = await nativeIn(join(target, 'dist'));
+        if (exported) {
+            const shown = join(target, 'dist').replaceAll('\\', '/');
+            throw new InputError(t => t.nativeApp(shown, { kind: 'export', ...exported }), NATIVE_APP);
+        }
+        if (isExpoPackage(await readFile(join(target, 'package.json'), 'utf8').catch(() => null))) {
+            throw new InputError(
+                t => t.nativeApp(target, { kind: 'project', platforms: [], evidence: 'package.json' }),
+                NATIVE_APP,
+            );
         }
         if (!(await isFile(join(target, 'index.html'))) || (await isDirectory(join(target, 'node_modules')))) {
             throw new InputError(t => t.projectNotBuilt(target));
