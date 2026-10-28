@@ -96,6 +96,17 @@ Polymer's es5/es6 builds look like. Read as ES modules only, Polymer's build cam
 loader, zero screens and 1.1 MB "in no figure here"; this holds up the dependency lists, the name in
 a string as a lazy edge, and `data-main`.
 
+## `pnpm9-lock/`
+
+**Written by hand**, unlike the builds above: a `pnpm-lock.yaml` in pnpm 9's format
+(`lockfileVersion: '9.0'`) with the `package.json` it sits next to, shaped after espaciot-app's —
+Angular, Firebase and `@microsoft/teams-js`, `idb` and `tslib` brought in by dependencies. What it
+holds up is the two things pnpm 9 writes differently: scoped names in quotes
+(`'@angular/core@20.3.4':`), which read as a package named `'` before, and what each package depends
+on under `snapshots:`, at **resolved** versions and with the peers in brackets. Those are read as who
+brings whom (`--lock`'s chains) and never as ranges, so nothing in it reads as pinned. The integrity
+hashes are filler; nothing reads them.
+
 ## `sample-report.json`
 
 A snapshot, not an input: the whole report for the synthetic build in
