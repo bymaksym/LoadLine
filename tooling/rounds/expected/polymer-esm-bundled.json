@@ -35,7 +35,7 @@
         "info sourceMaps: The build folder carries 5 source maps",
         "info media: 44 kB across 7 image or video files, 1 of them asked for by the page",
         "info secrets: 1 string shaped like a secret that is not one",
-        "info devLeftovers: 2 development markers in the build, author unknown",
+        "info devLeftovers: One development marker in the build, author unknown",
         "info sourceExposed: 81 files of your source can be reconstructed from the 5 source maps in this folder"
     ]
 }

@@ -39,7 +39,7 @@
         "mid devLeftovers: One development leftover in the build",
         "info unreachable: 1 chunk (834 B) that nothing reaches from the entry point",
         "info cascadeShape: assets/index-BFFDxRTc.js names 68 of 116 chunks and is imported by 1: a change stops there",
-        "info sourceMaps: The build folder carries 59 source maps",
+        "info sourceMaps: The build folder carries 115 source maps",
         "info media: 808 kB across 20 image or video files, 1 of them asked for by the page",
         "info unhashable: 11 files carry no hash in the name",
         "info secrets: 1 string shaped like a secret that is not one",
