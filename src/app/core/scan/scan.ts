@@ -233,6 +233,33 @@ const startsIndentedLine = (text: string, index: number): boolean => {
     }
     return start < index && text[start - 1] === '\n';
 };
+/**
+ * Whether a match sits in a comment, in a file that is not minified (a minifier keeps none but the
+ * legal ones). `// console.log(` on line 34 of a service worker was counted as a leftover, and it is
+ * the one thing about that line that is certain not to run.
+ *
+ * Read back to the start of the line, at most 500 characters: a line that starts a comment (`//`,
+ * `/*`, or the `*` of a block's middle), or a `//` after a space with no quote after it, which is a
+ * trailing comment and not the `//` of a URL inside a string.
+ */
+const inComment = (text: string, index: number): boolean => {
+    const lineStart = text.lastIndexOf('\n', index - 1) + 1;
+    const before = text.slice(Math.max(lineStart, index - 500), index);
+    const lead = before.trimStart();
+    if (lead.startsWith('//')) {
+        return true;
+    }
+    // A block comment the line opens or continues, unless it closes before the match: a licence
+    // header and the call after it on the same line (`/*! lodash MIT */ console.log(…)`) is code.
+    if ((lead.startsWith('/*') || lead.startsWith('*')) && !before.includes('*/')) {
+        return true;
+    }
+    const slashes = before.lastIndexOf('//');
+    return slashes > 0 && /\s/.test(before[slashes - 1] ?? '') && !/['"`]/.test(before.slice(slashes));
+};
+
+const isScript = (name: string): boolean => /\.m?js$/i.test(name);
+
 const leftoversOf = (
     texts: ReadonlyMap<string, string>,
     modules: readonly ModuleEntry[],
@@ -240,15 +267,28 @@ const leftoversOf = (
 ): Leftover[] => {
     const found: Leftover[] = [];
 
+    // A file copied into the build as it is: not minified, in a build that minifies its chunks.
+    // What `public/` holds — a service worker, a configuration script — and the project's own code
+    // whatever a source map would say, because no bundler wrote it. The name is no help: a
+    // hyphenated `firebase-messaging-sw.js` reads as hashed to every pattern a bundler's hash fits.
+
+    const minifies = [...texts].some(([name, text]) => isScript(name) && isMinified(text));
+    const copied = (chunk: string, text: string): boolean => minifies && isScript(chunk) && !isMinified(text);
+
     /**
      * How many of a marker's matches in one chunk are the project's own, and whether that could be
      * decided at all. Without a map the honest answer is "all of them, and I do not know whose".
      */
     const countIn = (chunk: string, text: string, pattern: RegExp): { count: number; attributed: boolean } => {
         const minified = isMinified(text);
-        const hits = [...text.matchAll(pattern)].filter(hit => !minified || !startsIndentedLine(text, hit.index));
+        const hits = [...text.matchAll(pattern)].filter(hit =>
+            minified ? !startsIndentedLine(text, hit.index) : !inComment(text, hit.index),
+        );
         if (hits.length === 0) {
             return { count: 0, attributed: true };
+        }
+        if (copied(chunk, text)) {
+            return { count: hits.length, attributed: true };
         }
 
         const reader = readerFor(chunk);
@@ -267,6 +307,7 @@ const leftoversOf = (
         let count = 0;
         let attributed = true;
         const where: string[] = [];
+        const copies: string[] = [];
         for (const [chunk, text] of texts) {
             const hits = countIn(chunk, text, pattern);
             attributed &&= hits.attributed;
@@ -276,9 +317,12 @@ const leftoversOf = (
 
             count += hits.count;
             where.push(chunk);
+            if (copied(chunk, text)) {
+                copies.push(chunk);
+            }
         }
         if (count > 0) {
-            found.push({ kind, count, where, attributed });
+            found.push({ kind, count, where, attributed, copied: copies });
         }
     }
 
@@ -287,7 +331,13 @@ const leftoversOf = (
     for (const { kind, pattern } of DEV_INPUTS) {
         const hit = modules.filter(module => pattern.test(module.path));
         if (hit.length > 0) {
-            found.push({ kind, count: hit.length, where: hit.map(module => module.label), attributed: true });
+            found.push({
+                kind,
+                count: hit.length,
+                where: hit.map(module => module.label),
+                attributed: true,
+                copied: [],
+            });
         }
     }
 

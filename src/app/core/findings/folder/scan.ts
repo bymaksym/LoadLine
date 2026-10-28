@@ -95,6 +95,7 @@ export const buildScanFindings = (
                 broken: breaking.length > 0,
                 unattributed,
                 tool,
+                copied: named([...new Set(leftovers.flatMap(item => item.copied))]),
                 list: leftovers
                     .map(item => `${text.leftoverNames[item.kind]} ×${item.count} (${named(item.where)})`)
                     .join(' · '),

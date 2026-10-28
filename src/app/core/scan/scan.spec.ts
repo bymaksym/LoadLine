@@ -132,6 +132,35 @@ describe('scanBuild · the rest of what the text says', () => {
         expect(found?.count).toBe(2);
     });
 
+    /**
+     * espaciot-app: `public/firebase-messaging-sw.js`, line 34, `// console.log(`. It was the one
+     * leftover left with source maps on, and the card called it a chunk without a map.
+     */
+    it('does not count a commented console.log, and tells a copied file from a chunk', () => {
+        const worker = [
+            "importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');",
+            'messaging.onBackgroundMessage(payload => {',
+            '    // console.log(payload);',
+            '    /* console.log(payload); */',
+            "    self.registration.showNotification('x'); // console.log('shown')",
+            '    console.log(payload.data);',
+            '});',
+        ].join('\n');
+        const leftover = scanBuild({
+            texts: new Map([
+                ['main-AB12CD34.js', `${'a'.repeat(4000)};`],
+                ['firebase-messaging-sw.js', worker],
+            ]),
+            modules: [],
+            boot: new Set(),
+            maps: [],
+        }).leftovers.find(item => item.kind === 'consoleLogs');
+
+        expect(leftover?.count).toBe(1);
+        expect(leftover?.copied).toEqual(['firebase-messaging-sw.js']);
+        expect(leftover?.attributed).toBe(true);
+    });
+
     it('does not call a build a development build because a chunk mentions one', () => {
         // The mistake this rule was written with. What decides is whether the file is in the
         // bundle, which the metafile says outright.

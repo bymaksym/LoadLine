@@ -54,6 +54,13 @@ export interface Leftover {
      * `@angular/core` look exactly the same. The report has to say that instead of picking one.
      */
     attributed: boolean;
+    /**
+     * Of `where`, the files the build copied as they are rather than generated: not minified, in a
+     * build that minifies the rest. `public/firebase-messaging-sw.js`
+     * is one. They are the project's own files by definition, and calling them "chunks without a
+     * source map" sent somebody to turn on source maps for a file no bundler touches.
+     */
+    copied: string[];
 }
 
 /** A licence found in the legal comments the bundler kept, with how it has to be treated. */
