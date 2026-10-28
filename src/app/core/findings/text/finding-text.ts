@@ -15,7 +15,7 @@ import {
     type SituationPriorityData,
 } from '../finding.types';
 import { mono } from './finding-html';
-import { mapsHidden, mapsOn, mayBeAngular, webpackSplit } from './tool-advice';
+import { mapsHidden, mapsOn, mayBeAngular, screenPreload, webpackSplit } from './tool-advice';
 
 /** A share as a percentage, for the answers that arrive as a fraction of one. */
 const pct = (share: number): string => `${Math.round(share * 100)} %`;
@@ -215,6 +215,7 @@ export const TEXT = {
             latencyMs: number;
             worstMs: number;
             list: string;
+            tool?: BuildTool;
         }) => ({
             chip: 'profundidad de descubrimiento',
             title: `${d.worstLabel} tarda ${d.worstWaves} idas y vueltas en estar completa: ${d.worstMs} ms de espera pura`,
@@ -223,7 +224,7 @@ export const TEXT = {
                     ? 'Su viaje más ancho trae un solo fichero: es una cadena de punta a punta, y cada nivel que se aplane quita una espera entera.'
                     : `Su viaje más ancho trae ${d.worstWidth} ficheros: profundidad y anchura son problemas distintos y el número de viajes los cuenta igual. Los ${d.worstWidth} de ese viaje cuestan uno entre todos; lo que cuesta viajes es lo que va detrás de ellos.`
             }`,
-            fix: 'Mira la cadena en la tabla de Pantallas: cada nivel es un fichero que importa a otro de forma estática. Se acorta importando desde la pantalla lo que hoy le llega a través de un intermediario, o —si el bundler lo permite— haciendo que el cargador pida la lista entera de golpe, que es lo que hace Vite con su lista de precarga. No es una cuestión de tamaño: fusionar chunks no la arregla si la cadena sigue teniendo la misma profundidad.',
+            fix: `Mira la cadena en la tabla de Pantallas: cada nivel es un fichero que importa a otro de forma estática. Se acorta importando desde la pantalla lo que hoy le llega a través de un intermediario, ${screenPreload(d.tool, 'es')}. No es una cuestión de tamaño: fusionar chunks no la arregla si la cadena sigue teniendo la misma profundidad.`,
         }),
         locales: (d: { packages: { name: string; files: number; size: string }[]; size: string; boot: boolean }) => ({
             chip: 'todos los idiomas de una librería',
@@ -1285,6 +1286,7 @@ export const TEXT = {
             latencyMs: number;
             worstMs: number;
             list: string;
+            tool?: BuildTool;
         }) => ({
             chip: 'discovery depth',
             title: `${d.worstLabel} takes ${d.worstWaves} round trips to be complete: ${d.worstMs} ms of pure waiting`,
@@ -1293,7 +1295,7 @@ export const TEXT = {
                     ? 'Its widest trip brings a single file: it is a chain end to end, and every level flattened removes a whole wait.'
                     : `Its widest trip brings ${d.worstWidth} files: depth and width are different problems and a count of trips reports them as one. Those ${d.worstWidth} cost one trip between them; what costs trips is whatever sits behind them.`
             }`,
-            fix: 'Look at the chain in the Screens tab: each level is one file statically importing another. It shortens by importing from the screen what reaches it today through an intermediary, or — where the bundler allows it — by having the loader ask for the whole list at once, which is what Vite does with its preload list. This is not a question of size: merging chunks does not fix it while the chain is as deep.',
+            fix: `Look at the chain in the Screens tab: each level is one file statically importing another. It shortens by importing from the screen what reaches it today through an intermediary, ${screenPreload(d.tool, 'en')}. This is not a question of size: merging chunks does not fix it while the chain is as deep.`,
         }),
         locales: (d: { packages: { name: string; files: number; size: string }[]; size: string; boot: boolean }) => ({
             chip: 'every language of a library',
