@@ -242,6 +242,15 @@ const driftFinding = (drift: SplitDrift | null, lang: Lang, tool?: BuildTool): F
     ];
 };
 
+/**
+ * How many source maps the folder carries, counted once for every card that says it: the map files
+ * read, and only when there are none of those (a report restored without its files) the chunks a
+ * map split. `sourceMaps` counted the second and `sourceExposed` the first, and one folder came out
+ * with 43 maps in one card and 44 in the next.
+ */
+export const mapCount = (maps: readonly unknown[], splitChunks: number): number =>
+    maps.length > 0 ? maps.length : splitChunks;
+
 export const buildFolderFindings = (
     build: {
         sourceMaps: number;

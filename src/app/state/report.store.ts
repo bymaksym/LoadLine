@@ -19,7 +19,7 @@ import { type Criteria, type Mode } from '../core/criteria/criteria.types';
 import { readAudit, readDeps, readLock } from '../core/deps/deps';
 import { type Advisory, type DepsReport, type LockedPackage } from '../core/deps/deps.types';
 import { unitScale } from '../core/findings/actions';
-import { buildFolderFindings } from '../core/findings/bundle/shipped';
+import { buildFolderFindings, mapCount } from '../core/findings/bundle/shipped';
 import { composeFindings } from '../core/findings/compose';
 import { type Finding } from '../core/findings/finding.types';
 import {
@@ -518,7 +518,7 @@ export class ReportStore {
         return [
             ...buildFolderFindings(
                 {
-                    sourceMaps: this.mapFiles() ?? 0,
+                    sourceMaps: mapCount(this.buildMaps(), this.mapFiles() ?? 0),
                     derived: this.derived(),
                     screens: analysis.screens.map(s => s.label),
                     drift: analysis.splitDrift,
