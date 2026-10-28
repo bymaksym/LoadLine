@@ -1,0 +1,44 @@
+:host {
+    display: block;
+}
+
+/* What makes the heaviest screen heavy, and the way to see it: a line, not a second diagram. */
+.flow-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    align-items: baseline;
+
+    margin: calc(-1 * var(--space-4)) 0 var(--space-9);
+    padding: var(--space-4) var(--space-7);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+
+    font-size: var(--fs-small);
+    color: var(--ink);
+
+    background: var(--accent-soft);
+
+    &__open {
+        cursor: pointer;
+
+        padding: 0;
+        border: 0;
+
+        font: inherit;
+        font-weight: 600;
+        color: var(--accent);
+
+        background: none;
+
+        &:hover {
+            color: var(--ink);
+        }
+
+        &:focus-visible {
+            border-radius: 2px;
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+    }
+}

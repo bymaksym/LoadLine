@@ -627,6 +627,71 @@ export const ES: UiStrings = {
     mapLegendOwn: 'código tuyo',
     mapEmpty: 'Nada que dibujar con este filtro.',
     mapPick: 'Pasa el ratón por un rectángulo o recórrelos con Tab para ver qué es.',
+
+    tabFlow: 'Flujo',
+    howToFlow:
+        '<p>Los bytes van de izquierda a derecha. A la izquierda, cada <strong>paquete</strong> (y tu propio código), tan alto como lo que pesa en el build. En el centro, <strong>dónde viven esos bytes</strong>: el bootstrap, que toda pantalla descarga antes que nada; los chunks compartidos, que descargan varias pantallas; y los chunks propios de cada pantalla. A la derecha, cada <strong>pantalla</strong> con su primer viaje: bootstrap + compartido + propio.</p><p>El color de una cinta es dónde vive: gris bootstrap, naranja compartido, verde solo una pantalla. <strong>La izquierda y el centro cuentan cada byte una vez; la derecha lo cuenta una vez por cada pantalla que lo descarga</strong>, así que tiene su propia escala y una cinta se estrecha o se ensancha al llegar. Un chunk que descargan seis pantallas sale en seis cintas.</p><p>Pasa el ratón por un paquete para iluminar la parte de cada cinta que es ese paquete y ver qué pantallas lo pagan. Haz clic, o pulsa Intro sobre él, para fijarlo y abrir su detalle; Escape lo quita. La tabla tiene las mismas cifras.</p>',
+    secFlow: 'A dónde van los bytes',
+    secFlowSub: 'Qué paquete hace pesada cada pantalla, y si lo paga toda pantalla o solo algunas.',
+    flowColSources: 'Paquetes',
+    flowColMiddles: 'Dónde viven',
+    flowColTargets: 'Pantallas · primer viaje',
+    flowOwnCode: 'Tu código',
+    flowUnattributed: 'Código del bundler',
+    flowUnknown: 'Sin desglosar',
+    flowMorePackages: count => `${count} paquetes más`,
+    flowBoot: 'Bootstrap',
+    flowMoreShared: count => `${count} chunks compartidos más`,
+    flowOwnChunks: 'Propio de cada pantalla',
+    flowMoreScreens: count => `${count} pantallas más`,
+    flowApp: 'La página',
+    flowReachAll: 'toda pantalla',
+    flowReachOnly: screen => `solo ${screen}`,
+    flowReach: screens => (screens === 1 ? 'en 1 pantalla' : `en ${screens} pantallas`),
+    flowOneEach: 'una pantalla cada uno',
+    flowScale:
+        'Izquierda y centro: bytes del build, contados una vez. Derecha: lo que descarga cada pantalla, así que un chunk que cargan cinco pantallas llega a las cinco.',
+    flowHint: 'Ratón o Tab para seguirlo · Intro fija · Escape quita',
+    flowView: 'Ver como',
+    flowViewChart: 'Diagrama',
+    flowViewTable: 'Tabla',
+    flowLegShared: 'Compartido · lo descargan varias pantallas',
+    flowTakeawayMisplaced: (pkg, size, importers, where, downloads) => {
+        const who =
+            importers.length === 1
+                ? `lo importa ${importers[0] ?? ''}`
+                : importers.length === 2
+                  ? `lo importan ${importers[0] ?? ''} y ${importers[1] ?? ''}`
+                  : `lo importan ${importers.length} pantallas`;
+        const place = where === 'boot' ? 'el bootstrap' : 'un chunk compartido';
+        return `${pkg} pesa ${size} y solo ${who}, pero está en ${place}: lo descargan ${downloads} pantallas.`;
+    },
+    flowTakeawayDriver: (pkg, size, screen, total, where, downloads) =>
+        where === 'shared'
+            ? `${pkg} (${size}) es lo que hace de ${screen} la pantalla más pesada (${total}); está en un chunk compartido, así que lo descargan ${downloads} pantallas.`
+            : downloads === 1
+              ? `${pkg} (${size}) es lo que hace de ${screen} la pantalla más pesada (${total}), y solo lo descarga ${screen}.`
+              : `${pkg} (${size}) es lo que hace de ${screen} la pantalla más pesada (${total}), y lo descargan ${downloads} pantallas.`,
+    flowTakeawayBoot: (pkg, size, boot, screens) =>
+        screens > 0
+            ? `Toda pantalla empieza por los mismos ${boot} de bootstrap; lo que más pesa en él es ${pkg} (${size}).`
+            : `La página descarga ${boot} antes que nada; lo que más pesa en ello es ${pkg} (${size}).`,
+    flowTakeawayScreen: (screen, total, boot, shared, own) =>
+        `${screen} es la que más descarga en su primer viaje, ${total}: ${boot} de bootstrap que paga toda pantalla, ${shared} compartidos con otras y ${own} propios. Con los source maps en la carpeta se vería qué paquetes.`,
+    flowPick:
+        'Pasa el ratón por un paquete o una pantalla, o llega con Tab, para seguir sus bytes. Haz clic para fijarlo aquí.',
+    flowClear: 'Quitar',
+    flowWhere: 'Dónde vive',
+    flowDownloadedBy: 'Quién lo descarga',
+    flowBeyondBoot: 'Lo que descarga además del bootstrap',
+    flowMadeOf: 'Qué lo llena',
+    flowGrouped: 'Agrupado aquí',
+    flowThPackage: 'Paquete',
+    flowThReach: 'Lo descargan',
+    flowThTrip: 'Primer viaje',
+    flowThDriver: 'Lo más pesado además del bootstrap',
+    flowEmpty: 'Nada que dibujar: ningún chunk de este build lo descarga una pantalla.',
+    flowOpen: 'Ver a dónde van los bytes',
     secBoot: 'Qué hay en el bootstrap',
     secBootSub: 'Lo que se descarga antes de ver nada, agrupado por paquete y por carpeta tuya.',
     secShared: 'Chunks compartidos',

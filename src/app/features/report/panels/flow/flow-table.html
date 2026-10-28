@@ -1,0 +1,89 @@
+@let t = i18n.ui();
+
+<div class="scroller--tall scroller--swipe flow-table">
+    <table>
+        <caption class="sr-only">
+            {{
+                t.flowColSources
+            }}
+        </caption>
+        <thead>
+            <tr>
+                <th scope="col">{{ t.flowThPackage }}</th>
+                <th class="num" scope="col">{{ t.thSize }}</th>
+                @for (zone of zones(); track zone.zone) {
+                    <th class="num" scope="col">
+                        <i aria-hidden="true" class="dot" [attr.data-zone]="zone.zone"></i>{{ zone.label }}
+                    </th>
+                }
+                <th scope="col">{{ t.flowThReach }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of packages(); track row.id) {
+                <tr [class.flow-table__row--pinned]="pinned() === row.id">
+                    <td>
+                        <button
+                            class="link-btn flow-table__name"
+                            type="button"
+                            [attr.aria-pressed]="pinned() === row.id"
+                            (click)="toggle(row.id)"
+                        >
+                            {{ row.name }}
+                        </button>
+                    </td>
+                    <td class="num">{{ row.size }}</td>
+                    @for (part of row.parts; track $index) {
+                        <td class="num">{{ part }}</td>
+                    }
+                    <td>{{ row.reach }}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="scroller--tall scroller--swipe flow-table">
+    <table>
+        <caption class="sr-only">
+            {{
+                t.flowColTargets
+            }}
+        </caption>
+        <thead>
+            <tr>
+                <th scope="col">{{ t.colScreen }}</th>
+                <th class="num" scope="col">{{ t.flowThTrip }}</th>
+                @for (zone of zones(); track zone.zone) {
+                    <th class="num" scope="col">
+                        <i aria-hidden="true" class="dot" [attr.data-zone]="zone.zone"></i>{{ zone.label }}
+                    </th>
+                }
+                <th scope="col">{{ t.flowThDriver }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of screens(); track row.id) {
+                <tr [class.flow-table__row--pinned]="pinned() === row.id">
+                    <td>
+                        <button
+                            class="link-btn flow-table__name"
+                            type="button"
+                            [attr.aria-pressed]="pinned() === row.id"
+                            (click)="toggle(row.id)"
+                        >
+                            {{ row.name }}
+                        </button>
+                    </td>
+                    <td class="num">
+                        <strong>{{ row.total }}</strong>
+                    </td>
+                    @for (part of row.parts; track $index) {
+                        <td class="num">{{ part }}</td>
+                    }
+                    <td class="flow-table__driver">{{ row.driver }}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

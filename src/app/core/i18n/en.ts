@@ -616,6 +616,70 @@ export const EN: UiStrings = {
     mapLegendOwn: 'your code',
     mapEmpty: 'Nothing to draw with this filter.',
     mapPick: 'Hover a rectangle, or Tab through them, to see what it is.',
+
+    tabFlow: 'Flow',
+    howToFlow:
+        '<p>Bytes flow left to right. On the left, each <strong>package</strong> (and your own code), as tall as what it weighs in the build. In the middle, <strong>where those bytes live</strong>: the bootstrap, which every screen downloads before anything; the shared chunks, which several screens download; and each screen’s own chunks. On the right, each <strong>screen</strong> with its first trip: bootstrap + shared + own.</p><p>The colour of a ribbon is where it lives: grey bootstrap, orange shared, green one screen only. <strong>The left and the middle count each byte once; the right counts it once per screen that downloads it</strong>, so it has a scale of its own and a ribbon narrows or widens on its way there. A chunk six screens download leaves in six ribbons.</p><p>Hover a package to light the part of every ribbon that is that package, and see which screens pay for it. Click it, or press Enter on it, to pin it and open its detail; Escape clears. The table has the same numbers.</p>',
+    secFlow: 'Where the bytes go',
+    secFlowSub: 'Which package makes which screen heavy, and whether every screen pays for it.',
+    flowColSources: 'Packages',
+    flowColMiddles: 'Where they live',
+    flowColTargets: 'Screens · first trip',
+    flowOwnCode: 'Your code',
+    flowUnattributed: 'Bundler code',
+    flowUnknown: 'Not broken down',
+    flowMorePackages: count => `${count} more packages`,
+    flowBoot: 'Bootstrap',
+    flowMoreShared: count => `${count} more shared chunks`,
+    flowOwnChunks: 'Each screen’s own',
+    flowMoreScreens: count => `${count} other screens`,
+    flowApp: 'The page',
+    flowReachAll: 'every screen',
+    flowReachOnly: screen => `only ${screen}`,
+    flowReach: screens => (screens === 1 ? 'on 1 screen' : `on ${screens} screens`),
+    flowOneEach: 'one screen each',
+    flowScale:
+        'Left and middle: bytes in the build, counted once. Right: what each screen downloads, so a chunk five screens load reaches five of them.',
+    flowHint: 'Hover or Tab to follow · Enter pins · Escape clears',
+    flowView: 'Show as',
+    flowViewChart: 'Diagram',
+    flowViewTable: 'Table',
+    flowLegShared: 'Shared · several screens download it',
+    flowTakeawayMisplaced: (pkg, size, importers, where, downloads) => {
+        const who =
+            importers.length === 1
+                ? `${importers[0] ?? ''} imports`
+                : importers.length === 2
+                  ? `${importers[0] ?? ''} and ${importers[1] ?? ''} import`
+                  : `${importers.length} screens import`;
+        const place = where === 'boot' ? 'the bootstrap' : 'a shared chunk';
+        return `${pkg} is ${size} and only ${who} it, but it sits in ${place}: ${downloads} screens download it.`;
+    },
+    flowTakeawayDriver: (pkg, size, screen, total, where, downloads) =>
+        where === 'shared'
+            ? `${pkg} (${size}) is what makes ${screen} the heaviest screen (${total}); it sits in a shared chunk, so ${downloads} screens download it.`
+            : downloads === 1
+              ? `${pkg} (${size}) is what makes ${screen} the heaviest screen (${total}), and only ${screen} downloads it.`
+              : `${pkg} (${size}) is what makes ${screen} the heaviest screen (${total}), and ${downloads} screens download it.`,
+    flowTakeawayBoot: (pkg, size, boot, screens) =>
+        screens > 0
+            ? `Every screen starts with the same ${boot} of bootstrap; the heaviest part of it is ${pkg} (${size}).`
+            : `The page downloads ${boot} before anything; the heaviest part of it is ${pkg} (${size}).`,
+    flowTakeawayScreen: (screen, total, boot, shared, own) =>
+        `${screen} downloads the most on its first trip, ${total}: ${boot} of bootstrap every screen pays, ${shared} shared with other screens and ${own} of its own. Source maps in the folder would say which packages.`,
+    flowPick: 'Hover a package or a screen, or Tab to it, to follow its bytes. Click to pin it here.',
+    flowClear: 'Clear',
+    flowWhere: 'Where it lives',
+    flowDownloadedBy: 'Who downloads it',
+    flowBeyondBoot: 'What it downloads on top of the bootstrap',
+    flowMadeOf: 'What fills it',
+    flowGrouped: 'Grouped here',
+    flowThPackage: 'Package',
+    flowThReach: 'Downloaded by',
+    flowThTrip: 'First trip',
+    flowThDriver: 'Heaviest beyond the bootstrap',
+    flowEmpty: 'Nothing to draw: no chunk of this build is downloaded by a screen.',
+    flowOpen: 'See where the bytes go',
     secBoot: 'What is in the bootstrap',
     secBootSub: 'What downloads before anything appears, grouped by package and by your own folders.',
     secShared: 'Shared chunks',

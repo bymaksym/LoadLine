@@ -686,7 +686,10 @@ module.exports = defineConfig([
             // the folder no screen downloads — the nomodule copy, the service worker, build.ignore.
             // Raised to 705 on 09/10/2026 (round details): the field that takes the entry script
             // when the page names none this reads, its label and its button.
-            'max-lines': ['error', { max: 705, skipBlankLines: true, skipComments: true }],
+            // Raised to 760 on 28/10/2026: the Flow tab. Its columns, nodes, three takeaway
+            // sentences, legend, table headings and detail panel; strings of a view that did not
+            // exist, not rewordings.
+            'max-lines': ['error', { max: 760, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -763,6 +766,15 @@ module.exports = defineConfig([
             '@angular-eslint/template/prefer-self-closing-tags': 'error',
             '@angular-eslint/template/use-track-by-function': 'error',
             '@angular-eslint/template/prefer-static-string-properties': 'error',
+        },
+    },
+    {
+        // The report page: the summary, the tab strip and one case per tab. Raised to 305 on
+        // 28/10/2026: the Flow tab's case and the line of it under the summary. Every panel is
+        // already a component of its own; what is left is the list of them.
+        files: ['src/app/features/report/report.page.html'],
+        rules: {
+            'max-lines': ['error', { max: 305, skipBlankLines: true }],
         },
     },
 ]);
