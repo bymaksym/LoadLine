@@ -37,7 +37,8 @@ The first line is what makes the file easy: VS Code, WebStorm and most editors r
 points at and then **complete every key, explain it on hover, list the allowed values and underline
 a typo** as you type. `tool` and `version` are always those two values.
 
-The command finds `loadline.json` in the working directory on its own; `--config <file>` points at
+The command finds `loadline.json` in the working directory on its own, or in its `.config/` folder when
+the root has none (the root wins when both exist); `--config <file>` points at
 another one. The page reads it too when you drop it in with the build.
 
 ## How the file is used

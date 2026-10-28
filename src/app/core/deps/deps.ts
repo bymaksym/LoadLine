@@ -21,8 +21,17 @@ import { asArray, asMember, asRecord, asText } from '../json/json.utils';
 import { type Advisory, type DepsReport, type LockedPackage, type Severity } from './deps.types';
 import { declaredFromLock } from './pins';
 
-/** `  /lodash@4.17.21:` in pnpm, `"node_modules/lodash": {` in npm, `lodash@^4.0.0:` in yarn. */
-const PNPM_ENTRY = /^ {2}\/?((?:@[^/@]+\/)?[^@/\s]+)@([^(:\s]+)/;
+/**
+ * `  /lodash@4.17.21:` in pnpm 8, `  '@angular/core@22.1.0(rxjs@7.8.2)':` in pnpm 9 — quoted when
+ * scoped, with the peers it was resolved against in brackets — `"node_modules/lodash": {` in npm,
+ * `lodash@^4.0.0:` in yarn. The quote was not expected, and a pnpm 9 lock read every scoped package
+ * as one named `'` at version `angular/core@…`.
+ */
+const PNPM_ENTRY = /^ {2}['"]?\/?((?:@[^\s"'/@]+\/)?[^\s"'/@]+)@([^\s"'():]+)/;
+/** A pnpm entry's block of dependencies: `    dependencies:`, `    optionalDependencies:`. */
+const PNPM_DEPENDENCIES = /^ {4}(?:optionalD|d)ependencies:\s*$/;
+/** One of them: `      '@jridgewell/gen-mapping': 0.3.13`, `      tslib: 2.8.1`. */
+const PNPM_DEPENDENCY = /^ {6}['"]?((?:@[^\s"'/]+\/)?[^\s"':]+)['"]?:/;
 const YARN_ENTRY = /^"?((?:@[^/@]+\/)?[^@/\s]+)@[^:]*:?$/;
 const YARN_VERSION = /^\s+version:?\s+"?([^"\s]+)"?/;
 
@@ -82,13 +91,58 @@ const readNpmLock = (lock: Record<string, unknown>): LockedPackage[] => {
 };
 
 /**
- * The pnpm and yarn formats, read line by line.
+ * The pnpm and yarn formats are read line by line: regular expressions rather than a YAML parser, on
+ * purpose and for the same reason `index-html.ts` does not use `DOMParser`. What is wanted is a few
+ * fields per entry, and a parser would be the only runtime dependency of a tool whose whole point is
+ * having none.
  *
- * Regular expressions rather than a YAML parser, on purpose and for the same reason `index-html.ts`
- * does not use `DOMParser`: what is wanted is two fields per entry, and a parser would be the only
- * runtime dependency of a tool whose whole point is having none.
+ * pnpm's lock: every entry of `packages:` and, when the entry lists them, what it depends on — under
+ * `snapshots:` in pnpm 9, under the entry itself in pnpm 8. The same `name@version` appears in both
+ * blocks of a pnpm 9 lock (and once per set of peers in `snapshots:`), and is one package.
+ *
+ * Only names are kept from the dependencies, as `requires`: the versions there are resolved, not
+ * the ranges declared, so they say who brings whom and nothing about pinning (see `declares`).
+ * Before this, "who brings this dependency" came out empty for every package of a pnpm project.
  */
-const readYamlLock = (text: string, yarn: boolean): LockedPackage[] => {
+const readPnpmLock = (text: string): LockedPackage[] => {
+    const found = new Map<string, LockedPackage>();
+    let current: LockedPackage | null = null;
+    let inDependencies = false;
+
+    for (const line of text.split('\n')) {
+        const entry = PNPM_ENTRY.exec(line);
+        if (entry?.[1] && entry[2]) {
+            const key = `${entry[1]}@${entry[2]}`;
+            current = found.get(key) ?? { name: entry[1], version: entry[2], requiredBy: [] };
+            found.set(key, current);
+            inDependencies = false;
+            continue;
+        }
+        // Any other key at the top or one level in — `importers:`, `  .:`, `snapshots:` — ends the
+        // entry: the importers' own dependencies are the project's, and belong to no package.
+        if (/^ {0,2}\S/.test(line)) {
+            current = null;
+            inDependencies = false;
+            continue;
+        }
+        if (!current) {
+            continue;
+        }
+        if (/^ {4}\S/.test(line)) {
+            inDependencies = PNPM_DEPENDENCIES.test(line);
+            continue;
+        }
+        const dependency = inDependencies ? PNPM_DEPENDENCY.exec(line)?.[1] : undefined;
+        if (dependency && !(current.requires ?? []).includes(dependency)) {
+            current.requires = [...(current.requires ?? []), dependency];
+        }
+    }
+
+    return [...found.values()];
+};
+
+/** yarn's lock: the name on one line, the version on the next, then the entry's `dependencies:`. */
+const readYarnLock = (text: string): LockedPackage[] => {
     const found = new Map<string, LockedPackage>();
     const lines = text.split('\n');
     let pending: string | null = null;
@@ -99,8 +153,8 @@ const readYamlLock = (text: string, yarn: boolean): LockedPackage[] => {
     for (const line of lines) {
         // A yarn entry's own dependencies, with the range each one is declared at. pnpm writes a
         // block of the same shape under `snapshots:` with **resolved** versions, which would read
-        // as every dependency pinned exactly — so this is only done for yarn.
-        if (yarn && current) {
+        // as every dependency pinned exactly — so there they are only names (`readPnpmLock`).
+        if (current) {
             if (/^ {2}dependencies:\s*$/.test(line)) {
                 inDependencies = true;
                 continue;
@@ -113,13 +167,6 @@ const readYamlLock = (text: string, yarn: boolean): LockedPackage[] => {
             if (!/^ {4}/.test(line)) {
                 inDependencies = false;
             }
-        }
-
-        const pnpm = yarn ? null : PNPM_ENTRY.exec(line);
-        if (pnpm?.[1] && pnpm[2]) {
-            found.set(`${pnpm[1]}@${pnpm[2]}`, { name: pnpm[1], version: pnpm[2], requiredBy: [] });
-            pending = null;
-            continue;
         }
 
         // yarn writes the name on one line and the version on the next.
@@ -155,7 +202,10 @@ export const readLock = (name: string, text: string): LockedPackage[] | null => 
         return lock ? readNpmLock(lock) : null;
     }
 
-    return /lock\.ya?ml$|yarn\.lock$/i.test(name) ? readYamlLock(text, /yarn\.lock$/i.test(name)) : null;
+    if (/yarn\.lock$/i.test(name)) {
+        return readYarnLock(text);
+    }
+    return /lock\.ya?ml$/i.test(name) ? readPnpmLock(text) : null;
 };
 
 /**
@@ -316,7 +366,7 @@ export const readDeps = (input: DepsInput): DepsReport => {
     const parents = new Map<string, Set<string>>();
     for (const entry of locked) {
         byName.set(entry.name, [...(byName.get(entry.name) ?? []), entry]);
-        const declared = Object.keys(entry.declares ?? {});
+        const declared = [...Object.keys(entry.declares ?? {}), ...(entry.requires ?? [])];
         for (const dependency of declared) {
             parents.set(dependency, (parents.get(dependency) ?? new Set()).add(entry.name));
         }
@@ -326,8 +376,9 @@ export const readDeps = (input: DepsInput): DepsReport => {
      * The shortest chain from something the project asked for to the package that pulls `name` in,
      * walked up what each lock entry declares. Nothing filled `requiredBy`, so "each one comes with
      * the dependency chain that pulls it" was printed over chains that were always empty. Empty
-     * still when the lock does not record what each entry declares (pnpm's does not here) or when
-     * nothing the project asked for is up the chain.
+     * still when the lock does not record what each entry depends on, or when nothing the project
+     * asked for is up the chain. pnpm's lock records it with resolved versions: those walk the
+     * chain (`requires`) and never decide a pin (`declares`).
      */
     const chainOf = (name: string): string[] => {
         const seen = new Set([name]);

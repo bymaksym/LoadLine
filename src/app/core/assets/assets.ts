@@ -360,6 +360,7 @@ const duplicatesOf = (
             bytes: group[0]?.bytes ?? 0,
             wasted: (group.length - 1) * (group[0]?.bytes ?? 0),
             named: null,
+            icons: false,
         }))
         .toSorted((a, b) => b.wasted - a.wasted);
 };
@@ -475,6 +476,30 @@ export const firstTripIn = (
     inline = 0,
 ): FirstTrip => firstTripOf(input, weigherOf(input.files, weigh, weighPath), inline);
 
+/** The files a web app manifest or a Windows tile configuration lists: icons, by what lists them. */
+const ICON_LISTS = /(?:manifest\.json|\.webmanifest|browserconfig\.xml)$/i;
+/** A `<meta>` tag, whole. Linear: no nested quantifier, and `[^>]` cannot run past the tag. */
+const META_TAG = /<meta\b[^>]*>/gi;
+
+/**
+ * Every name the page or its icon lists give as an icon for some platform: the `<link rel>` icons,
+ * what a manifest or `browserconfig.xml` names, and the `msapplication-*` metas. Which one a visitor
+ * downloads depends on the browser, and it is one of them.
+ */
+const platformIconsOf = (input: AssetInput): Set<string> => {
+    const icons = new Set(input.icons);
+    const lists = [...input.texts].filter(([name]) => ICON_LISTS.test(name)).map(([, text]) => text);
+    const metas = input.html
+        ? [...input.html.matchAll(META_TAG)].map(([tag]) => tag).filter(tag => /msapplication/i.test(tag))
+        : [];
+    for (const file of input.files) {
+        if (kindOf(file.name) === 'image' && [...lists, ...metas].some(text => text.includes(file.name))) {
+            icons.add(file.name);
+        }
+    }
+    return icons;
+};
+
 export const readAssets = (input: AssetInput): AssetReport => {
     const sizes = new Map(input.files.map(file => [file.name, file.bytes]));
     const sizeOf = (name: string): number => input.weigh?.get(name) ?? sizes.get(name) ?? 0;
@@ -482,6 +507,7 @@ export const readAssets = (input: AssetInput): AssetReport => {
     const referencesRead = input.texts.size > 0 || input.html !== null;
 
     const inlined = inlinedOf(input.texts);
+    const iconNames = platformIconsOf(input);
 
     // Scripts only. A prefetched font or picture is a different conversation and a much smaller
     // one; what makes this worth a line is a framework fetching whole routes nobody asked for.
@@ -528,12 +554,18 @@ export const readAssets = (input: AssetInput): AssetReport => {
         // of, not a file downloaded twice under two names.
         duplicates: duplicatesOf(input.files, input.hashes)
             .filter(entry => entry.names.some(path => !input.icons?.has(path.split('/').at(-1) ?? path)))
-            .map(entry => ({
-                ...entry,
-                named: referencesRead
-                    ? entry.names.filter(path => referenced.has(path.split('/').at(-1) ?? path)).length
-                    : null,
-            })),
+            .map(entry => {
+                const names = entry.names.map(path => path.split('/').at(-1) ?? path);
+                const asIcon = names.filter(name => iconNames.has(name));
+                return {
+                    ...entry,
+                    named: referencesRead ? names.filter(name => referenced.has(name)).length : null,
+                    icons:
+                        asIcon.length > 0 &&
+                        names.every(name => kindOf(name) === 'image') &&
+                        names.every(name => iconNames.has(name) || !referenced.has(name)),
+                };
+            }),
         contentCompared: !!input.hashes && input.hashes.size > 0,
         inlined,
         inlinedBytes: inlined.reduce((sum, row) => sum + row.bytes, 0),

@@ -14,7 +14,7 @@
 import { type Analysis } from '../analysis/analysis.types';
 import { formatBytes } from '../format/format.utils';
 import { EFFORT, type Effort, EFFORT_WEIGHT } from './effort';
-import { type Finding } from './finding.types';
+import { type Finding, type FindingKind } from './finding.types';
 
 /** What the whole list of signals is worth, with the ceiling it is a fraction of. */
 export interface TotalSaving {
@@ -149,9 +149,27 @@ export interface Action {
 const SEVERITY_RANK: Record<Finding['severity'], number> = { high: 0, mid: 1, info: 2, ok: 3 };
 
 /**
+ * The signals about how Loadline measured rather than about the build: no source maps, a split
+ * that does not add up, chunks the report cannot reach. Each has a fix — a flag on the build — and
+ * none of them takes a byte off what a visitor downloads.
+ */
+const ABOUT_THE_MEASUREMENT: ReadonlySet<FindingKind> = new Set(['noSourceMaps', 'splitDrift', 'unreachable']);
+
+/**
+ * Where a signal goes in the list before anything else is compared: what can be fixed in the build,
+ * then what fixes the report, then what the card itself says cannot be fixed from this project.
+ */
+const tierOf = (finding: Finding): number => (finding.unfixable ? 2 : ABOUT_THE_MEASUREMENT.has(finding.kind) ? 1 : 0);
+
+/**
  * The signals in the order somebody would do them.
  *
- * **Severity first, then bytes per unit of effort.** Sorting by score alone put twelve medium and
+ * **What can be fixed in the build first**; then what is about the measurement (a flag that makes the
+ * report exact and takes nothing off a visit); then what the card says cannot be fixed from here.
+ * On espaciot-app, with no signal saving a kilobyte, the list opened with a duplicate whose own card
+ * said "accept the signal and wait", and the third line was about how Loadline measures.
+ *
+ * **Then severity, then bytes per unit of effort.** Sorting by score alone put twelve medium and
  * informative signals ahead of a high one that names no saving in kilobytes — a key leaked into the
  * bundle saves nothing and is still the first thing anybody should touch. The score orders within a
  * severity, which is where comparing kilobytes against effort makes sense.
@@ -174,7 +192,12 @@ export const rankActions = (findings: readonly Finding[]): Action[] =>
         .filter(action => action.finding.severity !== 'ok')
         .toSorted(
             (a, b) =>
+                tierOf(a.finding) - tierOf(b.finding) ||
                 SEVERITY_RANK[a.finding.severity] - SEVERITY_RANK[b.finding.severity] ||
                 b.score - a.score ||
-                b.saving - a.saving,
+                b.saving - a.saving ||
+                // With no saving to compare — the usual case on a small app — the figure the signal
+                // is about, then the cheaper fix: not the order the signals happened to be built in.
+                (b.finding.size ?? 0) - (a.finding.size ?? 0) ||
+                EFFORT_WEIGHT[a.effort] - EFFORT_WEIGHT[b.effort],
         );

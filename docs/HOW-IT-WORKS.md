@@ -814,13 +814,25 @@ shared chunk, `metafile: true`, `minify: true` — comes out at **0.9892**, and 
 **0.9975**: the deficit is the per-chunk wrapper, in the direction the overhead predicts. Whatever
 moves the figure sits between esbuild's metafile and the folder Angular writes, on some of its builds.
 
-**Why it is a signal and not a correction.** Scaling the breakdown down by the ratio would make the
-totals reconcile and would be a model: it assumes every file moved by the same proportion, and nothing
-here measures whether it did. There is an exact answer available instead, and the signal's fix is to
-go and get it — build with source maps and drop the folder, and the split is measured on the generated
-file itself. On the same Angular 22 probe, the graph walk over the metafile alone totals 280 153 bytes
-against a 222 555-byte bootstrap (**+26 %**); with the maps alongside it, 221 555 (**−0.45 %**). It
-does not fire on chunks a map covered, because for those there is nothing left to drift.
+**A signal, and since 28/10/2026 a correction too.** This section used to stop at the signal:
+scaling the breakdown down by the ratio would make the totals reconcile and would be a model, assuming
+every file moved by the same proportion. Two things changed that. The cause was found — Angular's
+chunk optimizer bundles the chunks again after esbuild and shares each chunk's length out in
+proportion, before the last minification — which is exactly a same-proportion move. And leaving the
+figures as they were made the report contradict itself on every card but this one: espaciot-app
+without maps read "Bootstrap 117 kB" over "≈117 kB of packages against ≈30 kB of your own" (147),
+and one package was 53 kB in one card and 72 kB in another. Scaled to the file, the same build gives
+93 + 24; built with maps, it measures 93 + 25.
+
+So a chunk whose parts add up to **more** than the file, past the same 5 % and kibibyte, has them
+scaled down to it (`chunkScalesOf`), and every card's figures add up. Never up: parts short of the
+file are the wrapper and the runtime, which belong to nobody's file, and sharing them out would be
+inventing them. This card still fires, saying the metafile was off and by how much, because the
+scaled figures are a proportion and the exact answer is still one flag away — build with source maps
+and drop the folder, and the split is measured on the generated file itself. On the same Angular 22
+probe, the graph walk over the metafile alone totals 280 153 bytes against a 222 555-byte bootstrap
+(**+26 %**); with the maps alongside it, 221 555 (**−0.45 %**). It does not fire on chunks a map
+covered, because for those there is nothing left to drift.
 
 ### 3.24 What `loadline.json` forbids
 
@@ -1123,6 +1135,17 @@ line carries a **count as a screen** button, as every row of the table carries a
 telling a screen from a piece of one is partly done by reading file names, and no set of names fits
 every project. A reclassified entry is remembered with the session.
 
+### What is refused by name: a native app
+
+An Expo export for Android or iOS — a `metadata.json` naming those platforms, bundles under
+`_expo/static/js/android/` or `ios/`, Hermes bytecode (`.hbc`, or any file starting with its magic
+number) — is refused with exit code `2` and the code `NATIVE_APP` in `--format json`, saying what it
+is. So is the project folder of an Expo app with no web build in it. Loadline weighs what a browser
+downloads per screen; a native app arrives installed from a store, and read as a web build it gave a
+985 kB bootstrap with no screens, a first trip of 0 B and nine seconds on slow 4G for something
+nobody downloads that way. What a native bundle holds is what Expo Atlas shows. A web export
+(`expo export --platform web`) is a web build and is read as one.
+
 ### The other files, all optional
 
 | File                                       | What is read                                                                                                                                     |
@@ -1138,6 +1161,13 @@ every project. A reclassified entry is remembered with the session.
 | `package.json`                             | `scripts` (to follow the pipeline's commands), `zone.js` and `@angular/core`                                                                     |
 | `.gitlab-ci.yml` / GitHub workflow         | Commands containing `ng build` or a build script, with the job they live in                                                                      |
 
+A source map is read in either shape the specification allows: a regular map, with `sources` and
+`mappings` at its root, or an **index map** — `sections`, each with an offset and a map of its own —
+which is what Metro writes (an Expo export's map came in 2,290 sections). The sections are joined
+into one map where the JSON is read, so every reader sees the same thing. A section that points at
+another file (`url`) is not fetched, and a map that cannot be read is said to be there in a format
+Loadline does not read, never counted as no map.
+
 The page's "Export analysis" button and the command's `--export` write the same file. That matters
 more than it sounds: a `stats.json` is the only baseline a build can produce on its own, and Vite,
 Rollup, SvelteKit, Nuxt, Astro and Solid do not write one — so before `--export` the only way to get a
@@ -1145,6 +1175,14 @@ baseline for any of them was to open a browser and press a button, which a pipel
 
 The pipeline file is read without a YAML parser, line by line, which is why every command found is
 shown in the Project tab with what it resolves to: if the heuristic gets it wrong, it shows.
+
+**The name at the top of the report** comes from one order, whatever else was passed: the page's
+`<title>` in `index.html`, then the `name` of a `package.json` (the one `--project` names, or the
+nearest one above the build), then the Angular project, then the build folder's own name. The title
+is first because it is in the build: a package name is only known with `--project` or when the
+build sits inside its repository, and the same build copied to a temporary folder was called by its
+title without the flag and by its package with it. A title left as a generator wrote it (`Vite +
+React + TS`, `React App`) names a template, and is skipped.
 
 ### How `loadline.json` is allowed to grow
 

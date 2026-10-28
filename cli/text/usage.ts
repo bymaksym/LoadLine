@@ -45,8 +45,8 @@ Reading the build
                            writes this file with its "Download criteria" button.
   --config <file.json>     loadline.json: the thresholds, the gates and the signals the team has
                            decided to live with, kept next to the code. Without the flag, a
-                           loadline.json in the working directory is read if there is one. Flags on
-                           the command line win over the file.
+                           loadline.json in the working directory, or else in its .config/, is
+                           read if there is one. Flags on the command line win over the file.
   --print-config           Print that loadline.json with everything it "extends" joined in, and
                            stop: which threshold won, without reading three files. Needs no build.
                            The page cannot follow "extends"; drop what this prints on it instead.
@@ -161,8 +161,8 @@ Leer el build
                            página escribe este fichero con su botón "Descargar criterios".
   --config <fichero.json>  loadline.json: los umbrales, los gates y las señales que el equipo ha
                            decidido aceptar, junto al código. Sin la opción, se lee el
-                           loadline.json del directorio de trabajo si lo hay. Las opciones de la
-                           línea de comandos ganan al fichero.
+                           loadline.json del directorio de trabajo, o si no el de su .config/, si
+                           lo hay. Las opciones de la línea de comandos ganan al fichero.
   --print-config           Muestra ese loadline.json con todo lo que hereda con "extends" ya
                            unido, y para: qué umbral ha ganado, sin leer tres ficheros. No necesita
                            build. La página no puede seguir "extends"; suéltale lo que esto escribe.

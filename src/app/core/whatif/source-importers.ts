@@ -8,6 +8,7 @@
  * stats.json" while the line that brings the package in was sitting in the folder.
  */
 
+import { parseSourceMap } from '../analysis/sourcemap/index-map';
 import { projectRootsOf, sourcePathOf } from '../analysis/sourcemap/sourcemap';
 import { isDependency } from '../format/ownership';
 import { asArray, asRecord, asText } from '../json/json.utils';
@@ -35,7 +36,7 @@ export const importersInSources = (maps: readonly { text: string }[], name: stri
     const pattern = importOf(name);
     const read = maps.map(map => {
         try {
-            const parsed = asRecord(JSON.parse(map.text));
+            const parsed = asRecord(parseSourceMap(map.text));
             return {
                 sources: (asArray(parsed?.['sources']) ?? []).map(source => asText(source) ?? ''),
                 contents: (asArray(parsed?.['sourcesContent']) ?? []).map(content => asText(content)),

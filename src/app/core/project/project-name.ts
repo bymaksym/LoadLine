@@ -42,7 +42,37 @@ const folderName = (folder: string): string | null =>
         .filter(part => part !== '' && part !== '.' && part !== '..')
         .findLast(part => !GENERIC_FOLDERS.has(part.toLowerCase()) && !/\.json$/i.test(part)) ?? null;
 
-export const projectNameOf = (sources: NameSources): string | null =>
-    [sources.packageName, sources.angularProject, sources.pageTitle, sources.folder ? folderName(sources.folder) : null]
-        .map(name => name?.trim())
-        .find(name => !!name) ?? null;
+/**
+ * The titles a project generator writes and nobody changed: "Vite + React + TS" names the template,
+ * not the application, and reading it as the name would put the same name on every Vite app there is.
+ */
+const TEMPLATE_TITLES = new Set(['vite app', 'react app', 'svelte app', 'sveltekit app', 'angular', 'document', 'app']);
+const isTemplateTitle = (title: string): boolean => {
+    const lower = title.toLowerCase();
+    return TEMPLATE_TITLES.has(lower) || lower === 'vite' || lower.startsWith('vite + ');
+};
+
+/**
+ * **The build's own title first, then the package, then the Angular project, then the folder.**
+ *
+ * One order whatever was passed, so the same build gets the same name with and without `--project`.
+ * The package name came first, and it is only known when `--project` is given or a `package.json`
+ * sits a few folders above the build: a build copied to a temporary folder was called "Esail IT
+ * Solutions" (its `<title>`) without the flag and "control-horario-angular" with it. The title is in
+ * the build itself, so it does not depend on what else the command was given — and it is the name
+ * the application calls itself on screen, which a package name often is not ("frontend", "web").
+ * A title left as the generator wrote it is skipped: it names a template, not this application.
+ */
+export const projectNameOf = (sources: NameSources): string | null => {
+    const title = sources.pageTitle?.trim();
+    return (
+        [
+            title && !isTemplateTitle(title) ? title : null,
+            sources.packageName,
+            sources.angularProject,
+            sources.folder ? folderName(sources.folder) : null,
+        ]
+            .map(name => name?.trim())
+            .find(name => !!name) ?? null
+    );
+};

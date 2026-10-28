@@ -376,6 +376,12 @@ export interface Analysis {
      * source paths. `null` when the file is not reachable from the entry.
      */
     chainTo: (path: string) => string[] | null;
+    /**
+     * Whether a step of a `chainTo` chain is reached through an `import()` from the step before it,
+     * so the chain can say where it stops being part of the bootstrap. Absent where nothing walked
+     * the source graph (an analysis built by hand in a test); every step then reads as static.
+     */
+    lazyStep?: (path: string) => boolean;
     /** Where the weight of each file inside a chunk was measured: the metafile or a source map. */
     splitSource: SplitSource;
     /**

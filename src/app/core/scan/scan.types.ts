@@ -54,6 +54,13 @@ export interface Leftover {
      * `@angular/core` look exactly the same. The report has to say that instead of picking one.
      */
     attributed: boolean;
+    /**
+     * Of `where`, the scripts the bundler did not write — copied in as they are, from `public/` or an
+     * assets folder — when it listed what it wrote. `public/firebase-messaging-sw.js` is one, and
+     * calling it a "chunk without a source map" sent somebody to turn on maps for a file no bundler
+     * touches. Whose code it is stays unknown: it may be a library copied in.
+     */
+    copied: string[];
 }
 
 /** A licence found in the legal comments the bundler kept, with how it has to be treated. */

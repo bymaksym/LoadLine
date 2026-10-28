@@ -36,6 +36,9 @@ const EN: CliStrings = {
     htmlInsideBuild: folder =>
         `It is inside ${folder}, which the next build empties: write it somewhere else to keep it.`,
     located: files => `found ${files}`,
+    budgetStanding: d =>
+        `Budgets: ${d.current} of ${d.limit}${d.over ? ', over it' : ''} — the initial ${d.warning ? 'warning' : 'error'} ` +
+        `of ${d.config} in angular.json${d.error ? `, with the error at ${d.error}` : ''}.`,
     alsoFound: folders => `the newest build was read; also found ${folders}: pass one of them to read it instead`,
     lastRunUnchanged: 'nothing moved',
     tripFonts: 'fonts',
@@ -248,6 +251,9 @@ const ES: CliStrings = {
     htmlInsideBuild: folder =>
         `Está dentro de ${folder}, que el siguiente build vacía: guárdala en otro sitio para conservarla.`,
     located: files => `encontrado ${files}`,
+    budgetStanding: d =>
+        `Presupuestos: ${d.current} de ${d.limit}${d.over ? ', por encima' : ''} — el ${d.warning ? 'aviso' : 'error'} ` +
+        `inicial de ${d.config} en angular.json${d.error ? `, con el error en ${d.error}` : ''}.`,
     alsoFound: folders => `se ha leído el build más reciente; también hay ${folders}: pasa uno de ellos para leerlo`,
     lastRunUnchanged: 'no se ha movido nada',
     tripFonts: 'de tipografías',

@@ -18,7 +18,7 @@ import { RECOMMENDED } from '../src/app/core/criteria/criteria';
 import { type Criteria, type Mode } from '../src/app/core/criteria/criteria.types';
 import { readDeps } from '../src/app/core/deps/deps';
 import { unitScale } from '../src/app/core/findings/actions';
-import { buildFolderFindings } from '../src/app/core/findings/bundle/shipped';
+import { buildFolderFindings, mapCount, unreadMapCount } from '../src/app/core/findings/bundle/shipped';
 import { composeFindings } from '../src/app/core/findings/compose';
 import { type Finding } from '../src/app/core/findings/finding.types';
 import { buildComparisonFindings, buildContextFindings, buildFindings } from '../src/app/core/findings/findings';
@@ -31,8 +31,9 @@ import { buildForbiddenFindings } from '../src/app/core/findings/supplied/forbid
 import { buildSituationFindings } from '../src/app/core/findings/supplied/situation';
 import { baseName, setNumberLang } from '../src/app/core/format/format.utils';
 import { UI } from '../src/app/core/i18n/ui';
+import { budgetStanding } from '../src/app/core/project/budget-advice';
 import { projectNameOf } from '../src/app/core/project/project-name';
-import { scanBuild } from '../src/app/core/scan/scan';
+import { generatedOf, scanBuild } from '../src/app/core/scan/scan';
 import { EMPTY_SITUATION } from '../src/app/core/situation/situation';
 import { simulateDefer } from '../src/app/core/whatif/defer';
 import { importersInSources } from '../src/app/core/whatif/source-importers';
@@ -171,6 +172,7 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
                   modules: analysis.modules,
                   boot: new Set(analysis.bootChunks),
                   maps: input.maps ?? [],
+                  generated: generatedOf(analysis),
               })
             : null;
     const deps = readDeps({
@@ -197,7 +199,11 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
     const fromBuild = [
         ...buildFolderFindings(
             {
-                sourceMaps: input.splits?.size ?? 0,
+                // The map files in the folder, which is what the card about what they expose counts
+                // too: counted as chunks with a split, a stylesheet's map or one that did not parse
+                // dropped out, and two cards gave 43 and 44 for the same folder.
+                sourceMaps: mapCount(input.maps ?? [], input.splits?.size ?? 0),
+                unreadMaps: unreadMapCount(input.maps ?? [], chunk => !!input.splits?.has(chunk)),
                 derived: !!input.graph,
                 screens: analysis.screens.map(s => s.label),
                 drift: analysis.splitDrift,
@@ -273,6 +279,7 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
                 input.graph ? pkg => importersInSources(input.maps ?? [], pkg) : null,
             ),
         ),
+        budgetStanding: budgetStanding(input.context, analysis.initialRawBytes),
         projectName: projectNameOf({
             packageName: input.context.pkg?.name ?? input.packageName,
             angularProject: input.context.angular?.project,

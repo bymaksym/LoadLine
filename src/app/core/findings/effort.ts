@@ -74,13 +74,13 @@ export const EFFORT: Record<FindingKind, Effort> = {
     clean: 'none',
     unreachable: 'none',
     // Context when it only means "no breakdown by package", but on a folder whose every screen row
-    // is a content hash it is the one thing to do before anything else on the list can be acted on:
-    // you cannot move a screen's code when you cannot tell which screen the row is. And the fix is
-    // a flag — `--stats-json`, or source maps on — so it belongs with the configuration ones.
+    // is a content hash it is worth doing: you cannot move a screen's code when you cannot tell which
+    // screen the row is. The fix is a flag — `--stats-json`, or source maps on — so it belongs with
+    // the configuration ones. It is about the measurement, not the build, and `rankActions` puts it
+    // after what takes bytes off a visit: on the list, it is one more task, not the first.
     noSourceMaps: 'config',
     // The same shape of thing and the same way out: a flag on the build, and the figures inside the
-    // chunks stop reading high. It is about the report rather than the bundle, and it is still the
-    // first thing to do — every saving on the list below is quoted in the unit it corrects.
+    // chunks stop reading high. About the report rather than the bundle, so it ranks with the one above.
     splitDrift: 'config',
     // A `preconnect` is one tag in the `<head>`, and it is the whole of what can be done about a
     // handshake short of moving the files back. When the page already warms them there is nothing

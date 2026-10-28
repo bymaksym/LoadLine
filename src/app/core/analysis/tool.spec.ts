@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapsOn } from '../findings/text/tool-advice';
+import { mapsOn, screenPreload } from '../findings/text/tool-advice';
 import { type Metafile } from './metafile.types';
 import { toolLabel, toolOf } from './tool';
 
@@ -57,5 +57,15 @@ describe('the advice in the words of the tool', () => {
 
         expect(advice).toContain('Vite');
         expect(advice).toContain('Angular');
+    });
+
+    /** espaciot-app, Angular: the advice on screens three trips deep talked about Vite's preload list. */
+    it('says how each tool preloads a deep screen', () => {
+        const angular = screenPreload({ bundler: 'esbuild', framework: 'angular' }, 'en');
+
+        expect(angular).toContain('withPreloading');
+        expect(angular).not.toContain('Vite');
+        expect(screenPreload({ bundler: 'vite', framework: 'vue' }, 'es')).toContain('build.modulePreload');
+        expect(screenPreload({ bundler: 'webpack', framework: 'react' }, 'en')).toContain('webpackPrefetch');
     });
 });

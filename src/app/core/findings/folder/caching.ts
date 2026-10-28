@@ -11,7 +11,7 @@ import { cascadeShapeOf } from '../../analysis/graph/blast';
 import { type BuildTool } from '../../analysis/tool';
 import { type CachingReport } from '../../caching/caching.types';
 import { type Criteria } from '../../criteria/criteria.types';
-import { formatBytes } from '../../format/format.utils';
+import { formatBytes, formatShare } from '../../format/format.utils';
 import { type Lang } from '../../i18n/ui-strings';
 import { cascadeExposure, EMPTY_SITUATION, invalidationsPerWeek } from '../../situation/situation';
 import { type Situation } from '../../situation/situation.types';
@@ -152,14 +152,16 @@ export const buildCachingFindings = (
             ...text.unstableChunk({
                 count: unstable.length,
                 name: worst.name,
-                pct: Math.round(worst.vendorRatio * 100),
+                pct: formatShare(worst.vendorRatio),
+                own: formatBytes(worst.ownBytes),
+                vendor: `${worst.estimated ? '≈' : ''}${formatBytes(worst.vendorBytes)}`,
                 size: `${worst.estimated ? '≈' : ''}${formatBytes(wasted)}`,
                 inBoot: worst.inBoot,
                 tool,
                 list: unstable
                     .map(
                         chunk =>
-                            `${mono(chunk.name)} — ${Math.round(chunk.vendorRatio * 100)} % ${chunk.estimated ? '≈' : ''}${formatBytes(chunk.vendorBytes)}${chunk.inBoot ? ' (bootstrap)' : ''}`,
+                            `${mono(chunk.name)} — ${formatShare(chunk.vendorRatio)} % ${chunk.estimated ? '≈' : ''}${formatBytes(chunk.vendorBytes)}, ${text.ownInChunk(formatBytes(chunk.ownBytes))}${chunk.inBoot ? ' (bootstrap)' : ''}`,
                     )
                     .join(' · '),
             }),

@@ -18,6 +18,8 @@ fixtures/vite5-app/dist
 fixtures/vite-relative-app/dist
 fixtures/vite-router-app/dist
 fixtures/webpack4-app/dist
+# Written by a script as Metro writes it: the map's offsets point at lines of the bundle as it is.
+fixtures/metro-sectioned-map/dist
 fixtures/webpack5-app/dist
 # webpack's own stats, as webpack wrote them.
 fixtures/webpack4-app/stats.json

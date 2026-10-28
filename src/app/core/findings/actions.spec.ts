@@ -38,6 +38,29 @@ describe('rankActions · what to fix first', () => {
 
         expect(ranked).toEqual([]);
     });
+
+    /**
+     * espaciot-app, where no signal saved a kilobyte: the list came out in the order the signals
+     * were built, and opened with a duplicate whose own card said "accept the signal and wait", with
+     * a note on how Loadline measured as number three.
+     */
+    it('puts what can be fixed first, the measurement after, and what cannot be fixed last', () => {
+        const ranked = rankActions([
+            { ...finding('dupes'), unfixable: true },
+            finding('bigFile'),
+            { ...finding('noSourceMaps'), severity: 'mid' },
+            { ...finding('fonts'), size: 90 * KB },
+            { ...finding('unstableChunk'), size: 120 * KB },
+        ]);
+
+        expect(ranked.map(action => action.finding.kind)).toEqual([
+            'unstableChunk',
+            'fonts',
+            'bigFile',
+            'noSourceMaps',
+            'dupes',
+        ]);
+    });
 });
 
 describe('totalSaving · what doing all of it is worth', () => {

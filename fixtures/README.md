@@ -96,6 +96,39 @@ Polymer's es5/es6 builds look like. Read as ES modules only, Polymer's build cam
 loader, zero screens and 1.1 MB "in no figure here"; this holds up the dependency lists, the name in
 a string as a lazy edge, and `data-main`.
 
+## `metro-sectioned-map/`
+
+**Synthetic**, written by a short script rather than by Metro, in the shape Metro gives an Expo web
+export: one bundle of `__d(function(g,r,i,a,m,e,d){…},id,[deps],"path")` modules under
+`_expo/static/js/web/`, a `metadata.json` with no native platforms in it, and the bundle's map as an
+**index map** — `{ "version": 3, "sections": [ { "offset": …, "map": … } ] }`, one section per
+module, nothing at the root. That is the format of the specification Metro writes, and a real
+export (Zaporeak, 16 MB in 2,290 sections) was read as "this folder carries no source maps". What
+it holds up is the sections joined into one map — the split per source file — and a `console.log`
+traced to the project's own `src/core/logger.ts`, apart from React's. The bundle and the map are
+kept as written: the offsets point at lines of the bundle.
+
+## `expo-native-app/`
+
+**Synthetic**: the skeleton of an Expo app exported for Android and iOS — `package.json` with `expo`
+and a `bundle` script and no `build`, `app.json`, and `dist/` as `expo export` writes it:
+`metadata.json` naming both platforms, one bundle per platform under `_expo/static/js/<platform>/`
+as Hermes bytecode (the real magic number, then filler), and an image under `assets/` named by its
+hash with no extension. It is here to be **refused by name** from the three places a real one was
+pointed at — the project, `dist/` and the `.hbc` — instead of being told to `npm run build`, asked
+whether it is `browser/`, or read as a JSON that will not parse.
+
+## `pnpm9-lock/`
+
+**Written by hand**, unlike the builds above: a `pnpm-lock.yaml` in pnpm 9's format
+(`lockfileVersion: '9.0'`) with the `package.json` it sits next to, shaped after espaciot-app's —
+Angular, Firebase and `@microsoft/teams-js`, `idb` and `tslib` brought in by dependencies. What it
+holds up is the two things pnpm 9 writes differently: scoped names in quotes
+(`'@angular/core@20.3.4':`), which read as a package named `'` before, and what each package depends
+on under `snapshots:`, at **resolved** versions and with the peers in brackets. Those are read as who
+brings whom (`--lock`'s chains) and never as ranges, so nothing in it reads as pinned. The integrity
+hashes are filler; nothing reads them.
+
 ## `sample-report.json`
 
 A snapshot, not an input: the whole report for the synthetic build in

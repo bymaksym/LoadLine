@@ -257,6 +257,11 @@ export interface JsonReport {
      */
     budget: { warningKb: number; errorKb: number; currentBytes: number; snippet: string } | null;
     /**
+     * The budget `angular.json` already sets and where the initial load stands against it, raw
+     * bytes. `null` without `--project` or when no configuration sets one.
+     */
+    budgetStanding: { config: string; current: number; warning: number | null; error: number | null } | null;
+    /**
      * What an update costs rather than a first visit, which is the half of the real cost nothing
      * else reports. `update` is `null` unless the baseline carried the previous build's file names.
      */

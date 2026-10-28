@@ -6,6 +6,7 @@ import {
     elidePath,
     formatBytes,
     formatDelta,
+    formatShare,
     packageOf,
     projectFolderOf,
     screenLabel,
@@ -205,5 +206,20 @@ describe('elidePath', () => {
         expect(elidePath('a-single-very-long-file-name-with-no-folders-at-all-in-it.ts')).toBe(
             'a-single-very-long-file-name-with-no-folders-at-all-in-it.ts',
         );
+    });
+});
+
+describe('formatShare', () => {
+    /** A chunk 99.79 % dependencies was said to be 100 %: the 0.21 % left is what moves its hash. */
+    it('never rounds to a whole it is not', () => {
+        expect(formatShare(0.9979)).toBe('99.7');
+        expect(formatShare(0.99999)).toBe('99.9');
+        expect(formatShare(0.002)).toBe('0.2');
+    });
+
+    it('gives whole percentages everywhere else', () => {
+        expect(formatShare(0.8)).toBe('80');
+        expect(formatShare(1)).toBe('100');
+        expect(formatShare(0)).toBe('0');
     });
 });
