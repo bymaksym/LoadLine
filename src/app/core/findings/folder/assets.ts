@@ -56,6 +56,11 @@ export const buildAssetFindings = (
         .flatMap(family => family.files)
         .filter(file => spare.has(file.name))
         .reduce((sum, file) => sum + file.bytes, 0);
+    // The family with the most weights, named with its real count: the card said "seven weights of
+    // one family to use two" whatever the folder held, and over a build with three it was wrong.
+    const weightsOf = (family: (typeof fonts)[number]): number =>
+        family.files.filter(file => !family.superseded.includes(file.name)).length;
+    const widest = manyWeights.toSorted((a, b) => weightsOf(b) - weightsOf(a))[0];
     if (fonts.length > 0 && (fontBytes >= c.shippedMinBytes || superseded.length > 0)) {
         findings.push({
             // A second format is clutter on the server, not bytes on the wire: on its own it is
@@ -70,6 +75,7 @@ export const buildAssetFindings = (
                 spare: formatBytes(spareBytes),
                 superseded: named(superseded),
                 preloaded: named(fonts.flatMap(family => family.preloaded)),
+                widest: widest ? { name: widest.name, weights: weightsOf(widest) } : null,
                 list: fonts
                     .map(
                         family =>
@@ -112,8 +118,13 @@ export const buildAssetFindings = (
         entries.map(entry => `${named(entry.names)} (${formatBytes(entry.bytes)} ${text.each})`).join(' · ');
     const wastedBy = (entries: typeof assets.duplicates): number =>
         entries.reduce((sum, entry) => sum + entry.wasted, 0);
-    const travels = assets.duplicates.filter(entry => entry.named === null || entry.named > 1);
-    const stored = assets.duplicates.filter(entry => entry.named !== null && entry.named <= 1);
+    // Icons for different platforms apart: a favicon generator writes the same picture as the
+    // Android, the Apple and the Windows icon, each browser takes one, and the card said a visitor
+    // downloads all three — with medium severity, next to an image signal counting two requests.
+    const icons = assets.duplicates.filter(entry => entry.icons);
+    const others = assets.duplicates.filter(entry => !entry.icons);
+    const travels = others.filter(entry => entry.named === null || entry.named > 1);
+    const stored = others.filter(entry => entry.named !== null && entry.named <= 1);
     const wasted = wastedBy(travels);
     if (assets.duplicates.length > 0) {
         findings.push({
@@ -130,6 +141,7 @@ export const buildAssetFindings = (
                     list: listOf(stored),
                     none: stored.every(entry => entry.named === 0),
                 },
+                icons: { count: icons.length, list: listOf(icons) },
             }),
         });
     }

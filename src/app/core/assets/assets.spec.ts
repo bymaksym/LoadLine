@@ -283,3 +283,53 @@ describe('readAssets · the rest', () => {
         expect(row?.bytes).toBe(20_000);
     });
 });
+
+/**
+ * espaciot-app: a favicon generator's 144×144 picture as the Android icon (the manifest), the Apple
+ * one (a `<link rel>`) and the Windows tile (a `msapplication` meta). The card said a visitor
+ * downloads it twice, with medium severity; each browser takes the one meant for it.
+ */
+describe('readAssets · icons for several platforms', () => {
+    const icons = input({
+        files: [
+            { path: 'assets/icons/android-icon-144x144.png', name: 'android-icon-144x144.png', bytes: 9000 },
+            { path: 'assets/icons/apple-icon-144x144.png', name: 'apple-icon-144x144.png', bytes: 9000 },
+            { path: 'assets/icons/ms-icon-144x144.png', name: 'ms-icon-144x144.png', bytes: 9000 },
+        ],
+        html: `<head><link rel="apple-touch-icon" sizes="144x144" href="/assets/icons/apple-icon-144x144.png">
+<meta name="msapplication-TileImage" content="/assets/icons/ms-icon-144x144.png"></head>`,
+        texts: new Map([['manifest.webmanifest', '{"icons":[{"src":"assets/icons/android-icon-144x144.png"}]}']]),
+        icons: new Set(['apple-icon-144x144.png']),
+        hashes: new Map([
+            ['assets/icons/android-icon-144x144.png', 'same'],
+            ['assets/icons/apple-icon-144x144.png', 'same'],
+            ['assets/icons/ms-icon-144x144.png', 'same'],
+        ]),
+    });
+
+    it('marks the copies as icons rather than a file downloaded twice', () => {
+        expect(readAssets(icons).duplicates[0]?.icons).toBe(true);
+    });
+
+    it('says so as context, never as a problem', () => {
+        const finding = buildAssetFindings(readAssets(icons), 'en', RECOMMENDED.raw).find(
+            f => f.kind === 'duplicateAssets',
+        );
+
+        expect(finding?.severity).toBe('info');
+        expect(finding?.title).toContain('each browser downloads one');
+    });
+});
+
+/** espaciot-app has three weights; the card said "seven weights of one family" whatever was there. */
+describe('buildAssetFindings · fonts', () => {
+    it('names the real number of weights', () => {
+        const three = input({
+            files: ['Regular', 'Medium', 'Bold'].map(weight => file(`Inter-${weight}-A1.woff2`, 40_000)),
+        });
+        const finding = buildAssetFindings(readAssets(three), 'en', RECOMMENDED.raw).find(f => f.kind === 'fonts');
+
+        expect(finding?.body).toContain('3 weights');
+        expect(finding?.body).not.toContain('seven');
+    });
+});

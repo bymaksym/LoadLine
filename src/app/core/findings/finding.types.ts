@@ -172,6 +172,11 @@ export interface DuplicateAssetsData {
         /** Not one copy of any of them is named, by the page or by the code. */
         none: boolean;
     };
+    /**
+     * Pictures named only as icons for different platforms, which a favicon generator writes on
+     * purpose: each browser takes the one meant for it, so none of them travels twice.
+     */
+    icons: { count: number; list: string };
 }
 
 export interface DupesData {

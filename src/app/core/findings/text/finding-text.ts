@@ -384,6 +384,7 @@ export const TEXT = {
             spare: string;
             superseded: string;
             preloaded: string;
+            widest: { name: string; weights: number } | null;
             list: string;
         }) => ({
             chip: 'tipografías',
@@ -391,7 +392,11 @@ export const TEXT = {
                 d.superseded === ''
                     ? `${d.size} de tipografías: ${d.files} ficheros en ${d.families} ${d.families === 1 ? 'familia' : 'familias'}`
                     : `${d.size} de tipografías en el servidor, ${d.spare} de ellos en un segundo formato que ningún navegador actual descarga`,
-            body: `Ningún analizador de bundle enseña esto porque todos paran en el JavaScript, y siete pesos de una familia para usar dos es un hallazgo de trescientos kilobytes. ${d.list}.${
+            body: `Ningún analizador de bundle enseña esto porque todos paran en el JavaScript${
+                d.widest
+                    ? `: aquí ${mono(d.widest.name)} trae ${d.widest.weights} pesos, cuando una interfaz suele usar dos.`
+                    : ', y los pesos y formatos de una tipografía suman kilobytes que nadie mira.'
+            } ${d.list}.${
                 d.superseded ? ` En un formato que otro de la misma carpeta ya sustituye: ${d.superseded}.` : ''
             }${d.preloaded ? ` La página precarga ${d.preloaded}, así que esos entran en la primera carga.` : ''}`,
             fix: `Cuenta los pesos que la interfaz usa de verdad —normalmente son dos, regular y bold— y borra el resto de la configuración de fuentes. Salvo que sean subconjuntos ${mono('unicode-range')} de un mismo peso —decenas de ficheros de una familia suelen serlo, como los de una fuente china—: esos los pide el navegador solo para los caracteres que hay en pantalla, y ahí no sobra ninguno. Si hay un ${mono('.woff2')} al lado de un ${mono('.ttf')} de la misma cara, el segundo solo lo necesita un navegador que ya no usa nadie: quítalo de la lista de formatos. Y precarga solo lo que hace falta antes de pintar: un ${mono('preload')} por peso convierte la lista entera en primera carga.`,
@@ -418,14 +423,20 @@ export const TEXT = {
             ...(d.count > 0
                 ? {
                       title: `${d.size} en ${d.count === 1 ? 'un fichero que viaja' : `${d.count} ficheros que viajan`} dos veces con nombres distintos`,
-                      body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño— y aun así son entradas de caché separadas, así que quien visita la página los descarga los dos. ${d.list}.${d.stored.count > 0 ? ` Aparte, guardados dos veces y descargados una como mucho, porque nada nombra la otra copia: ${d.stored.list}.` : ''}`,
+                      body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño— y aun así son entradas de caché separadas, así que quien visita la página los descarga los dos. ${d.list}.${d.stored.count > 0 ? ` Aparte, guardados dos veces y descargados una como mucho, porque nada nombra la otra copia: ${d.stored.list}.` : ''}${d.icons.count > 0 ? ` Y son iconos de varias plataformas, de los que cada navegador descarga uno: ${d.icons.list}.` : ''}`,
                       fix: 'Casi siempre es el mismo recurso importado desde dos sitios con rutas distintas, o una copia que quedó de una migración. Unifica el import y borra la copia. Si los dos nombres los genera el build, mira si un plugin está copiando la carpeta de recursos además de procesarla.',
                   }
-                : {
-                      title: `${d.stored.size} en ${d.stored.count === 1 ? 'un fichero' : `${d.stored.count} ficheros`} que la carpeta guarda dos veces y la página descarga una como mucho`,
-                      body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño—, pero ${d.stored.none ? 'ni la página ni el código nombran ninguna de las copias' : 'la página y el código nombran solo una de las copias'}, y una copia que nada nombra no se descarga salvo que algo construya su URL al ejecutarse: esto cuesta espacio donde se despliega, no tiempo en la visita. ${d.stored.list}.`,
-                      fix: 'En la visita no hay nada que ahorrar. Si el build escribe los dos nombres a propósito —hay herramientas que escriben un fichero con su nombre y otra vez con un hash—, déjalo; si no, borra la copia que nada nombra.',
-                  }),
+                : d.stored.count > 0
+                  ? {
+                        title: `${d.stored.size} en ${d.stored.count === 1 ? 'un fichero' : `${d.stored.count} ficheros`} que la carpeta guarda dos veces y la página descarga una como mucho`,
+                        body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño—, pero ${d.stored.none ? 'ni la página ni el código nombran ninguna de las copias' : 'la página y el código nombran solo una de las copias'}, y una copia que nada nombra no se descarga salvo que algo construya su URL al ejecutarse: esto cuesta espacio donde se despliega, no tiempo en la visita. ${d.stored.list}.${d.icons.count > 0 ? ` Y son iconos de varias plataformas, de los que cada navegador descarga uno: ${d.icons.list}.` : ''}`,
+                        fix: 'En la visita no hay nada que ahorrar. Si el build escribe los dos nombres a propósito —hay herramientas que escriben un fichero con su nombre y otra vez con un hash—, déjalo; si no, borra la copia que nada nombra.',
+                    }
+                  : {
+                        title: `${d.icons.count === 1 ? 'Un icono' : `${d.icons.count} iconos`} con el mismo dibujo para varias plataformas: cada navegador descarga uno`,
+                        body: `El contenido es idéntico byte a byte, pero cada copia se nombra como el icono de una plataforma —un ${mono('<link rel>')} de la página, el manifiesto, ${mono('browserconfig.xml')}—, que es lo que escribe cualquier generador de favicons. Cada navegador elige el suyo, así que nadie descarga dos. ${d.icons.list}.`,
+                        fix: 'En la visita no hay nada que ahorrar, y quitar una copia puede dejar a una plataforma sin su icono. Si molesta tenerlas repetidas en el servidor, que el manifiesto y los enlaces apunten al mismo fichero.',
+                    }),
         }),
         unreferencedAssets: (d: {
             count: number;
@@ -1429,6 +1440,7 @@ export const TEXT = {
             spare: string;
             superseded: string;
             preloaded: string;
+            widest: { name: string; weights: number } | null;
             list: string;
         }) => ({
             chip: 'fonts',
@@ -1436,7 +1448,11 @@ export const TEXT = {
                 d.superseded === ''
                     ? `${d.size} of fonts: ${d.files} files across ${d.families} ${d.families === 1 ? 'family' : 'families'}`
                     : `${d.size} of fonts on the server, ${d.spare} of it in a second format no current browser downloads`,
-            body: `No bundle analyser shows this, because they all stop at the JavaScript, and seven weights of one family to use two is a three-hundred-kilobyte finding. ${d.list}.${
+            body: `No bundle analyser shows this, because they all stop at the JavaScript${
+                d.widest
+                    ? `: here ${mono(d.widest.name)} ships ${d.widest.weights} weights, where an interface usually uses two.`
+                    : ', and the weights and formats of a typeface add up to kilobytes nobody looks at.'
+            } ${d.list}.${
                 d.superseded ? ` In a format another file in the same folder already supersedes: ${d.superseded}.` : ''
             }${d.preloaded ? ` The page preloads ${d.preloaded}, so those are part of the first load.` : ''}`,
             fix: `Count the weights the interface actually uses — usually two, regular and bold — and drop the rest from the font configuration. Unless they are ${mono('unicode-range')} subsets of one weight — dozens of files of one family usually are, as a CJK font's — which the browser fetches only for the characters on screen: there, none of them is spare. Where a ${mono('.woff2')} sits next to a ${mono('.ttf')} of the same face, the second is only wanted by a browser nobody runs any more: take it out of the format list. And preload only what is needed before the first paint: one ${mono('preload')} per weight turns the whole list into first-load bytes.`,
@@ -1463,14 +1479,20 @@ export const TEXT = {
             ...(d.count > 0
                 ? {
                       title: `${d.size} in ${d.count === 1 ? 'a file that ships' : `${d.count} files that ship`} twice under different names`,
-                      body: `The content is identical byte for byte — it was compared, not assumed from the size — and they are still separate cache entries, so a visitor downloads both. ${d.list}.${d.stored.count > 0 ? ` Besides, stored twice and downloaded once at most, because nothing names the other copy: ${d.stored.list}.` : ''}`,
+                      body: `The content is identical byte for byte — it was compared, not assumed from the size — and they are still separate cache entries, so a visitor downloads both. ${d.list}.${d.stored.count > 0 ? ` Besides, stored twice and downloaded once at most, because nothing names the other copy: ${d.stored.list}.` : ''}${d.icons.count > 0 ? ` And these are icons for several platforms, each browser downloading one: ${d.icons.list}.` : ''}`,
                       fix: 'Almost always the same asset imported from two places by different paths, or a copy left over from a migration. Unify the import and delete the copy. If the build generates both names, check whether a plugin is copying the assets folder as well as processing it.',
                   }
-                : {
-                      title: `${d.stored.size} in ${d.stored.count === 1 ? 'a file' : `${d.stored.count} files`} the folder holds twice and the page downloads once at most`,
-                      body: `The content is identical byte for byte — it was compared, not assumed from the size — but ${d.stored.none ? 'neither the page nor the code names any of the copies' : 'the page and the code name only one of the copies'}, and a copy nothing names is not downloaded unless something builds its URL at run time: this costs space where the build is deployed, not time on the visit. ${d.stored.list}.`,
-                      fix: 'There is nothing to save on the visit. If the build writes both names on purpose — some tools write a file under its own name and again under a hash — leave it; otherwise delete the copy nothing names.',
-                  }),
+                : d.stored.count > 0
+                  ? {
+                        title: `${d.stored.size} in ${d.stored.count === 1 ? 'a file' : `${d.stored.count} files`} the folder holds twice and the page downloads once at most`,
+                        body: `The content is identical byte for byte — it was compared, not assumed from the size — but ${d.stored.none ? 'neither the page nor the code names any of the copies' : 'the page and the code name only one of the copies'}, and a copy nothing names is not downloaded unless something builds its URL at run time: this costs space where the build is deployed, not time on the visit. ${d.stored.list}.${d.icons.count > 0 ? ` And these are icons for several platforms, each browser downloading one: ${d.icons.list}.` : ''}`,
+                        fix: 'There is nothing to save on the visit. If the build writes both names on purpose — some tools write a file under its own name and again under a hash — leave it; otherwise delete the copy nothing names.',
+                    }
+                  : {
+                        title: `${d.icons.count === 1 ? 'An icon' : `${d.icons.count} icons`} with the same picture for several platforms: each browser downloads one`,
+                        body: `The content is identical byte for byte, but each copy is named as one platform's icon — a ${mono('<link rel>')} of the page, the manifest, ${mono('browserconfig.xml')} — which is what any favicon generator writes. Each browser picks its own, so nobody downloads two. ${d.icons.list}.`,
+                        fix: 'There is nothing to save on the visit, and removing a copy can leave a platform without its icon. If the repetition on the server bothers you, point the manifest and the links at one file.',
+                    }),
         }),
         unreferencedAssets: (d: {
             count: number;
