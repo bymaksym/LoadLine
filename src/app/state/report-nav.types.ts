@@ -8,6 +8,9 @@ export const REPORT_TABS = [
     // The views of the build.
     'findings',
     'screens',
+    // Next to the screens, because it answers the question their table raises: which package makes
+    // which screen heavy, and whether every screen pays for it or only some.
+    'flow',
     'boot',
     'shared',
     'tree',

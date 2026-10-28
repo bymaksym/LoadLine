@@ -1,0 +1,130 @@
+@let t = i18n.ui();
+@let lit = active() !== null;
+
+<!--
+The diagram scrolls sideways inside this box below its minimum width, so the page itself never
+does. Every node is a button; the ribbons are a picture of the figures the buttons carry.
+-->
+<div #box class="flow">
+    <svg
+        class="flow__svg"
+        role="group"
+        [attr.aria-label]="t.secFlow"
+        [attr.height]="svgHeight()"
+        [attr.viewBox]="'0 0 ' + drawWidth() + ' ' + svgHeight()"
+        [attr.width]="drawWidth()"
+    >
+        @for (heading of headings(); track heading.text) {
+            <text
+                aria-hidden="true"
+                class="flow__heading"
+                y="14"
+                [attr.text-anchor]="heading.anchor"
+                [attr.x]="heading.x"
+            >
+                {{ heading.text }}
+            </text>
+        }
+
+        <g [attr.transform]="'translate(0,' + head + ')'">
+            <!-- The ribbons, then the bands of them the active node lights, on top. -->
+            <g aria-hidden="true">
+                @for (ribbon of ribbons(); track ribbon.key) {
+                    <path
+                        class="flow__ribbon"
+                        [attr.d]="ribbon.d"
+                        [attr.data-zone]="ribbon.zone"
+                        [class.flow__ribbon--dim]="lit"
+                        [class.flow__ribbon--lit]="lit && isLit(ribbon.key)"
+                    >
+                        <title>{{ ribbon.title }}</title>
+                    </path>
+                }
+                @for (band of bands(); track band.key) {
+                    <path class="flow__band" [attr.d]="band.d" [attr.data-zone]="band.zone"></path>
+                }
+            </g>
+
+            @for (node of nodes(); track node.id) {
+                <g
+                    class="flow__node"
+                    role="button"
+                    tabindex="0"
+                    [attr.aria-label]="node.aria"
+                    [attr.aria-pressed]="pinned() === node.id"
+                    [attr.data-column]="node.column"
+                    [class.flow__node--dim]="isDim(node.id)"
+                    [class.flow__node--pinned]="pinned() === node.id"
+                    (blur)="leave(node.id)"
+                    (click)="toggle(node.id)"
+                    (focus)="hovered.set(node.id)"
+                    (keydown)="onKey($event, node.id)"
+                    (mouseenter)="hovered.set(node.id)"
+                    (mouseleave)="leave(node.id)"
+                >
+                    <title>{{ node.fullName }}</title>
+                    @for (box of node.hits; track $index) {
+                        <rect
+                            class="flow__hit"
+                            [attr.height]="box.h"
+                            [attr.width]="box.w"
+                            [attr.x]="box.x"
+                            [attr.y]="box.y"
+                        />
+                    }
+                    @if (node.leader; as line) {
+                        <line
+                            class="flow__leader"
+                            [attr.x1]="line.x1"
+                            [attr.x2]="line.x2"
+                            [attr.y1]="line.y1"
+                            [attr.y2]="line.y2"
+                        />
+                    }
+                    <rect
+                        class="flow__ring"
+                        rx="3"
+                        [attr.height]="node.h + 6"
+                        [attr.width]="18"
+                        [attr.x]="node.x - 3"
+                        [attr.y]="node.y - 3"
+                    />
+                    <rect
+                        class="flow__bar"
+                        rx="2"
+                        [attr.data-zone]="node.zone"
+                        [attr.height]="node.h"
+                        [attr.width]="12"
+                        [attr.x]="node.x"
+                        [attr.y]="node.y"
+                    />
+                    <!--
+                    The label twice: first in the surface's colour with a thick stroke, a halo that
+                    keeps it readable over the ribbons, then in ink on top. One text with
+                    paint-order would do, and that property is not widely available yet.
+                    -->
+                    @for (layer of layers; track layer) {
+                        <g [class.flow__halo]="layer === 'halo'">
+                            <text
+                                class="flow__name"
+                                [attr.text-anchor]="node.anchor"
+                                [attr.x]="node.labelX"
+                                [attr.y]="node.labelY - 3"
+                            >
+                                {{ node.name }}
+                            </text>
+                            <text
+                                class="flow__figure"
+                                [attr.text-anchor]="node.anchor"
+                                [attr.x]="node.labelX"
+                                [attr.y]="node.labelY + 12"
+                            >
+                                {{ node.figure }}
+                            </text>
+                        </g>
+                    }
+                </g>
+            }
+        </g>
+    </svg>
+</div>

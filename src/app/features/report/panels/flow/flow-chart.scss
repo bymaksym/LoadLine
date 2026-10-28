@@ -1,0 +1,160 @@
+:host {
+    display: block;
+}
+
+/*
+   The diagram's own box: it scrolls sideways when the panel is narrower than the drawing, so the
+   page never does. `position: relative` for the reason written over `.scroller`.
+*/
+.flow {
+    position: relative;
+
+    overflow-x: auto;
+
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+
+    background: var(--surface);
+
+    &__svg {
+        display: block;
+        margin: var(--space-6) var(--space-4);
+    }
+
+    &__heading {
+        font-family: var(--font-data);
+        font-size: var(--fs-label);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+
+        fill: var(--muted);
+    }
+
+    /*
+       A ribbon is bytes; its colour is where they live, the same three colours as every bar of the
+       report. Light enough that the labels over the middle read on it, in both themes.
+    */
+    &__ribbon,
+    &__band {
+        fill: var(--seg-boot);
+
+        &[data-zone='shared'] {
+            fill: var(--seg-shared);
+        }
+
+        &[data-zone='own'] {
+            fill: var(--seg-own);
+        }
+    }
+
+    &__ribbon {
+        fill-opacity: 0.3;
+        transition: fill-opacity 0.15s ease;
+
+        &--dim {
+            fill-opacity: 0.07;
+        }
+
+        /* The whole ribbon stays faintly there behind its lit band, so the band reads as a part of it. */
+        &--lit {
+            fill-opacity: 0.16;
+        }
+    }
+
+    /* The part of a ribbon that is the node looked at. It never takes the pointer from the ribbon under it. */
+    &__band {
+        pointer-events: none;
+        fill-opacity: 0.85;
+    }
+
+    &__node {
+        cursor: pointer;
+        outline: none;
+        transition: opacity 0.15s ease;
+
+        &--dim {
+            opacity: 0.3;
+        }
+
+        &:focus-visible .flow__ring {
+            stroke: var(--accent);
+        }
+
+        &--pinned .flow__ring {
+            stroke: var(--ink);
+        }
+
+        &--pinned:focus-visible .flow__ring {
+            stroke: var(--accent);
+        }
+    }
+
+    /* What answers the pointer: the bar and its label, so a node of three pixels can still be found. */
+    &__hit {
+        fill: transparent;
+    }
+
+    /* From a label that had to move to the bar it names: thin, so it is read as a pointer and not as a ribbon. */
+    &__leader {
+        stroke: var(--line-strong);
+        stroke-width: 1;
+    }
+
+    &__ring {
+        fill: none;
+        stroke: transparent;
+        stroke-width: 2;
+    }
+
+    /* Packages and screens in a neutral grey; the middle in the colour of where its bytes live. */
+    &__bar {
+        fill: var(--muted);
+
+        &[data-zone='boot'] {
+            fill: var(--seg-boot);
+        }
+
+        &[data-zone='shared'] {
+            fill: var(--seg-shared);
+        }
+
+        &[data-zone='own'] {
+            fill: var(--seg-own);
+        }
+    }
+
+    /*
+       Labels sit over the ribbons in the middle column; a halo in the colour of the surface keeps
+       them readable on any ribbon without a box behind each one.
+    */
+    &__name,
+    &__figure {
+        font-family: var(--font-data);
+        font-size: var(--fs-note);
+    }
+
+    &__name {
+        font-weight: 600;
+        fill: var(--ink);
+    }
+
+    &__figure {
+        fill: var(--muted);
+    }
+
+    /* The copy of a label drawn first: as thick as a halo and the colour of the surface. */
+    &__halo &__name,
+    &__halo &__figure {
+        fill: var(--surface);
+        stroke: var(--surface);
+        stroke-linejoin: round;
+        stroke-width: 4;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        &__ribbon,
+        &__node {
+            transition: none;
+        }
+    }
+}

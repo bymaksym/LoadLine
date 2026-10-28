@@ -20,6 +20,8 @@ import { BootTabComponent } from './panels/boot/boot-tab';
 import { CompareTabComponent } from './panels/compare/compare-tab';
 import { CriteriaTabComponent } from './panels/criteria/criteria-tab';
 import { FindingsTabComponent } from './panels/findings/findings-tab';
+import { FlowSummaryComponent } from './panels/flow/flow-summary';
+import { FlowTabComponent } from './panels/flow/flow-tab';
 import { MapTabComponent } from './panels/map/map-tab';
 import { MeasuredTabComponent } from './panels/measured/measured-tab';
 import { ProjectTabComponent } from './panels/project/project-tab';
@@ -47,6 +49,8 @@ const BAR_HEADROOM = 1.17;
         BytesPipe,
         FindingsTabComponent,
         ScreensTabComponent,
+        FlowTabComponent,
+        FlowSummaryComponent,
         MeasuredTabComponent,
         BootTabComponent,
         SharedTabComponent,
@@ -334,6 +338,7 @@ export class ReportPageComponent {
         return {
             findings: this.severityCount().all,
             screens: analysis?.screens.length ?? 0,
+            flow: 0,
             measured: this.store.measured()?.extra.length ?? 0,
             boot: analysis?.bootBuckets.length ?? 0,
             shared: analysis?.sharedChunks.length ?? 0,
@@ -383,7 +388,7 @@ export class ReportPageComponent {
             return `${n}/${QUESTIONS.length}`;
         }
 
-        const quiet: ReportTab[] = ['criteria', 'project', 'search', 'measured', 'compare', 'map'];
+        const quiet: ReportTab[] = ['criteria', 'project', 'search', 'measured', 'compare', 'map', 'flow'];
         return quiet.includes(tab) && n === 0 ? null : String(n);
     }
 

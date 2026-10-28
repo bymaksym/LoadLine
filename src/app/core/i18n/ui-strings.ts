@@ -488,6 +488,72 @@ export interface UiStrings {
     mapLegendOwn: string;
     mapEmpty: string;
     mapPick: string;
+
+    // --- flow: where the bytes go ---
+    tabFlow: string;
+    howToFlow: string;
+    secFlow: string;
+    secFlowSub: string;
+    /** The heading over each column of the diagram. */
+    flowColSources: string;
+    flowColMiddles: string;
+    flowColTargets: string;
+    flowOwnCode: string;
+    flowUnattributed: string;
+    /** Chunks nothing describes the inside of: a folder read without its source maps. */
+    flowUnknown: string;
+    flowMorePackages: (count: number) => string;
+    flowBoot: string;
+    flowMoreShared: (count: number) => string;
+    flowOwnChunks: string;
+    flowMoreScreens: (count: number) => string;
+    /** The one node on the right of a build with no lazy screen. */
+    flowApp: string;
+    /** How far a package reaches: all screens, one, or a count. */
+    flowReachAll: string;
+    flowReachOnly: (screen: string) => string;
+    flowReach: (screens: number) => string;
+    /** Under every screen's own chunks: each byte of them is downloaded by one screen. */
+    flowOneEach: string;
+    /** Why a ribbon narrows on its way to a screen: the right column has a scale of its own. */
+    flowScale: string;
+    flowHint: string;
+    flowView: string;
+    flowViewChart: string;
+    flowViewTable: string;
+    flowLegShared: string;
+    /** The sentence under the diagram, one per kind of takeaway (see `flow/takeaway.ts`). */
+    flowTakeawayMisplaced: (
+        pkg: string,
+        size: string,
+        importers: string[],
+        where: 'boot' | 'shared',
+        downloads: number,
+    ) => string;
+    flowTakeawayDriver: (
+        pkg: string,
+        size: string,
+        screen: string,
+        total: string,
+        where: 'shared' | 'own',
+        downloads: number,
+    ) => string;
+    flowTakeawayBoot: (pkg: string, size: string, boot: string, screens: number) => string;
+    flowTakeawayScreen: (screen: string, total: string, boot: string, shared: string, own: string) => string;
+    flowPick: string;
+    flowClear: string;
+    flowWhere: string;
+    flowDownloadedBy: string;
+    flowBeyondBoot: string;
+    flowMadeOf: string;
+    flowGrouped: string;
+    flowThPackage: string;
+    flowThReach: string;
+    flowThTrip: string;
+    flowThDriver: string;
+    flowEmpty: string;
+    /** The link from the flow's sentence on the first view to its tab. */
+    flowOpen: string;
     secBoot: string;
     secBootSub: string;
     secShared: string;

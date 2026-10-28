@@ -196,6 +196,8 @@
         </p>
     </div>
 
+    <app-flow-summary />
+
     <!--
     ---------- tabs ----------
 
@@ -247,6 +249,9 @@
                 }
                 @case ('screens') {
                     <app-screens-tab />
+                }
+                @case ('flow') {
+                    <app-flow-tab />
                 }
                 @case ('measured') {
                     <app-measured-tab />

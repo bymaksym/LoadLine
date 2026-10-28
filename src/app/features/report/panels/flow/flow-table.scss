@@ -1,0 +1,22 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+
+.flow-table {
+    &__name {
+        font-family: var(--font-data);
+        text-align: left;
+    }
+
+    &__row--pinned td {
+        background: var(--accent-soft);
+    }
+
+    &__driver {
+        font-family: var(--font-data);
+        font-size: var(--fs-small);
+        color: var(--muted);
+    }
+}

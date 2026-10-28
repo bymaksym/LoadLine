@@ -1,0 +1,152 @@
+@let t = i18n.ui();
+
+<app-panel-header [howTo]="t.howToFlow" [subtitle]="t.secFlowSub" [title]="t.secFlow" />
+
+@if (flow(); as model) {
+    @if (empty()) {
+        <p class="empty">{{ t.flowEmpty }}</p>
+    } @else {
+        <!-- The one sentence the figures say: the reason to look at the diagram at all. -->
+        @if (takeaway()) {
+            <p class="flow-lead">{{ takeaway() }}</p>
+        }
+
+        <div class="flow-bar">
+            <p class="legend flow-bar__legend">
+                <span><i aria-hidden="true" class="dot" data-zone="boot"></i>{{ t.legBoot }}</span>
+                <span><i aria-hidden="true" class="dot" data-zone="shared"></i>{{ t.flowLegShared }}</span>
+                <span><i aria-hidden="true" class="dot" data-zone="own"></i>{{ t.legOwn }}</span>
+            </p>
+
+            <div class="flow-bar__views" role="group" [attr.aria-label]="t.flowView">
+                <button
+                    class="ctl"
+                    type="button"
+                    [attr.aria-pressed]="view() === 'chart'"
+                    [class.ctl--active]="view() === 'chart'"
+                    (click)="setView('chart')"
+                >
+                    {{ t.flowViewChart }}
+                </button>
+                <button
+                    class="ctl"
+                    type="button"
+                    [attr.aria-pressed]="view() === 'table'"
+                    [class.ctl--active]="view() === 'table'"
+                    (click)="setView('table')"
+                >
+                    {{ t.flowViewTable }}
+                </button>
+            </div>
+        </div>
+
+        <p class="flow-note">
+            <span>{{ t.flowScale }}</span>
+            @if (view() === 'chart') {
+                <span class="flow-note__hint">{{ t.flowHint }}</span>
+            }
+        </p>
+
+        @if (view() === 'chart') {
+            <app-flow-chart [flow]="model" [pinned]="pinned()" (pinnedChange)="pin($event)" />
+            <!-- The node being looked at, in words, as the pointer or the focus moves. -->
+            <p aria-live="polite" class="flow-readout">{{ readout() || t.flowPick }}</p>
+        } @else {
+            <app-flow-table [flow]="model" [pinned]="pinned()" (pinnedChange)="pin($event)" />
+        }
+
+        @if (detail(); as d) {
+            <section class="flow-detail" [attr.aria-label]="d.name">
+                <div class="flow-detail__head">
+                    <h3 class="flow-detail__title">
+                        {{ d.name }} <span class="flow-detail__size">{{ d.size }}</span>
+                    </h3>
+                    <button class="ctl" type="button" (click)="pin(null)">{{ t.flowClear }}</button>
+                </div>
+
+                <p class="flow-detail__zones">
+                    <span class="flow-detail__label">{{ d.column === 'target' ? t.colTotal : t.flowWhere }}</span>
+                    @for (part of d.zones; track part.zone) {
+                        <span class="flow-detail__zone" [class.flow-detail__zone--empty]="part.empty">
+                            <i aria-hidden="true" class="dot" [attr.data-zone]="part.zone"></i>
+                            {{ part.zone === 'boot' ? t.treeBoot : part.zone === 'shared' ? t.colShared : t.colOwn }}
+                            {{ part.bytes }}
+                        </span>
+                    }
+                </p>
+
+                <div class="flow-detail__lists">
+                    @if (d.column !== 'target' && d.targets.lines.length > 0) {
+                        <div>
+                            <h4 class="flow-detail__label">{{ t.flowDownloadedBy }}</h4>
+                            <ul class="flow-detail__list">
+                                @for (line of d.targets.lines; track line.id) {
+                                    <li>
+                                        <span>{{ line.name }}</span
+                                        ><span class="flow-detail__bytes">{{ line.bytes }}</span>
+                                    </li>
+                                }
+                            </ul>
+                            @if (d.targets.more) {
+                                <p class="flow-detail__more">+{{ d.targets.more }}</p>
+                            }
+                        </div>
+                    }
+
+                    @if (d.column !== 'source' && d.sources.lines.length > 0) {
+                        <div>
+                            <h4 class="flow-detail__label">
+                                {{ d.column === 'target' ? t.flowBeyondBoot : t.flowMadeOf }}
+                            </h4>
+                            <ul class="flow-detail__list">
+                                @for (line of d.sources.lines; track line.id) {
+                                    <li>
+                                        <span>{{ line.name }}</span
+                                        ><span class="flow-detail__bytes">{{ line.bytes }}</span>
+                                    </li>
+                                }
+                            </ul>
+                            @if (d.sources.more) {
+                                <p class="flow-detail__more">+{{ d.sources.more }}</p>
+                            }
+                        </div>
+                    }
+
+                    @if (d.members.length > 0) {
+                        <div>
+                            <h4 class="flow-detail__label">{{ t.flowGrouped }}</h4>
+                            <p class="flow-detail__members">{{ d.members.join(', ') }}</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Where the report already says more about it. -->
+                <p class="flow-detail__actions">
+                    @if (d.search; as name) {
+                        <button class="link-btn" type="button" (click)="nav.go('search', name)">
+                            {{ t.mapFindIt }}
+                        </button>
+                    }
+                    @if (d.boot) {
+                        <button class="link-btn" type="button" (click)="seeInBoot(d.id)">{{ t.seeInBoot }}</button>
+                    }
+                    @if (d.shared; as file) {
+                        <button class="link-btn" type="button" (click)="nav.go('shared', file)">
+                            {{ t.seeInShared }}
+                        </button>
+                    }
+                    @if (d.screen; as screen) {
+                        <button class="link-btn" type="button" (click)="nav.go('screens', screen.source)">
+                            {{ t.seeInScreens }}
+                        </button>
+                    }
+                </p>
+
+                <!-- A screen opens what the screens table opens under its row: the same component. -->
+                @if (d.screen; as screen) {
+                    <app-screen-detail [screen]="screen" />
+                }
+            </section>
+        }
+    }
+}
