@@ -82,8 +82,9 @@
                             <ul class="flow-detail__list">
                                 @for (line of d.targets.lines; track line.id) {
                                     <li>
-                                        <span>{{ line.name }}</span
-                                        ><span class="flow-detail__bytes">{{ line.bytes }}</span>
+                                        <span>{{ line.name }}</span><span class="flow-detail__bytes">{{
+                                            line.bytes
+                                        }}</span>
                                     </li>
                                 }
                             </ul>
@@ -101,8 +102,9 @@
                             <ul class="flow-detail__list">
                                 @for (line of d.sources.lines; track line.id) {
                                     <li>
-                                        <span>{{ line.name }}</span
-                                        ><span class="flow-detail__bytes">{{ line.bytes }}</span>
+                                        <span>{{ line.name }}</span><span class="flow-detail__bytes">{{
+                                            line.bytes
+                                        }}</span>
                                     </li>
                                 }
                             </ul>
