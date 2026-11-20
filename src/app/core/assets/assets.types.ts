@@ -69,6 +69,13 @@ export interface DuplicateAsset {
      * `p-qsbgvzk9.css`, the page asks for neither, and the report said a visitor downloads both.
      */
     named: number | null;
+    /**
+     * Every copy is a picture named only as an icon — a `<link rel>` of the page, an entry of the
+     * web app manifest, a `browserconfig.xml` or a `msapplication-*` meta — or by nothing. A favicon
+     * generator writes the same 144×144 picture as the Android, the Apple and the Windows icon on
+     * purpose, and each browser takes the one meant for it: nobody downloads two of them.
+     */
+    icons: boolean;
 }
 
 /** Bytes of a chunk that are really an image inlined as a `data:` URI. */

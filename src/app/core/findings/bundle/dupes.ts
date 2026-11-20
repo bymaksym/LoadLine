@@ -10,11 +10,10 @@
 
 import { type Analysis } from '../../analysis/analysis.types';
 import { type Declared, pinsOf } from '../../deps/pins';
-import { chainSteps } from '../../format/format.utils';
 import { type Lang } from '../../i18n/ui-strings';
 import { formatSaving, unitScale } from '../actions';
 import { type Finding } from '../finding.types';
-import { chainHtml, mono } from '../text/finding-html';
+import { chainHtmlOf, mono } from '../text/finding-html';
 import { TEXT } from '../text/finding-text';
 
 export const buildDupesFindings = (analysis: Analysis, lang: Lang, declared: Declared | null): Finding[] => {
@@ -27,11 +26,25 @@ export const buildDupesFindings = (analysis: Analysis, lang: Lang, declared: Dec
     // A copy's weight is its modules', raw: shown at the ratio the bootstrap compresses by.
     const scale = unitScale(analysis);
     const pins = pinsOf(analysis.duplicates, declared);
-    const allPins = [...pins.values()].flat();
-    const parents = (apart: boolean): string | null => {
-        const names = [...new Set(allPins.filter(pin => pin.majorApart === apart).map(pin => pin.parent))];
+    const pinsFor = (dupes: readonly { name: string }[]) => dupes.flatMap(dupe => pins.get(dupe.name) ?? []);
+    const parents = (dupes: readonly { name: string }[], apart: boolean): string | null => {
+        const names = [
+            ...new Set(
+                pinsFor(dupes)
+                    .filter(pin => pin.majorApart === apart)
+                    .map(pin => pin.parent),
+            ),
+        ];
         return names.length > 0 ? names.map(name => mono(name)).join(', ') : null;
     };
+    const names = (dupes: readonly { name: string }[]): string => dupes.map(dupe => mono(dupe.name)).join(', ');
+
+    // Each package gets the advice that fits it, and every one of them is named: one sentence for the
+    // whole card said "accept the signal and wait" of `idb` and nothing at all of `tslib`.
+    const apart = analysis.duplicates.filter(dupe => (pins.get(dupe.name) ?? []).some(pin => pin.majorApart));
+    const movable = analysis.duplicates.filter(dupe => !apart.includes(dupe));
+    const viaDependency = movable.filter(dupe => dupe.copies.some(copy => copy.importers.length === 0));
+    const direct = movable.filter(dupe => !viaDependency.includes(dupe));
     const list = analysis.duplicates
         .map(dupe => {
             const copies = dupe.copies
@@ -42,7 +55,7 @@ export const buildDupesFindings = (analysis: Analysis, lang: Lang, declared: Dec
                         under: copy.under,
                         size: formatSaving(copy.bytes, scale),
                         zone: text.dupeZone[copy.zone],
-                        chain: copy.chain ? chainHtml(chainSteps(copy.chain)) : null,
+                        chain: copy.chain ? chainHtmlOf(copy.chain, analysis.lazyStep) : null,
                         own: copy.importers.length > 0 ? copy.importers.map(file => mono(file)).join(', ') : null,
                         via: copy.viaPackages.length > 0 ? copy.viaPackages.map(pkg => mono(pkg)).join(', ') : null,
                         pinned: pin ? { parent: mono(pin.parent), range: mono(pin.range) } : null,
@@ -58,13 +71,19 @@ export const buildDupesFindings = (analysis: Analysis, lang: Lang, declared: Dec
             severity: 'mid',
             target: { tab: 'search', key: firstDupe.name },
             kind: 'dupes',
+            // When every copy is held a major apart by a parent, the card's own advice is to wait.
+            ...(movable.length === 0 && { unfixable: true }),
             ...text.dupes({
                 count: analysis.duplicates.length,
                 list,
                 viaDependency: analysis.duplicates.some(dupe => dupe.copies.some(copy => copy.importers.length === 0)),
                 inBoot: analysis.duplicates.some(dupe => dupe.inBoot),
-                pinnedApart: parents(true),
-                pinnedSame: parents(false),
+                apart: apart.length > 0 ? { packages: names(apart), parents: parents(apart, true) ?? '' } : null,
+                override:
+                    viaDependency.length > 0
+                        ? { packages: names(viaDependency), pinnedSame: parents(viaDependency, false) }
+                        : null,
+                align: direct.length > 0 ? names(direct) : null,
             }),
         },
     ];

@@ -12,10 +12,10 @@
 
 import { type Analysis, type ModuleEntry } from '../../analysis/analysis.types';
 import { type ForbiddenRule } from '../../config/loadline-config.types';
-import { chainSteps, formatBytes, matchesStars, namedBy } from '../../format/format.utils';
+import { formatBytes, matchesStars, namedBy } from '../../format/format.utils';
 import { type Lang } from '../../i18n/ui-strings';
 import { type Finding } from '../finding.types';
-import { chainHtml, escapeHtml, mono } from '../text/finding-html';
+import { chainHtmlOf, escapeHtml, mono } from '../text/finding-html';
 import { TEXT } from '../text/finding-text';
 
 /** Names listed on the card before "and N more": enough to recognise the rule, not a dump. */
@@ -76,7 +76,7 @@ export const buildForbiddenFindings = (
                     size: formatBytes(bytes),
                     names: names.slice(0, LISTED).map(name => mono(name)),
                     more: Math.max(0, names.length - LISTED),
-                    chain: chain && chain.length > 1 ? chainHtml(chainSteps(chain)) : null,
+                    chain: chain && chain.length > 1 ? chainHtmlOf(chain, analysis.lazyStep) : null,
                 }),
             },
         ];

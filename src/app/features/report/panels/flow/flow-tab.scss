@@ -1,0 +1,171 @@
+:host {
+    display: block;
+}
+
+/* The sentence the figures say, above the drawing that shows it. */
+.flow-lead {
+    max-width: 72ch;
+    margin: 0 0 var(--space-6);
+    padding: var(--space-5) var(--space-7);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+
+    font-size: var(--fs-3);
+    line-height: 1.45;
+    color: var(--ink);
+
+    background: var(--accent-soft);
+}
+
+/* The three colours on the left, the choice between drawing and table on the right. */
+.flow-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+    align-items: center;
+    justify-content: space-between;
+
+    &__legend {
+        margin: 0;
+    }
+
+    &__views {
+        display: flex;
+        gap: var(--space-2);
+    }
+}
+
+.flow-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-10);
+
+    margin: var(--space-4) 0 var(--space-6);
+
+    font-size: var(--fs-note);
+    color: var(--muted);
+
+    &__hint {
+        margin-left: auto;
+    }
+}
+
+/* What the pointer or the focus is on, in a sentence: the part of a diagram a ribbon cannot say. */
+.flow-readout {
+    min-height: 1.5em;
+    margin: var(--space-4) 0 var(--space-8);
+
+    font-family: var(--font-data);
+    font-size: var(--fs-small);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+/* The pinned node, in figures, and where the report says more about it. */
+.flow-detail {
+    margin-top: var(--space-8);
+    padding: var(--space-8) var(--space-10);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+
+    background: var(--surface);
+
+    &__head {
+        display: flex;
+        gap: var(--space-6);
+        align-items: baseline;
+        justify-content: space-between;
+    }
+
+    &__title {
+        margin: 0;
+        font-family: var(--font-data);
+        font-size: var(--fs-4);
+        overflow-wrap: anywhere;
+    }
+
+    &__size {
+        font-weight: 400;
+        color: var(--muted);
+    }
+
+    &__zones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-8);
+        align-items: center;
+
+        margin: var(--space-6) 0;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-small);
+    }
+
+    &__zone--empty {
+        color: var(--muted);
+    }
+
+    &__label {
+        margin: 0 0 var(--space-3);
+
+        font-family: var(--font-ui);
+        font-size: var(--fs-label);
+        font-weight: 400;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    &__lists {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+        gap: var(--space-8) var(--space-12);
+    }
+
+    &__list {
+        margin: 0;
+        padding: 0;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-small);
+        list-style: none;
+
+        li {
+            display: flex;
+            gap: var(--space-6);
+            justify-content: space-between;
+
+            padding: var(--space-2) 0;
+            border-bottom: 1px solid var(--line);
+
+            span:first-child {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+    }
+
+    &__bytes {
+        flex: none;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+    }
+
+    &__more,
+    &__members {
+        margin: var(--space-3) 0 0;
+
+        font-family: var(--font-data);
+        font-size: var(--fs-small);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-8);
+        margin: var(--space-8) 0 var(--space-6);
+    }
+}

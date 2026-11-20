@@ -226,3 +226,49 @@ describe('--html', () => {
         });
     });
 });
+
+/**
+ * Zaporeak and QR Checker, Expo apps exported for Android and iOS. Three ways in gave three wrong
+ * answers: "build it with npm run build", "is that the browser/ folder?" and "not valid JSON".
+ */
+describe('locateBuild · a native Expo app', () => {
+    const APP = join(process.cwd(), 'fixtures', 'expo-native-app');
+    const refusal = (target: string): Promise<string> =>
+        locateBuild(target, null)
+            .then(() => 'read')
+            .catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
+
+    it('names the export folder for what it is', async () => {
+        const said = await refusal(join(APP, 'dist'));
+
+        expect(said).toContain('native Expo export for android and ios');
+        expect(said).not.toContain('browser/');
+    });
+
+    it('names the project, and does not ask for npm run build', async () => {
+        const said = await refusal(APP);
+
+        expect(said).toContain('native Expo export');
+        expect(said).not.toContain('npm run build');
+    });
+
+    it('names a Hermes bundle by its magic number, not as a JSON that will not parse', async () => {
+        const said = await refusal(join(APP, 'dist', '_expo', 'static', 'js', 'android', 'entry-6b1f0c2d9e8a7b3c.hbc'));
+
+        expect(said).toContain('Hermes bytecode');
+        expect(said).not.toContain('JSON');
+    });
+
+    it('names an Expo project with no export at all', async () => {
+        const project = scratch();
+        writeFileSync(join(project, 'package.json'), JSON.stringify({ dependencies: { expo: '~54.0.0' } }));
+
+        expect(await refusal(project)).toContain('an Expo app with no web build in it');
+    });
+
+    it('reads a web export as the web build it is', async () => {
+        const web = join(process.cwd(), 'fixtures', 'metro-sectioned-map', 'dist');
+
+        expect(await refusal(web)).toBe('read');
+    });
+});

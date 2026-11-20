@@ -346,6 +346,7 @@ export const unstableChunks = (chunks: readonly ChunkContents[], minRatio: numbe
                         : compressed
                           ? Math.round((chunk.vendorBytes / total) * chunk.bytes)
                           : chunk.vendorBytes,
+                ownBytes: chunk.ownBytes,
                 estimated: compressed,
                 inBoot: chunk.inBoot,
             };

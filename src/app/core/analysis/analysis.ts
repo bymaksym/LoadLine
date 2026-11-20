@@ -40,7 +40,7 @@ import {
     routedName,
     wavesThrough,
 } from './screens/route-files';
-import { splitDriftOf } from './sourcemap/split-drift';
+import { chunkScalesOf, splitDriftOf } from './sourcemap/split-drift';
 import { toolOf } from './tool';
 
 interface FileEntry {
@@ -171,6 +171,10 @@ export const analyze = (
     const travelsTogether = (imp: { kind: string; external?: boolean }) =>
         !imp.external && imp.kind !== 'dynamic-import';
 
+    // A chunk whose parts do not add up to it has them scaled to it: see `chunkScalesOf`.
+    const scales = chunkScalesOf(outputs, exact);
+    const scaled = (chunk: string, bytes: number): number => Math.round(bytes * (scales.get(chunk) ?? 1));
+
     /**
      * How many bytes of a file are inside a chunk. The metafile's figure is already the minified
      * one; the source map of that chunk, when the folder brought it, is preferred simply because
@@ -178,7 +182,9 @@ export const analyze = (
      */
     const bytesIn = (chunk: string, input: string): number => {
         const measured = exact?.get(baseName(chunk))?.get(input);
-        return typeof measured === 'number' ? measured : (outputs[chunk]?.inputs?.[input]?.bytesInOutput ?? 0);
+        return typeof measured === 'number'
+            ? measured
+            : scaled(chunk, outputs[chunk]?.inputs?.[input]?.bytesInOutput ?? 0);
     };
 
     /**
@@ -193,7 +199,7 @@ export const analyze = (
         }
 
         const inside = outputs[chunk]?.inputs;
-        return inside ? (inside[input]?.bytesInOutput ?? 0) : null;
+        return inside ? scaled(chunk, inside[input]?.bytesInOutput ?? 0) : null;
     };
 
     /** Files of a chunk with their bytes, skipping the empty ones. */
@@ -535,22 +541,30 @@ export const analyze = (
      * question asked of a file that is only inside one screen.
      */
     const cameFrom = new Map<string, string | null>();
+    // The files that walk reached through an `import()` rather than a static import. A chain that
+    // crosses one is not "in the bootstrap" past that step: `teams.service.ts` loading
+    // `@microsoft/teams-js` with `await import` read as `main.ts › … › teams.service.ts ›
+    // @microsoft/teams-js`, exactly like a package everybody downloads first.
+    const reachedLazily = new Set<string>();
     if (mainSource && inputs[mainSource]) {
         cameFrom.set(mainSource, null);
         const pending = [mainSource];
-        const visit = (from: string, path: string): void => {
+        const visit = (from: string, path: string, lazy: boolean): void => {
             if (cameFrom.has(path)) {
                 return;
             }
 
             cameFrom.set(path, from);
+            if (lazy) {
+                reachedLazily.add(path);
+            }
             pending.push(path);
         };
 
         for (const file of pending) {
             const imports = (inputs[file]?.imports ?? []).filter(imp => !imp.external);
             for (const imp of imports) {
-                visit(file, imp.path);
+                visit(file, imp.path, !travelsTogether(imp));
             }
         }
     }
@@ -853,6 +867,7 @@ export const analyze = (
         ownFilesInBoot,
         modules,
         chainTo,
+        lazyStep: path => reachedLazily.has(path),
         // From the maps only when a map covers something the application reaches. Polymer ships maps
         // for its polyfill bundles alone, and the report opened with "weight per file read from the
         // source maps" right above "no source maps in this folder".

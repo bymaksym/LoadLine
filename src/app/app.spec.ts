@@ -285,6 +285,35 @@ describe('the page, with the example loaded', () => {
         expect(textOf(fixture, 'app-compare-tab .lead-figure').length).toBeGreaterThan(0);
     });
 
+    /**
+     * The flow is a picture whose every node is a button. What a rendering test can hold it to:
+     * the sentence it leads with, Enter pinning a node and opening its detail, Escape clearing it.
+     */
+    it('pins a node of the flow with Enter and clears it with Escape', async () => {
+        store.loadSample();
+        TestBed.inject(ReportNav).go('flow');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(textOf(fixture, '.flow-lead')).toContain('xlsx');
+        const host = fixture.nativeElement as HTMLElement;
+        const node = [...host.querySelectorAll<SVGGElement>('.flow__node')].find(entry =>
+            entry.getAttribute('aria-label')?.startsWith('reports'),
+        );
+        expect(node, 'no node for the reports screen').toBeDefined();
+
+        node?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await fixture.whenStable();
+        fixture.detectChanges();
+        expect(node?.getAttribute('aria-pressed')).toBe('true');
+        expect(countOf(fixture, '.flow-detail app-screen-detail')).toBe(1);
+
+        node?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await fixture.whenStable();
+        fixture.detectChanges();
+        expect(countOf(fixture, '.flow-detail')).toBe(0);
+    });
+
     it('lists the screens, heaviest first, in the screens tab', async () => {
         store.loadSample();
         TestBed.inject(ReportNav).go('screens');

@@ -1,3 +1,5 @@
+import { packageOf } from '../../format/format.utils';
+
 /**
  * The two bits of markup every signal is written with. Signal text carries HTML on purpose: a file
  * name or a version number set apart from the sentence is what makes it findable at a glance.
@@ -8,6 +10,27 @@ export const mono = (text: string): string => `<span class="mono">${text}</span>
 
 /** An import chain as HTML: each step in monospace, joined by a separator. */
 export const chainHtml = (steps: string[]): string => steps.map(step => mono(step)).join(' › ');
+
+/**
+ * A chain of source files as HTML, with every step a dynamic `import()` reaches marked as one:
+ * `main.ts › teams.service.ts › import() › @microsoft/teams-js`. Files of one package collapse into
+ * the package, as `chainSteps` does; the mark goes before the step the `import()` first enters.
+ */
+export const chainHtmlOf = (chain: readonly string[], lazy: ((file: string) => boolean) | undefined): string => {
+    const steps: { name: string; lazy: boolean }[] = [];
+    for (const file of chain) {
+        const name = packageOf(file) ?? file;
+        const last = steps.at(-1);
+        if (last?.name === name) {
+            last.lazy ||= !!lazy?.(file);
+        } else {
+            steps.push({ name, lazy: !!lazy?.(file) });
+        }
+    }
+    return steps
+        .map((step, index) => `${index > 0 && step.lazy ? `${mono('import()')} › ` : ''}${mono(step.name)}`)
+        .join(' › ');
+};
 
 /**
  * A list of names cut to the first few, with how many were left out. For the lists that grow with

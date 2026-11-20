@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { budgetStanding } from './budget-advice';
 import {
     configurationBudgets,
     EMPTY_CONTEXT,
@@ -288,6 +289,44 @@ describe('configurationBudgets', () => {
 
         expect(rows.every(r => r.hasBudget && r.error === KB * KB)).toBe(true);
         expect(rows.find(r => r.name === 'production')?.builtBy).toEqual(['build']);
+    });
+});
+
+/**
+ * espaciot-app with `--project .`: 468 kB against a 650 kB warning and an 850 kB error, and not a
+ * line about it, so nothing said the project had been read at all.
+ */
+describe('budgetStanding', () => {
+    const angular = readAngularJson({
+        projects: {
+            app: {
+                projectType: 'application',
+                architect: {
+                    build: {
+                        configurations: {
+                            production: {
+                                budgets: [{ type: 'initial', maximumWarning: '650kB', maximumError: '850kB' }],
+                            },
+                            development: {},
+                        },
+                        defaultConfiguration: 'production',
+                    },
+                },
+            },
+        },
+    });
+
+    it('says where the initial load stands against the budget of the default configuration', () => {
+        expect(budgetStanding({ ...EMPTY_CONTEXT, angular }, 468 * KB)).toEqual({
+            config: 'production',
+            current: 468 * KB,
+            warning: 650 * KB,
+            error: 850 * KB,
+        });
+    });
+
+    it('says nothing where no configuration sets a budget', () => {
+        expect(budgetStanding(EMPTY_CONTEXT, 468 * KB)).toBeNull();
     });
 });
 

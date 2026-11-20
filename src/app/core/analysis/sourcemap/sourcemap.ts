@@ -17,6 +17,7 @@
  * accents or emoji.
  */
 
+import { parseSourceMap } from './index-map';
 import { type ChunkSplit, type Segment, type SourceMap, type TextFile } from './sourcemap.types';
 
 const VLQ_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -314,7 +315,7 @@ export const readSourceMaps = async (files: TextFile[]): Promise<Map<string, Chu
         }
 
         try {
-            const parsed: unknown = JSON.parse(await file.text());
+            const parsed = parseSourceMap(await file.text());
             if (!isSourceMap(parsed)) {
                 continue;
             }

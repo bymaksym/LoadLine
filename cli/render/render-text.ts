@@ -14,9 +14,9 @@ import { type Verdict } from '../../src/app/core/criteria/criteria.types';
 import { formatSaving, rankActions, savingWords, totalSaving, unitScale } from '../../src/app/core/findings/actions';
 import { type Finding, type Severity } from '../../src/app/core/findings/finding.types';
 import { plainText } from '../../src/app/core/findings/text/finding-plain';
-import { baseName, formatBytes, formatDelta } from '../../src/app/core/format/format.utils';
+import { baseName, formatBytes, formatBytesApart, formatDelta } from '../../src/app/core/format/format.utils';
 import { UI } from '../../src/app/core/i18n/ui';
-import { budgetAdvice, screenBudgetAdvice } from '../../src/app/core/project/budget-advice';
+import { budgetAdvice, firstLimitOf, screenBudgetAdvice } from '../../src/app/core/project/budget-advice';
 import { formatMs, timingsOf } from '../../src/app/core/timing/timing';
 import { blindBoot, opaqueBootChunks } from '../../src/app/core/whatif/defer';
 import { violationLines } from '../gates';
@@ -313,6 +313,31 @@ const timeBlock = (report: CliReport, palette: Palette): string[] => {
 };
 
 /**
+ * One line saying where the initial load stands against the budget `angular.json` sets, when the
+ * budget signals have nothing to say. Without it a project whose budgets were fine printed nothing,
+ * and "the budgets pass" could not be told from "the project was never read".
+ */
+const standingLines = (report: CliReport, palette: Palette): string[] => {
+    const standing = report.budgetStanding;
+    const limit = standing ? firstLimitOf(standing) : null;
+    if (!standing || limit === null) {
+        return [];
+    }
+    const text = CLI_TEXT[report.lang];
+    // Apart, so 2,579 bytes against 3 kB does not read "3 kB of 3 kB".
+    const [current, bound] = formatBytesApart(standing.current, limit);
+    const line = text.budgetStanding({
+        current,
+        limit: bound,
+        over: standing.current > limit,
+        warning: standing.warning !== null,
+        error: standing.warning !== null && standing.error !== null ? formatBytes(standing.error) : null,
+        config: standing.config,
+    });
+    return ['', ...wrap(line, WIDTH).map(row => (standing.current > limit ? palette.warn(row) : palette.dim(row)))];
+};
+
+/**
  * The budget that should be in `angular.json`. Only with `--project`, because without it there is
  * nothing to say a budget is missing from, and the figure is raw bytes: that is what Angular counts.
  */
@@ -324,7 +349,7 @@ const budgetBlock = (report: CliReport, palette: Palette): string[] => {
     const wanted = report.findings.some(finding => asking.has(finding.kind));
     const advice = wanted ? budgetAdvice(report.analysis.initialRawBytes) : null;
     if (!advice) {
-        return [];
+        return standingLines(report, palette);
     }
 
     // The second budget, for a build that has screens: `anyScript` applies to every emitted file —

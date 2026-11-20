@@ -10,6 +10,7 @@ export const labelOfTab = (tab: ReportTab, t: UiStrings): string => {
     const labels: Record<ReportTab, string> = {
         findings: t.tabFindings,
         screens: t.tabScreens,
+        flow: t.tabFlow,
         measured: t.tabMeasured,
         boot: t.tabBoot,
         shared: t.tabShared,

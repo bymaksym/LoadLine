@@ -15,7 +15,7 @@ import {
     type SituationPriorityData,
 } from '../finding.types';
 import { mono } from './finding-html';
-import { mapsHidden, mapsOn, mayBeAngular, webpackSplit } from './tool-advice';
+import { mapsHidden, mapsOn, mayBeAngular, screenPreload, webpackSplit } from './tool-advice';
 
 /** A share as a percentage, for the answers that arrive as a fraction of one. */
 const pct = (share: number): string => `${Math.round(share * 100)} %`;
@@ -37,6 +37,7 @@ export const TEXT = {
         // a Spanish sentence.
         andMore: (count: number) => `y ${count} más`,
         inPage: 'la pide la página',
+        ownInChunk: (size: string) => `${size} tuyos`,
         each: 'cada uno',
         fileCount: (count: number) => `${count} ${count === 1 ? 'fichero' : 'ficheros'}`,
         packageBarrelRow: (files: number, entries: number, size: string, inBoot: boolean) =>
@@ -127,15 +128,23 @@ export const TEXT = {
                     ? ' Una de las copias está en el bootstrap, así que ese peso de más lo descarga todo el mundo.'
                     : ''
             } ${d.list}`,
-            fix: d.pinnedApart
-                ? `<strong>No se puede deduplicar desde tu proyecto</strong>: ${d.pinnedApart} fija su copia a una versión exacta, y la otra va por otra versión mayor. Forzar una sola con ${mono('overrides')} o ${mono('resolutions')} es meter un cambio de versión mayor dentro de ${d.pinnedApart}, que no se ha publicado contra esa versión. Lo razonable es aceptar la señal y esperar a que ${d.pinnedApart} se actualice${d.pinnedSame ? `; lo de ${d.pinnedSame} va en la misma versión mayor y ahí un override sí puede valer, probándolo` : ''}.`
-                : d.viaDependency
-                  ? `Al menos una de las copias no la pides tú: la importa otra dependencia, así que alinear tu ${mono('package.json')} no basta. Fuerza la resolución con ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) o ${mono('resolutions')} (yarn), y comprueba que la versión que dejas vale para las dos${
-                        d.pinnedSame
-                            ? `: ${d.pinnedSame} fija su copia a una versión exacta, así que el override cambia una dependencia que esa librería no ha probado`
-                            : ` —pasa ${mono('--lock')} y el informe dirá si alguna está fijada a versión exacta—`
-                    }.`
-                  : `Las dos copias entran por dependencias que pides tú directamente: alinea las versiones en ${mono('package.json')} y vuelve a medir.`,
+            fix: [
+                d.apart
+                    ? `<strong>${d.apart.packages}: no se puede deduplicar desde tu proyecto</strong>. ${d.apart.parents} fija su copia a una versión exacta, y la otra va por otra versión mayor. Forzar una sola con ${mono('overrides')} o ${mono('resolutions')} es meter un cambio de versión mayor dentro de ${d.apart.parents}, que no se ha publicado contra esa versión. Lo razonable es aceptar la señal y esperar a que ${d.apart.parents} se actualice.`
+                    : '',
+                d.override
+                    ? `${d.override.packages}: al menos una de las copias no la pides tú; la importa otra dependencia, así que alinear tu ${mono('package.json')} no basta. Fuerza la resolución con ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) o ${mono('resolutions')} (yarn), y comprueba que la versión que dejas vale para las dos${
+                          d.override.pinnedSame
+                              ? `: ${d.override.pinnedSame} fija su copia a una versión exacta de la misma versión mayor, así que el override cambia una dependencia que esa librería no ha probado`
+                              : ` —pasa ${mono('--lock')} y el informe dirá si alguna está fijada a versión exacta—`
+                      }.`
+                    : '',
+                d.align
+                    ? `${d.align}: las dos copias entran por dependencias que pides tú directamente; alinea las versiones en ${mono('package.json')} y vuelve a medir.`
+                    : '',
+            ]
+                .filter(sentence => sentence !== '')
+                .join(' '),
         }),
         heavy: (d: { count: number; label: string; own: string; median: string; list: string }) => ({
             chip: d.count === 1 ? 'pantalla cara' : 'pantallas caras',
@@ -206,6 +215,7 @@ export const TEXT = {
             latencyMs: number;
             worstMs: number;
             list: string;
+            tool?: BuildTool;
         }) => ({
             chip: 'profundidad de descubrimiento',
             title: `${d.worstLabel} tarda ${d.worstWaves} idas y vueltas en estar completa: ${d.worstMs} ms de espera pura`,
@@ -214,7 +224,7 @@ export const TEXT = {
                     ? 'Su viaje más ancho trae un solo fichero: es una cadena de punta a punta, y cada nivel que se aplane quita una espera entera.'
                     : `Su viaje más ancho trae ${d.worstWidth} ficheros: profundidad y anchura son problemas distintos y el número de viajes los cuenta igual. Los ${d.worstWidth} de ese viaje cuestan uno entre todos; lo que cuesta viajes es lo que va detrás de ellos.`
             }`,
-            fix: 'Mira la cadena en la tabla de Pantallas: cada nivel es un fichero que importa a otro de forma estática. Se acorta importando desde la pantalla lo que hoy le llega a través de un intermediario, o —si el bundler lo permite— haciendo que el cargador pida la lista entera de golpe, que es lo que hace Vite con su lista de precarga. No es una cuestión de tamaño: fusionar chunks no la arregla si la cadena sigue teniendo la misma profundidad.',
+            fix: `Mira la cadena en la tabla de Pantallas: cada nivel es un fichero que importa a otro de forma estática. Se acorta importando desde la pantalla lo que hoy le llega a través de un intermediario, ${screenPreload(d.tool, 'es')}. No es una cuestión de tamaño: fusionar chunks no la arregla si la cadena sigue teniendo la misma profundidad.`,
         }),
         locales: (d: { packages: { name: string; files: number; size: string }[]; size: string; boot: boolean }) => ({
             chip: 'todos los idiomas de una librería',
@@ -278,13 +288,23 @@ export const TEXT = {
                 d.angular
                     ? '<strong>La causa es el optimizador de chunks de Angular</strong>: después de esbuild vuelve a empaquetar los chunks con Rolldown y reescribe el peso de cada fichero como la longitud de ese paso repartida en proporción, antes de la minificación final. Por eso las partes suman más que el fichero, y en la misma proporción en todos. No son las hojas de estilos de los componentes: esas van dentro del JavaScript y ya están en el peso del fichero.'
                     : '<strong>Por qué difieren no se sabe desde aquí</strong> —algo cambió la salida después de escribirlo— y no hace falta saberlo para leer la consecuencia.'
-            } Las cifras de arriba —el arranque, cada pantalla, las idas y vueltas— salen del fichero y son exactas. Las que se miden <strong>dentro</strong> de un chunk —el reparto por paquete, la columna exclusiva, lo que ahorraría un ${mono('--what-if')}— salen de esta suma, así que van un ${d.off} % ${d.high ? 'altas' : 'bajas'}.`,
-            fix: `Compila con source maps —${mapsOn(d.tool, 'es')}— y suelta la carpeta: cuando hay ${mono('.map')} el reparto se mide sobre el fichero generado y esta diferencia desaparece. No hace falta desplegarlos. Mientras tanto, léelas como una cota superior: el orden de la lista es correcto —todas están infladas igual— y la cifra absoluta no lo es.`,
+            } Las cifras de arriba —el arranque, cada pantalla, las idas y vueltas— salen del fichero y son exactas. Las que se miden <strong>dentro</strong> de un chunk —el reparto por paquete, la columna exclusiva, lo que ahorraría un ${mono('--what-if')}— salen de esta suma, que va un ${d.off} % ${d.high ? 'alta' : 'baja'}. ${
+                d.high
+                    ? '<strong>En este informe están escaladas al peso de cada chunk</strong>: cada fichero conserva su parte y las partes vuelven a sumar el fichero, así que cuadran con las cifras de arriba en todas las fichas. Son un reparto proporcional, no una medida: aproximadas en lo que el reparto se desvíe.'
+                    : 'Por debajo no se escalan: lo que falta suele ser código que no es de ningún fichero —el runtime del bundler, un envoltorio— y repartirlo sería inventárselo.'
+            }`,
+            fix: `Compila con source maps —${mapsOn(d.tool, 'es')}— y suelta la carpeta: cuando hay ${mono('.map')} el reparto se mide sobre el fichero generado y esta diferencia desaparece. No hace falta desplegarlos. Mientras tanto, el orden de la lista es correcto${d.high ? ' y las cifras escaladas, una buena aproximación' : ''}.`,
         }),
-        sourceMaps: (d: { count: number; tool?: BuildTool }) => ({
+        sourceMaps: (d: { count: number; tool?: BuildTool; unread?: number }) => ({
             chip: 'source maps en la carpeta',
-            title: `La carpeta de build trae ${d.count === 1 ? '1 source map' : `${d.count} source maps`}`,
-            body: 'Un source map reconstruye tu fuente a partir de lo compilado. No pesa en la descarga —el navegador solo lo pide si abres las herramientas—, pero si esta carpeta es la que subes, cualquiera que conozca la URL tiene tu código.',
+            title: `La carpeta de build trae ${d.count === 1 ? '1 source map' : `${d.count} source maps`}${
+                d.unread && d.unread === d.count ? ' en un formato que Loadline no lee' : ''
+            }`,
+            body: `Un source map reconstruye tu fuente a partir de lo compilado. No pesa en la descarga —el navegador solo lo pide si abres las herramientas—, pero si esta carpeta es la que subes, cualquiera que conozca la URL tiene tu código.${
+                d.unread
+                    ? ` ${d.unread === d.count ? (d.count === 1 ? 'Este está' : 'Están') : `${d.unread} de ellos están`} en un formato que Loadline no lee —ni JSON con ${mono('sources')} y ${mono('mappings')}, ni un mapa por secciones con cada mapa dentro—, así que lo que hay dentro de esos chunks no sale de ellos: las cifras de dentro son aproximadas.`
+                    : ''
+            }`,
             fix: `Con ${mapsHidden(d.tool, 'es')} se generan sin enlazarlos desde el bundle, que es lo que quieres para subirlos a tu herramienta de errores. Que el bundle deje de enlazarlos no impide que el servidor los siga sirviendo: si los .map acaban en el servidor, siguen ahí para quien conozca la URL.`,
         }),
         clean: (d: { unit: string }) => ({
@@ -383,6 +403,7 @@ export const TEXT = {
             spare: string;
             superseded: string;
             preloaded: string;
+            widest: { name: string; weights: number } | null;
             list: string;
         }) => ({
             chip: 'tipografías',
@@ -390,7 +411,11 @@ export const TEXT = {
                 d.superseded === ''
                     ? `${d.size} de tipografías: ${d.files} ficheros en ${d.families} ${d.families === 1 ? 'familia' : 'familias'}`
                     : `${d.size} de tipografías en el servidor, ${d.spare} de ellos en un segundo formato que ningún navegador actual descarga`,
-            body: `Ningún analizador de bundle enseña esto porque todos paran en el JavaScript, y siete pesos de una familia para usar dos es un hallazgo de trescientos kilobytes. ${d.list}.${
+            body: `Ningún analizador de bundle enseña esto porque todos paran en el JavaScript${
+                d.widest
+                    ? `: aquí ${mono(d.widest.name)} trae ${d.widest.weights} pesos, cuando una interfaz suele usar dos.`
+                    : ', y los pesos y formatos de una tipografía suman kilobytes que nadie mira.'
+            } ${d.list}.${
                 d.superseded ? ` En un formato que otro de la misma carpeta ya sustituye: ${d.superseded}.` : ''
             }${d.preloaded ? ` La página precarga ${d.preloaded}, así que esos entran en la primera carga.` : ''}`,
             fix: `Cuenta los pesos que la interfaz usa de verdad —normalmente son dos, regular y bold— y borra el resto de la configuración de fuentes. Salvo que sean subconjuntos ${mono('unicode-range')} de un mismo peso —decenas de ficheros de una familia suelen serlo, como los de una fuente china—: esos los pide el navegador solo para los caracteres que hay en pantalla, y ahí no sobra ninguno. Si hay un ${mono('.woff2')} al lado de un ${mono('.ttf')} de la misma cara, el segundo solo lo necesita un navegador que ya no usa nadie: quítalo de la lista de formatos. Y precarga solo lo que hace falta antes de pintar: un ${mono('preload')} por peso convierte la lista entera en primera carga.`,
@@ -417,14 +442,20 @@ export const TEXT = {
             ...(d.count > 0
                 ? {
                       title: `${d.size} en ${d.count === 1 ? 'un fichero que viaja' : `${d.count} ficheros que viajan`} dos veces con nombres distintos`,
-                      body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño— y aun así son entradas de caché separadas, así que quien visita la página los descarga los dos. ${d.list}.${d.stored.count > 0 ? ` Aparte, guardados dos veces y descargados una como mucho, porque nada nombra la otra copia: ${d.stored.list}.` : ''}`,
+                      body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño— y aun así son entradas de caché separadas, así que quien visita la página los descarga los dos. ${d.list}.${d.stored.count > 0 ? ` Aparte, guardados dos veces y descargados una como mucho, porque nada nombra la otra copia: ${d.stored.list}.` : ''}${d.icons.count > 0 ? ` Y son iconos de varias plataformas, de los que cada navegador descarga uno: ${d.icons.list}.` : ''}`,
                       fix: 'Casi siempre es el mismo recurso importado desde dos sitios con rutas distintas, o una copia que quedó de una migración. Unifica el import y borra la copia. Si los dos nombres los genera el build, mira si un plugin está copiando la carpeta de recursos además de procesarla.',
                   }
-                : {
-                      title: `${d.stored.size} en ${d.stored.count === 1 ? 'un fichero' : `${d.stored.count} ficheros`} que la carpeta guarda dos veces y la página descarga una como mucho`,
-                      body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño—, pero ${d.stored.none ? 'ni la página ni el código nombran ninguna de las copias' : 'la página y el código nombran solo una de las copias'}, y una copia que nada nombra no se descarga salvo que algo construya su URL al ejecutarse: esto cuesta espacio donde se despliega, no tiempo en la visita. ${d.stored.list}.`,
-                      fix: 'En la visita no hay nada que ahorrar. Si el build escribe los dos nombres a propósito —hay herramientas que escriben un fichero con su nombre y otra vez con un hash—, déjalo; si no, borra la copia que nada nombra.',
-                  }),
+                : d.stored.count > 0
+                  ? {
+                        title: `${d.stored.size} en ${d.stored.count === 1 ? 'un fichero' : `${d.stored.count} ficheros`} que la carpeta guarda dos veces y la página descarga una como mucho`,
+                        body: `El contenido es idéntico byte a byte —se ha comparado, no se ha supuesto por el tamaño—, pero ${d.stored.none ? 'ni la página ni el código nombran ninguna de las copias' : 'la página y el código nombran solo una de las copias'}, y una copia que nada nombra no se descarga salvo que algo construya su URL al ejecutarse: esto cuesta espacio donde se despliega, no tiempo en la visita. ${d.stored.list}.${d.icons.count > 0 ? ` Y son iconos de varias plataformas, de los que cada navegador descarga uno: ${d.icons.list}.` : ''}`,
+                        fix: 'En la visita no hay nada que ahorrar. Si el build escribe los dos nombres a propósito —hay herramientas que escriben un fichero con su nombre y otra vez con un hash—, déjalo; si no, borra la copia que nada nombra.',
+                    }
+                  : {
+                        title: `${d.icons.count === 1 ? 'Un icono' : `${d.icons.count} iconos`} con el mismo dibujo para varias plataformas: cada navegador descarga uno`,
+                        body: `El contenido es idéntico byte a byte, pero cada copia se nombra como el icono de una plataforma —un ${mono('<link rel>')} de la página, el manifiesto, ${mono('browserconfig.xml')}—, que es lo que escribe cualquier generador de favicons. Cada navegador elige el suyo, así que nadie descarga dos. ${d.icons.list}.`,
+                        fix: 'En la visita no hay nada que ahorrar, y quitar una copia puede dejar a una plataforma sin su icono. Si molesta tenerlas repetidas en el servidor, que el manifiesto y los enlaces apunten al mismo fichero.',
+                    }),
         }),
         unreferencedAssets: (d: {
             count: number;
@@ -494,7 +525,9 @@ export const TEXT = {
         unstableChunk: (d: {
             count: number;
             name: string;
-            pct: number;
+            pct: string;
+            own: string;
+            vendor: string;
             size: string;
             inBoot: boolean;
             list: string;
@@ -503,9 +536,9 @@ export const TEXT = {
             chip: 'chunk que mezcla lo que cambia con lo que no',
             title:
                 d.count === 1
-                    ? `${d.name} es ${d.pct} % código de terceros y se invalida con cada cambio tuyo`
+                    ? `${d.name} es ${d.pct} % código de terceros: ${d.own} tuyos hacen que sus ${d.vendor} se vuelvan a descargar en cada despliegue`
                     : `${d.count} chunks mezclan dependencias y código tuyo: ${d.size} se reinvalidan en cada despliegue`,
-            body: `Las dependencias no cambian en meses y tu código cambia a diario. Un chunk que junta las dos cosas cambia de hash cada vez que tocas una línea, y todo lo que lleva dentro de terceros se vuelve a descargar para nada.${
+            body: `Las dependencias no cambian en meses y tu código cambia a diario. Un chunk que junta las dos cosas cambia de hash cada vez que tocas una línea, y todo lo que lleva dentro de terceros se vuelve a descargar para nada. Lo que mueve el hash es la parte tuya, por pequeña que sea: en ${mono(d.name)} son ${d.own}.${
                 d.inBoot ? ' Y está en el bootstrap, así que lo paga toda visita de vuelta.' : ''
             } ${d.list}.`,
             fix: `Sepáralos: ${webpackSplit(d.tool, 'es')}en Rollup y Vite con una regla de ${mono('manualChunks')} que mande todo lo de ${mono('node_modules')} a su propio chunk; el application builder de Angular no tiene esa regla ni una opción para ella: separa por quién importa qué, así que un servicio tuyo que importan todas las pantallas acaba en el mismo chunk que el framework —lo que hay que buscar es justo eso, un fichero tuyo que importa todo el mundo, y lo que lo saca es importarlo desde menos sitios—. Ojo con el extremo contrario: un único chunk de vendor gigantesco se invalida entero cuando actualizas una sola librería, así que lo que se busca es separar por frecuencia de cambio, no por origen.`,
@@ -583,6 +616,8 @@ export const TEXT = {
             count: number;
             broken: boolean;
             unattributed: boolean;
+            /** Files copied into the build as they are, as HTML: not chunks, and the project's own. */
+            copied: string;
             list: string;
             tool?: BuildTool;
         }) => ({
@@ -598,6 +633,10 @@ export const TEXT = {
                     : d.unattributed
                       ? `Estos chunks no llevan mapa de fuentes al lado, así que la posición de cada coincidencia no se puede devolver al fichero donde se escribió — y un ${mono('console.log')} tuyo es idéntico al de cualquier librería${mayBeAngular(d.tool) ? `, como el que hay dentro de ${mono('@angular/core')}, que publica un servicio de consola y mete uno en todas las compilaciones de Angular que existen` : ''}. Las coincidencias son reales; de quién son, aquí no se sabe.`
                       : 'Ninguno de estos rompe nada por sí solo, pero todos son cosas que nadie quiso desplegar. Cada uno se ha seguido por los mapas de fuentes hasta un fichero tuyo, así que ninguno es de tu framework.'
+            }${
+                d.copied
+                    ? ` No todo está en un chunk: ${d.copied} no lo escribió el bundler, se copia tal cual al build (de ${mono('public/')} o de una carpeta de recursos), así que ningún mapa de fuentes lo va a cubrir: lo que lleva se mira en el propio fichero.`
+                    : ''
             } ${d.list}.`,
             fix: d.broken
                 ? 'El arreglo es anterior a todo lo demás: compila con la configuración de producción y vuelve a medir, porque ninguna cifra de este informe describe lo que descargan tus usuarios.'
@@ -1085,6 +1124,7 @@ export const TEXT = {
         rootScreen: 'the root',
         andMore: (count: number) => `and ${count} more`,
         inPage: 'asked for by the page',
+        ownInChunk: (size: string) => `${size} of yours`,
         each: 'each',
         fileCount: (count: number) => `${count} ${count === 1 ? 'file' : 'files'}`,
         packageBarrelRow: (files: number, entries: number, size: string, inBoot: boolean) =>
@@ -1169,15 +1209,23 @@ export const TEXT = {
             body: `You pay the weight twice because two dependencies ask for incompatible ranges.${
                 d.inBoot ? ' One of the copies is in the bootstrap, so everybody downloads that extra weight.' : ''
             } ${d.list}`,
-            fix: d.pinnedApart
-                ? `<strong>This cannot be deduplicated from your project</strong>: ${d.pinnedApart} pins its copy to an exact version, and the other copy is on another major. Forcing a single one with ${mono('overrides')} or ${mono('resolutions')} puts a major version change inside ${d.pinnedApart}, which was never released against it. The sensible move is to accept the signal and wait for ${d.pinnedApart} to update${d.pinnedSame ? `; the one under ${d.pinnedSame} is on the same major, and an override may work there, once tested` : ''}.`
-                : d.viaDependency
-                  ? `At least one copy is not one you asked for: another dependency imports it, so aligning your ${mono('package.json')} is not enough. Force the resolution with ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) or ${mono('resolutions')} (yarn), and check that the version you keep works for both${
-                        d.pinnedSame
-                            ? `: ${d.pinnedSame} pins its copy to an exact version, so the override changes a dependency that library has not been tested with`
-                            : ` — pass ${mono('--lock')} and the report will say whether any of them is pinned to an exact version`
-                    }.`
-                  : `Both copies come in through dependencies you ask for directly: align the versions in ${mono('package.json')} and measure again.`,
+            fix: [
+                d.apart
+                    ? `<strong>${d.apart.packages}: this cannot be deduplicated from your project</strong>. ${d.apart.parents} pins its copy to an exact version, and the other copy is on another major. Forcing a single one with ${mono('overrides')} or ${mono('resolutions')} puts a major version change inside ${d.apart.parents}, which was never released against it. The sensible move is to accept the signal and wait for ${d.apart.parents} to update.`
+                    : '',
+                d.override
+                    ? `${d.override.packages}: at least one copy is not one you asked for; another dependency imports it, so aligning your ${mono('package.json')} is not enough. Force the resolution with ${mono('pnpm.overrides')}, ${mono('overrides')} (npm) or ${mono('resolutions')} (yarn), and check that the version you keep works for both${
+                          d.override.pinnedSame
+                              ? `: ${d.override.pinnedSame} pins its copy to an exact version on the same major, so the override changes a dependency that library has not been tested with`
+                              : ` — pass ${mono('--lock')} and the report will say whether any of them is pinned to an exact version`
+                      }.`
+                    : '',
+                d.align
+                    ? `${d.align}: both copies come in through dependencies you ask for directly; align the versions in ${mono('package.json')} and measure again.`
+                    : '',
+            ]
+                .filter(sentence => sentence !== '')
+                .join(' '),
         }),
         heavy: (d: { count: number; label: string; own: string; median: string; list: string }) => ({
             chip: d.count === 1 ? 'expensive screen' : 'expensive screens',
@@ -1248,6 +1296,7 @@ export const TEXT = {
             latencyMs: number;
             worstMs: number;
             list: string;
+            tool?: BuildTool;
         }) => ({
             chip: 'discovery depth',
             title: `${d.worstLabel} takes ${d.worstWaves} round trips to be complete: ${d.worstMs} ms of pure waiting`,
@@ -1256,7 +1305,7 @@ export const TEXT = {
                     ? 'Its widest trip brings a single file: it is a chain end to end, and every level flattened removes a whole wait.'
                     : `Its widest trip brings ${d.worstWidth} files: depth and width are different problems and a count of trips reports them as one. Those ${d.worstWidth} cost one trip between them; what costs trips is whatever sits behind them.`
             }`,
-            fix: 'Look at the chain in the Screens tab: each level is one file statically importing another. It shortens by importing from the screen what reaches it today through an intermediary, or — where the bundler allows it — by having the loader ask for the whole list at once, which is what Vite does with its preload list. This is not a question of size: merging chunks does not fix it while the chain is as deep.',
+            fix: `Look at the chain in the Screens tab: each level is one file statically importing another. It shortens by importing from the screen what reaches it today through an intermediary, ${screenPreload(d.tool, 'en')}. This is not a question of size: merging chunks does not fix it while the chain is as deep.`,
         }),
         locales: (d: { packages: { name: string; files: number; size: string }[]; size: string; boot: boolean }) => ({
             chip: 'every language of a library',
@@ -1320,13 +1369,23 @@ export const TEXT = {
                 d.angular
                     ? "<strong>The cause is Angular's chunk optimizer</strong>: after esbuild it bundles the chunks again with Rolldown and rewrites each file's weight as that pass's length shared out in proportion, before the final minification. That is why the parts add up to more than the file, and by the same factor in every chunk. It is not the component stylesheets: those are inside the JavaScript and already in the file's weight."
                     : '<strong>Why they differ cannot be told from here</strong> — something changed the output after it was written — and it does not have to be known to read the consequence.'
-            } The figures above — the bootstrap, each screen, the round trips — come from the file and are exact. The ones measured <strong>inside</strong> a chunk — the breakdown by package, the exclusive column, what a ${mono('--what-if')} would save — come from this sum, so they read ${d.off} % ${d.high ? 'high' : 'low'}.`,
-            fix: `Build with source maps — ${mapsOn(d.tool, 'en')} — and drop the folder: with ${mono('.map')} files the split is measured on the generated file itself and this difference goes away. They do not have to be deployed. Until then, read those figures as an upper bound: the order of the list is right — all of them are inflated by the same ratio — and the absolute number is not.`,
+            } The figures above — the bootstrap, each screen, the round trips — come from the file and are exact. The ones measured <strong>inside</strong> a chunk — the breakdown by package, the exclusive column, what a ${mono('--what-if')} would save — come from this sum, which is ${d.off} % ${d.high ? 'high' : 'low'}. ${
+                d.high
+                    ? "<strong>In this report they are scaled to each chunk's weight</strong>: each file keeps its share and the shares add up to the file again, so they agree with the figures above on every card. They are a proportion, not a measurement: approximate by as much as the share is off."
+                    : "Short is not scaled: what is missing is usually code that is nobody's file — the bundler's runtime, a wrapper — and sharing it out would be making it up."
+            }`,
+            fix: `Build with source maps — ${mapsOn(d.tool, 'en')} — and drop the folder: with ${mono('.map')} files the split is measured on the generated file itself and this difference goes away. They do not have to be deployed. Until then, the order of the list is right${d.high ? ' and the scaled figures are a good approximation' : ''}.`,
         }),
-        sourceMaps: (d: { count: number; tool?: BuildTool }) => ({
+        sourceMaps: (d: { count: number; tool?: BuildTool; unread?: number }) => ({
             chip: 'source maps in the folder',
-            title: `The build folder carries ${d.count === 1 ? '1 source map' : `${d.count} source maps`}`,
-            body: 'A source map reconstructs your source from the compiled output. It does not weigh on the download — the browser only asks for it if you open the tools — but if this is the folder you deploy, anybody who knows the URL has your code.',
+            title: `The build folder carries ${d.count === 1 ? '1 source map' : `${d.count} source maps`}${
+                d.unread && d.unread === d.count ? ' in a format Loadline does not read' : ''
+            }`,
+            body: `A source map reconstructs your source from the compiled output. It does not weigh on the download — the browser only asks for it if you open the tools — but if this is the folder you deploy, anybody who knows the URL has your code.${
+                d.unread
+                    ? ` ${d.unread === d.count ? (d.count === 1 ? 'This one is' : 'They are') : `${d.unread} of them are`} in a format Loadline does not read — neither JSON with ${mono('sources')} and ${mono('mappings')}, nor an index map with each map inside its section — so what is inside those chunks does not come from them: the figures inside are approximate.`
+                    : ''
+            }`,
             fix: `With ${mapsHidden(d.tool, 'en')} they are generated without being linked from the bundle, which is what you want in order to upload them to your error tool. The bundle no longer linking them does not stop the server from serving them: if the .map files end up on the server, they are still there for whoever knows the URL.`,
         }),
         clean: (d: { unit: string }) => ({
@@ -1425,6 +1484,7 @@ export const TEXT = {
             spare: string;
             superseded: string;
             preloaded: string;
+            widest: { name: string; weights: number } | null;
             list: string;
         }) => ({
             chip: 'fonts',
@@ -1432,7 +1492,11 @@ export const TEXT = {
                 d.superseded === ''
                     ? `${d.size} of fonts: ${d.files} files across ${d.families} ${d.families === 1 ? 'family' : 'families'}`
                     : `${d.size} of fonts on the server, ${d.spare} of it in a second format no current browser downloads`,
-            body: `No bundle analyser shows this, because they all stop at the JavaScript, and seven weights of one family to use two is a three-hundred-kilobyte finding. ${d.list}.${
+            body: `No bundle analyser shows this, because they all stop at the JavaScript${
+                d.widest
+                    ? `: here ${mono(d.widest.name)} ships ${d.widest.weights} weights, where an interface usually uses two.`
+                    : ', and the weights and formats of a typeface add up to kilobytes nobody looks at.'
+            } ${d.list}.${
                 d.superseded ? ` In a format another file in the same folder already supersedes: ${d.superseded}.` : ''
             }${d.preloaded ? ` The page preloads ${d.preloaded}, so those are part of the first load.` : ''}`,
             fix: `Count the weights the interface actually uses — usually two, regular and bold — and drop the rest from the font configuration. Unless they are ${mono('unicode-range')} subsets of one weight — dozens of files of one family usually are, as a CJK font's — which the browser fetches only for the characters on screen: there, none of them is spare. Where a ${mono('.woff2')} sits next to a ${mono('.ttf')} of the same face, the second is only wanted by a browser nobody runs any more: take it out of the format list. And preload only what is needed before the first paint: one ${mono('preload')} per weight turns the whole list into first-load bytes.`,
@@ -1459,14 +1523,20 @@ export const TEXT = {
             ...(d.count > 0
                 ? {
                       title: `${d.size} in ${d.count === 1 ? 'a file that ships' : `${d.count} files that ship`} twice under different names`,
-                      body: `The content is identical byte for byte — it was compared, not assumed from the size — and they are still separate cache entries, so a visitor downloads both. ${d.list}.${d.stored.count > 0 ? ` Besides, stored twice and downloaded once at most, because nothing names the other copy: ${d.stored.list}.` : ''}`,
+                      body: `The content is identical byte for byte — it was compared, not assumed from the size — and they are still separate cache entries, so a visitor downloads both. ${d.list}.${d.stored.count > 0 ? ` Besides, stored twice and downloaded once at most, because nothing names the other copy: ${d.stored.list}.` : ''}${d.icons.count > 0 ? ` And these are icons for several platforms, each browser downloading one: ${d.icons.list}.` : ''}`,
                       fix: 'Almost always the same asset imported from two places by different paths, or a copy left over from a migration. Unify the import and delete the copy. If the build generates both names, check whether a plugin is copying the assets folder as well as processing it.',
                   }
-                : {
-                      title: `${d.stored.size} in ${d.stored.count === 1 ? 'a file' : `${d.stored.count} files`} the folder holds twice and the page downloads once at most`,
-                      body: `The content is identical byte for byte — it was compared, not assumed from the size — but ${d.stored.none ? 'neither the page nor the code names any of the copies' : 'the page and the code name only one of the copies'}, and a copy nothing names is not downloaded unless something builds its URL at run time: this costs space where the build is deployed, not time on the visit. ${d.stored.list}.`,
-                      fix: 'There is nothing to save on the visit. If the build writes both names on purpose — some tools write a file under its own name and again under a hash — leave it; otherwise delete the copy nothing names.',
-                  }),
+                : d.stored.count > 0
+                  ? {
+                        title: `${d.stored.size} in ${d.stored.count === 1 ? 'a file' : `${d.stored.count} files`} the folder holds twice and the page downloads once at most`,
+                        body: `The content is identical byte for byte — it was compared, not assumed from the size — but ${d.stored.none ? 'neither the page nor the code names any of the copies' : 'the page and the code name only one of the copies'}, and a copy nothing names is not downloaded unless something builds its URL at run time: this costs space where the build is deployed, not time on the visit. ${d.stored.list}.${d.icons.count > 0 ? ` And these are icons for several platforms, each browser downloading one: ${d.icons.list}.` : ''}`,
+                        fix: 'There is nothing to save on the visit. If the build writes both names on purpose — some tools write a file under its own name and again under a hash — leave it; otherwise delete the copy nothing names.',
+                    }
+                  : {
+                        title: `${d.icons.count === 1 ? 'An icon' : `${d.icons.count} icons`} with the same picture for several platforms: each browser downloads one`,
+                        body: `The content is identical byte for byte, but each copy is named as one platform's icon — a ${mono('<link rel>')} of the page, the manifest, ${mono('browserconfig.xml')} — which is what any favicon generator writes. Each browser picks its own, so nobody downloads two. ${d.icons.list}.`,
+                        fix: 'There is nothing to save on the visit, and removing a copy can leave a platform without its icon. If the repetition on the server bothers you, point the manifest and the links at one file.',
+                    }),
         }),
         unreferencedAssets: (d: {
             count: number;
@@ -1536,7 +1606,9 @@ export const TEXT = {
         unstableChunk: (d: {
             count: number;
             name: string;
-            pct: number;
+            pct: string;
+            own: string;
+            vendor: string;
             size: string;
             inBoot: boolean;
             list: string;
@@ -1545,9 +1617,9 @@ export const TEXT = {
             chip: 'chunk mixing what changes with what does not',
             title:
                 d.count === 1
-                    ? `${d.name} is ${d.pct} % third-party code and is invalidated by every change of yours`
+                    ? `${d.name} is ${d.pct} % third-party code: ${d.own} of yours make its ${d.vendor} download again on every deploy`
                     : `${d.count} chunks mix dependencies with your own code: ${d.size} is re-invalidated on every deploy`,
-            body: `Dependencies do not change for months and your code changes daily. A chunk holding both gets a new hash every time you touch a line, and everything third-party inside it is downloaded again for nothing.${
+            body: `Dependencies do not change for months and your code changes daily. A chunk holding both gets a new hash every time you touch a line, and everything third-party inside it is downloaded again for nothing. What moves the hash is your part, however small: in ${mono(d.name)} it is ${d.own}.${
                 d.inBoot ? ' And it is in the bootstrap, so every returning visit pays for it.' : ''
             } ${d.list}.`,
             fix: `Split them: ${webpackSplit(d.tool, 'en')}in Rollup and Vite with a ${mono('manualChunks')} rule sending everything from ${mono('node_modules')} to its own chunk. Angular's application builder has no such rule and no option for one: it splits by what imports what, so a service of yours imported by every screen lands in the same chunk as the framework — the case to look for is exactly that, a file of yours that everything imports, and what moves it out is importing it from fewer places. Watch the opposite extreme: one enormous vendor chunk is invalidated whole when a single library is updated, so what is wanted is a split by how often things change, not by where they came from.`,
@@ -1622,6 +1694,8 @@ export const TEXT = {
             count: number;
             broken: boolean;
             unattributed: boolean;
+            /** Files copied into the build as they are, as HTML: not chunks, and the project's own. */
+            copied: string;
             list: string;
             tool?: BuildTool;
         }) => ({
@@ -1637,6 +1711,10 @@ export const TEXT = {
                     : d.unattributed
                       ? `These chunks carry no source map, so the position of each match cannot be traced back to the file it was written in — and a ${mono('console.log')} of yours looks exactly like one inside any library${mayBeAngular(d.tool) ? `, such as the one inside ${mono('@angular/core')}, which ships a console service and puts one in every Angular build there is` : ''}. The matches are real; whose they are is not known here.`
                       : 'None of these breaks anything on its own, but every one of them is something nobody meant to deploy. Each one was traced through the source maps to a file of yours, so none of them is your framework’s.'
+            }${
+                d.copied
+                    ? ` Not all of it is in a chunk: ${d.copied} was not written by the bundler but copied into the build as it is (from ${mono('public/')} or an assets folder), so no source map will cover it: what it holds is read in the file itself.`
+                    : ''
             } ${d.list}.`,
             fix: d.broken
                 ? 'The fix comes before everything else: build with the production configuration and measure again, because no figure in this report describes what your users download.'

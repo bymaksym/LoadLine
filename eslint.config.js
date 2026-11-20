@@ -589,9 +589,13 @@ module.exports = defineConfig([
         // Raised to 615 on 09/10/2026 (webpack stats, the tool): what webpack says travels together
         // stands in for a folder's preload lists, and the tool that wrote the build is handed on
         // for the advice. Reading both is in `intake/webpack-stats.ts` and `tool.ts`.
+        // Raised to 620 on 28/10/2026 (espaciot-app round): the walk behind `chainTo` remembers
+        // which files it reached through an `import()`, so a chain says where it leaves the bootstrap.
+        // Raised to 625 the same day: a chunk whose parts add up to more than it has them scaled to
+        // it (`chunkScalesOf`, in `split-drift.ts`), so every card's figures add up to the file.
         files: ['src/app/core/analysis/analysis.ts'],
         rules: {
-            'max-lines': ['error', { max: 615, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 625, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -682,7 +686,10 @@ module.exports = defineConfig([
             // the folder no screen downloads — the nomodule copy, the service worker, build.ignore.
             // Raised to 705 on 09/10/2026 (round details): the field that takes the entry script
             // when the page names none this reads, its label and its button.
-            'max-lines': ['error', { max: 705, skipBlankLines: true, skipComments: true }],
+            // Raised to 760 on 28/10/2026: the Flow tab. Its columns, nodes, three takeaway
+            // sentences, legend, table headings and detail panel; strings of a view that did not
+            // exist, not rewordings.
+            'max-lines': ['error', { max: 760, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -705,9 +712,10 @@ module.exports = defineConfig([
         // Raised to 590 on 08/10/2026 for two more out of an Angular 22 build installed with pnpm:
         // a directory name carrying its peer suffix or cut short, and Angular's own source maps
         // pointing outside the installed package.
+        // Raised to 605 on 28/10/2026 for the chain that crosses an `import()`, marked where it does.
         files: ['src/app/core/analysis/analysis.spec.ts'],
         rules: {
-            'max-lines': ['error', { max: 590, skipBlankLines: true, skipComments: true }],
+            'max-lines': ['error', { max: 605, skipBlankLines: true, skipComments: true }],
         },
     },
     {
@@ -758,6 +766,15 @@ module.exports = defineConfig([
             '@angular-eslint/template/prefer-self-closing-tags': 'error',
             '@angular-eslint/template/use-track-by-function': 'error',
             '@angular-eslint/template/prefer-static-string-properties': 'error',
+        },
+    },
+    {
+        // The report page: the summary, the tab strip and one case per tab. Raised to 305 on
+        // 28/10/2026: the Flow tab's case and the line of it under the summary. Every panel is
+        // already a component of its own; what is left is the list of them.
+        files: ['src/app/features/report/report.page.html'],
+        rules: {
+            'max-lines': ['error', { max: 305, skipBlankLines: true }],
         },
     },
 ]);

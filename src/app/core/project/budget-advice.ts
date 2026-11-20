@@ -14,6 +14,9 @@
  * which would fail the next build for a reason having nothing to do with the build.
  */
 
+import { configurationBudgets, pipelineKnown } from './project-context';
+import { type ProjectContext } from './project-context.types';
+
 const KB = 1024;
 
 /** Rounded to something a person would write down. Nobody puts `maximumError: 731 kB` in a file. */
@@ -91,4 +94,38 @@ export const screenBudgetAdvice = (largestScriptRawBytes: number, headroom = 0.1
     ].join('\n');
 
     return { warningKb, errorKb, currentBytes: largestScriptRawBytes, snippet };
+};
+
+/**
+ * Where the initial load stands against the budget `angular.json` sets, so a report read with
+ * `--project` says it looked. Without it, a project whose budgets were fine printed nothing about
+ * them, and nobody could tell a budget that passed from a project that was never read.
+ */
+export interface BudgetStanding {
+    /** The configuration whose budget it is: the strictest one the pipeline builds, else the default. */
+    config: string;
+    /** What Angular's `initial` budget counts, raw. */
+    current: number;
+    warning: number | null;
+    error: number | null;
+}
+
+/** The figure that fires first: the warning, else the error. */
+export const firstLimitOf = (standing: BudgetStanding): number | null => standing.warning ?? standing.error;
+
+/**
+ * The budget that applies, chosen as the budget signals choose it: among the configurations the
+ * pipeline builds when one was read, the strictest; otherwise the default configuration's, or the
+ * strictest of all. `null` when no configuration has one: `budgetNone` already says so.
+ */
+export const budgetStanding = (context: ProjectContext, initialRawBytes: number): BudgetStanding | null => {
+    const rows = configurationBudgets(context).filter(row => row.hasBudget);
+    const built = pipelineKnown(context) ? rows.filter(row => row.builtBy.length > 0) : [];
+    const defaulted = rows.filter(row => row.name === context.angular?.defaultConfiguration);
+    const pool = built.length > 0 ? built : defaulted.length > 0 ? defaulted : rows;
+    const bound = (row: (typeof rows)[number]): number => row.warning ?? row.error ?? Infinity;
+    const chosen = pool.toSorted((a, b) => bound(a) - bound(b))[0];
+    return chosen && initialRawBytes > 0
+        ? { config: chosen.name, current: initialRawBytes, warning: chosen.warning, error: chosen.error }
+        : null;
 };

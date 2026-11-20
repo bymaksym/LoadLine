@@ -15,6 +15,7 @@
  */
 
 import { type Analysis, type ModuleEntry, type SplitDrift } from '../../analysis/analysis.types';
+import { isReadableMap } from '../../analysis/sourcemap/index-map';
 import { type BuildTool } from '../../analysis/tool';
 import { type Criteria } from '../../criteria/criteria.types';
 import { formatBytes } from '../../format/format.utils';
@@ -242,9 +243,29 @@ const driftFinding = (drift: SplitDrift | null, lang: Lang, tool?: BuildTool): F
     ];
 };
 
+/**
+ * How many source maps the folder carries, counted once for every card that says it: the map files
+ * read, and only when there are none of those (a report restored without its files) the chunks a
+ * map split. `sourceMaps` counted the second and `sourceExposed` the first, and one folder came out
+ * with 43 maps in one card and 44 in the next.
+ */
+export const mapCount = (maps: readonly unknown[], splitChunks: number): number =>
+    maps.length > 0 ? maps.length : splitChunks;
+
+/**
+ * The map files that split no chunk and are not in a format this reads: what the report has to say
+ * is "a map it does not read" rather than "no map". Only those without a split are parsed again.
+ */
+export const unreadMapCount = (
+    maps: readonly { name: string; text: string }[],
+    split: (chunk: string) => boolean,
+): number => maps.filter(map => !split(map.name.replace(/\.map$/i, '')) && !isReadableMap(map.text)).length;
+
 export const buildFolderFindings = (
     build: {
         sourceMaps: number;
+        /** Of those, the ones in a format this does not read (`isReadableMap`). */
+        unreadMaps?: number;
         derived: boolean;
         screens?: readonly string[];
         drift?: SplitDrift | null;
@@ -263,7 +284,7 @@ export const buildFolderFindings = (
             {
                 severity: 'info',
                 kind: 'sourceMaps',
-                ...TEXT[lang].sourceMaps({ count: build.sourceMaps, tool: build.tool }),
+                ...TEXT[lang].sourceMaps({ count: build.sourceMaps, tool: build.tool, unread: build.unreadMaps ?? 0 }),
             },
         ];
     }

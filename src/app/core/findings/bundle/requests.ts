@@ -72,6 +72,7 @@ const slowScreenFindings = (analysis: Analysis, lang: Lang, c: Criteria): Findin
                 // the arithmetic instead of asking anybody to take `3` on faith.
                 latencyMs: c.latencyMs,
                 worstMs: worst.waves * c.latencyMs,
+                tool: analysis.tool,
                 list: slow
                     .toSorted((a, b) => b.waves - a.waves)
                     .map(screen => named(screen))

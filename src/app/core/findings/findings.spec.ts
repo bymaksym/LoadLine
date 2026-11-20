@@ -456,6 +456,7 @@ describe('the list of signal kinds', () => {
             'situationAsks',
             'andMore',
             'inPage',
+            'ownInChunk',
             'each',
             'fileCount',
             'packageBarrelRow',

@@ -24,6 +24,14 @@ export interface LockedPackage {
      * version by its parent and cannot be deduplicated without changing that parent.
      */
     declares?: Record<string, string>;
+    /**
+     * The names of the packages it depends on, with no range: what pnpm's lock records under each
+     * entry of `snapshots:` (pnpm 9) or `packages:` (pnpm 8), at the version it resolved to. That
+     * resolved version is why it is not `declares` — read as a range, every dependency of a pnpm
+     * install would look pinned exactly — but who depends on whom is the same either way, and it
+     * is what "who brings this dependency" walks. Absent where `declares` already says it.
+     */
+    requires?: string[];
 }
 
 export type Severity = 'critical' | 'high' | 'moderate' | 'low' | 'info';

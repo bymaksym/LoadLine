@@ -138,6 +138,7 @@ export const renderJson = (report: CliReport, violations: Violation[], anyAsked:
             criteria.latencyMs,
         ),
         budget: advice,
+        budgetStanding: report.budgetStanding,
         caching: report.caching,
         scan: report.scan,
         // Without the declared ranges: they are an input the signals already read, not a finding.

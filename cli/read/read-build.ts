@@ -58,11 +58,14 @@ import { type DistSizes } from './read-build.types';
  */
 export class InputError extends Error {
     readonly say: (t: ErrorStrings) => string;
+    /** The word `--format json` reports it under: `input`, unless the case has one of its own. */
+    readonly code: string;
 
-    constructor(say: ((t: ErrorStrings) => string) | string) {
+    constructor(say: ((t: ErrorStrings) => string) | string, code = 'input') {
         const said = typeof say === 'string' ? (): string => say : say;
         super(said(ERROR_TEXT.en));
         this.say = said;
+        this.code = code;
     }
 }
 

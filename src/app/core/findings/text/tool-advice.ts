@@ -110,3 +110,35 @@ export const webpackSplit = (tool: BuildTool | undefined, lang: Lang): string =>
         ? `en webpack con un grupo de ${mono('optimization.splitChunks.cacheGroups')} para ${mono('node_modules')}; `
         : `in webpack with a group of ${mono('optimization.splitChunks.cacheGroups')} for ${mono('node_modules')}; `;
 };
+
+/**
+ * How the tool that wrote the build fetches a screen's chunks before the chain discovers them, as
+ * the clause the advice on deep screens ends with. It named Vite's preload list in an Angular app,
+ * whose answer is the router's preloading — which that app did not have.
+ */
+export const screenPreload = (tool: BuildTool | undefined, lang: Lang): string => {
+    const es = lang === 'es';
+    if (tool?.framework === 'angular') {
+        return es
+            ? `o haciendo que el router de Angular precargue las rutas lazy con ${mono('withPreloading(PreloadAllModules)')} en ${mono('provideRouter')} (${mono('preloadingStrategy')} en ${mono('RouterModule.forRoot')}): los niveles de la cadena se pagan en tiempo libre, antes del clic`
+            : `or by having Angular's router preload the lazy routes with ${mono('withPreloading(PreloadAllModules)')} in ${mono('provideRouter')} (${mono('preloadingStrategy')} in ${mono('RouterModule.forRoot')}): the levels of the chain are paid in idle time, before the click`;
+    }
+    if (tool?.bundler === 'vite' || tool?.framework === 'nuxt' || tool?.framework === 'sveltekit') {
+        return es
+            ? `o dejando que el cargador pida la lista entera de golpe, que es lo que hace la lista de precarga de Vite (${mono('build.modulePreload')}, activa salvo que se apague)`
+            : `or by letting the loader ask for the whole list at once, which is what Vite's preload list does (${mono('build.modulePreload')}, on unless switched off)`;
+    }
+    if (tool?.bundler === 'webpack') {
+        return es
+            ? `o marcando el ${mono('import()')} de la pantalla con ${mono('/* webpackPrefetch: true */')}, para que webpack baje sus chunks en tiempo libre`
+            : `or by marking the screen's ${mono('import()')} with ${mono('/* webpackPrefetch: true */')}, so webpack fetches its chunks in idle time`;
+    }
+    if (tool?.bundler) {
+        return es
+            ? `o nombrando los chunks de la pantalla con ${mono('<link rel="modulepreload">')} cuando se vaya a abrir`
+            : `or by naming the screen's chunks with ${mono('<link rel="modulepreload">')} when it is about to open`;
+    }
+    return es
+        ? 'o —si el bundler lo permite— haciendo que el cargador pida la lista entera de golpe, como la lista de precarga de Vite o la precarga del router de Angular'
+        : "or — where the bundler allows it — by having the loader ask for the whole list at once, as Vite's preload list or Angular's router preloading do";
+};

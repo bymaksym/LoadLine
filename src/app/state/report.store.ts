@@ -19,7 +19,7 @@ import { type Criteria, type Mode } from '../core/criteria/criteria.types';
 import { readAudit, readDeps, readLock } from '../core/deps/deps';
 import { type Advisory, type DepsReport, type LockedPackage } from '../core/deps/deps.types';
 import { unitScale } from '../core/findings/actions';
-import { buildFolderFindings } from '../core/findings/bundle/shipped';
+import { buildFolderFindings, mapCount, unreadMapCount } from '../core/findings/bundle/shipped';
 import { composeFindings } from '../core/findings/compose';
 import { type Finding } from '../core/findings/finding.types';
 import {
@@ -74,7 +74,7 @@ import {
 import { type ProjectContext } from '../core/project/project-context.types';
 import { projectNameOf } from '../core/project/project-name';
 import { SAMPLE_CSS, SAMPLE_NAME, SAMPLE_PAGE, SAMPLE_STATS } from '../core/sample/sample-build';
-import { scanBuild } from '../core/scan/scan';
+import { generatedOf, scanBuild } from '../core/scan/scan';
 import { type ScanReport } from '../core/scan/scan.types';
 import { clearSession, loadSession, saveSession } from '../core/session/persistence';
 import { type StoredSession } from '../core/session/persistence.types';
@@ -468,6 +468,7 @@ export class ReportStore {
             modules: analysis.modules,
             boot: new Set(analysis.bootChunks),
             maps: this.buildMaps(),
+            generated: generatedOf(analysis),
         });
     });
 
@@ -518,7 +519,8 @@ export class ReportStore {
         return [
             ...buildFolderFindings(
                 {
-                    sourceMaps: this.mapFiles() ?? 0,
+                    sourceMaps: mapCount(this.buildMaps(), this.mapFiles() ?? 0),
+                    unreadMaps: unreadMapCount(this.buildMaps(), chunk => !!this.maps()?.has(chunk)),
                     derived: this.derived(),
                     screens: analysis.screens.map(s => s.label),
                     drift: analysis.splitDrift,

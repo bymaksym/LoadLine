@@ -11,9 +11,12 @@
 import { basename, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { analyze } from '../../src/app/core/analysis/analysis';
+import { type ModuleEntry } from '../../src/app/core/analysis/analysis.types';
 import { checkBoot, isSameBoot } from '../../src/app/core/analysis/invariant';
 import { resolveSplits } from '../../src/app/core/analysis/sourcemap/sourcemap';
-import { readDist } from './read-build';
+import { readDeps } from '../../src/app/core/deps/deps';
+import { scanBuild } from '../../src/app/core/scan/scan';
+import { readDepsFiles, readDist } from './read-build';
 
 const FOLDER = join(process.cwd(), 'fixtures', 'vite-app', 'dist');
 
@@ -195,5 +198,83 @@ describe('readDist on an AMD build', () => {
         expect(labels(analysis.screens)).toEqual(['home.page', 'orders.page', 'settings.page']);
         expect(analysis.deferredBlocks.map(block => block.label)).toEqual(['chart.widget']);
         expect(analysis.bootFiles).toBe(1);
+    });
+});
+
+/**
+ * espaciot-app, installed with pnpm 9: "who brings this dependency" was empty for all nine indirect
+ * dependencies, because only yarn's lock was read for what each package depends on. pnpm 9 records
+ * it under `snapshots:`, at resolved versions — which is why those are names here and never pins.
+ */
+describe('readDepsFiles on a pnpm 9 lock file', () => {
+    const LOCK = join(process.cwd(), 'fixtures', 'pnpm9-lock', 'pnpm-lock.yaml');
+    const shipped = (path: string, pkg: string): ModuleEntry => ({
+        path,
+        label: path,
+        pkg,
+        bytes: 1000,
+        places: [{ chunk: 'main.js', chunkName: 'main.js', bytes: 1000, zone: 'boot', screens: 0 }],
+    });
+
+    it('reads the scoped names pnpm 9 quotes, and what each package depends on', async () => {
+        const { lock, lockDirect } = await readDepsFiles(LOCK, null);
+        const core = lock?.find(entry => entry.name === '@angular/core');
+
+        expect(core?.version).toBe('20.3.4');
+        expect(core?.requires).toEqual(['rxjs', 'tslib', 'zone.js']);
+        expect(core?.declares).toBeUndefined();
+        expect(lockDirect).toContain('firebase');
+    });
+
+    it('says which package brings each indirect dependency', async () => {
+        const { lock, lockDirect } = await readDepsFiles(LOCK, null);
+        const report = readDeps({
+            lock,
+            advisories: null,
+            modules: [
+                shipped('node_modules/.pnpm/idb@7.1.1/node_modules/idb/build/index.js', 'idb'),
+                shipped('node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js', 'ms'),
+            ],
+            boot: new Set(['main.js']),
+            direct: new Set(lockDirect),
+        });
+        const chain = (name: string) => report.transitive.find(entry => entry.name === name)?.chain;
+
+        expect(chain('idb')).toEqual(['firebase', '@firebase/app']);
+        expect(chain('ms')).toEqual(['@microsoft/teams-js', 'debug']);
+        expect(report.declared.size).toBe(0);
+    });
+});
+
+/**
+ * Zaporeak's web export, shaped after Metro: one bundle of `__d(…)` modules and an index map with a
+ * section per module, nothing at its root. Read as "this folder carries no source maps" before; the
+ * one `console.log` that is the project's own (`src/core/logger.ts`) could not be told from React's.
+ */
+describe('readDist on a Metro build with a sectioned map', () => {
+    const METRO = join(process.cwd(), 'fixtures', 'metro-sectioned-map', 'dist');
+
+    it('splits the bundle by source file through the sections', async () => {
+        const dist = await readDist(METRO, true);
+        const split = dist.splits?.get('entry-3f9a1c2b7d4e5f60.js');
+
+        expect([...(split?.keys() ?? [])].toSorted((a, b) => a.localeCompare(b))).toEqual([
+            'node_modules/expo-router/entry.js',
+            'node_modules/react/cjs/react.production.min.js',
+            'src/app/index.tsx',
+            'src/core/logger.ts',
+        ]);
+    });
+
+    it('counts only the console.log that is the project’s own', async () => {
+        const dist = await readDist(METRO, true);
+        const leftover = scanBuild({
+            texts: dist.texts ?? new Map(),
+            modules: [],
+            boot: new Set(),
+            maps: dist.maps ?? [],
+        }).leftovers.find(item => item.kind === 'consoleLogs');
+
+        expect(leftover).toMatchObject({ count: 1, attributed: true });
     });
 });

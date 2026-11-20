@@ -46,6 +46,14 @@ export interface ErrorStrings {
     noProject: (folder: string) => string;
     /** `loadline .` in a project that holds no build yet. */
     projectNotBuilt: (folder: string) => string;
+    /**
+     * A native Expo app: the export folder, its Hermes bundle, or the project with no web build.
+     * Refused by name, because Loadline weighs what a browser downloads and an app from a store is not that.
+     */
+    nativeApp: (
+        path: string,
+        d: { kind: 'export' | 'bundle' | 'project'; platforms: string[]; evidence: string },
+    ) => string;
     notThresholds: (path: string) => string;
     needsBrotli: (by: string) => string;
     needsDist: (by: string) => string;
@@ -107,6 +115,16 @@ const EN: ErrorStrings = {
         `${folder} is a project, not a build, and no build was found inside it: no folder holding an index.html with ` +
         'scripts, nor a stats.json. Build it the way you deploy it (npm run build) and run this again, or pass the ' +
         'output folder itself: dist/, build/, www/ or wherever your tool writes it.',
+    nativeApp: (path, d) =>
+        `${path} is ${
+            d.kind === 'bundle'
+                ? 'Hermes bytecode: the bundle of a native app'
+                : d.kind === 'project'
+                  ? 'an Expo app with no web build in it'
+                  : `a native Expo export${d.platforms.length > 0 ? ` for ${d.platforms.join(' and ')}` : ''} (${d.evidence} says so)`
+        }. Loadline weighs what a browser downloads for each screen, and does not analyse native apps: they ` +
+        'arrive installed from the store. For what the native bundle holds, Expo Atlas breaks it down. For the web ' +
+        'version of the app, export it with npx expo export --platform web and point Loadline at that folder.',
     notThresholds: path => `${path} has to be an object of thresholds.`,
     needsBrotli: by => `${by} needs the .js.br files of the build in --dist.`,
     needsDist: by => `${by} needs the build folder in --dist.`,
@@ -174,6 +192,16 @@ const ES: ErrorStrings = {
         `${folder} es un proyecto, no un build, y dentro no hay ningún build: ninguna carpeta con un index.html y ` +
         'scripts, ni un stats.json. Compílalo como lo despliegas (npm run build) y vuelve a lanzarlo, o pasa la ' +
         'carpeta de salida directamente: dist/, build/, www/ o donde la escriba tu herramienta.',
+    nativeApp: (path, d) =>
+        `${path} es ${
+            d.kind === 'bundle'
+                ? 'bytecode de Hermes: el bundle de una app nativa'
+                : d.kind === 'project'
+                  ? 'una app de Expo sin ningún build web dentro'
+                  : `una exportación nativa de Expo${d.platforms.length > 0 ? ` para ${d.platforms.join(' y ')}` : ''} (lo dice ${d.evidence})`
+        }. Loadline mide lo que descarga un navegador en cada pantalla y no analiza apps nativas: llegan ` +
+        'instaladas desde la tienda. Para ver qué lleva el bundle nativo, Expo Atlas lo desglosa. Para la versión ' +
+        'web de la app, expórtala con npx expo export --platform web y pasa a Loadline esa carpeta.',
     notThresholds: path => `${path} tiene que ser un objeto de umbrales.`,
     needsBrotli: by => `${by} necesita los ficheros .js.br del build en --dist.`,
     needsDist: by => `${by} necesita la carpeta del build en --dist.`,

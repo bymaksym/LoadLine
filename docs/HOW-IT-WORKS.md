@@ -303,6 +303,51 @@ the first load take two trips. Late or not, it arrives before the first paint.
 
 ---
 
+### 2.10 Where the bytes go
+
+The screens table says what each screen weighs and the bootstrap tab what the first load holds.
+Neither answers the question a heavy screen raises next: _which package_ makes it heavy, and does
+that package cost every screen or only some? That question is about a path (package → chunk →
+screen), and the Flow tab draws those paths (`core/analysis/views/flow/`).
+
+**Three columns.**
+
+- **Left:** each package, plus your own code as one node. Each node is as tall as what it weighs in
+  the build.
+- **Middle:** where those bytes live. The bootstrap comes first; every screen downloads it before
+  anything. Then the shared chunks, ranked by size × screens. Last, every screen's own chunks.
+- **Right:** each screen with its first trip, split into bootstrap + shared + own, the same three
+  figures as the screens table.
+
+A ribbon's width is bytes, and its colour is where those bytes live.
+
+**Two scales, on purpose.** The left and middle columns count each byte once: `chart.js` is 224 kB
+however many screens load it. The right column counts each byte once per screen that downloads it.
+On one scale, the right column of a build with twelve screens would be about ten times taller than
+the left one. So the screens get a scale of their own: their heights compare with each other and
+with nothing else. Each middle node shares its height out among the screens that download it, and
+the bootstrap leaves in as many equal ribbons as there are screens. The page says this under the
+legend.
+
+**A package inside a chunk is its raw share.** It is the treemap's `≈` figure. The bytes the
+metafile gives to no file form one node, the bundler's code. That way every chunk is fully counted
+and the columns add up; the tests check this on every fixture, raw and gzip. A folder read without
+its source maps describes nothing inside its chunks, so those bytes form a node called "not broken
+down". The first version put them under the bundler's name, which put a whole build there.
+
+**Readable at any size.** Past 12 packages, 8 shared chunks or 12 screens, the rest fold into one
+node per column that lists what it holds. The columns are ordered with a barycentre pass (two
+sweeps between the middle and the screens, then the packages), and the folded nodes stay at the
+bottom. A test checks the order crosses no more ribbons than sorting by weight.
+
+**The sentence on top** is worked out, not written. The first case that applies wins:
+
+1. A package that more screens download than import it, through the bootstrap or a shared chunk.
+   "Import" means your own files import it directly, and that is all the sentence claims.
+2. What makes the heaviest screen heavy, beyond the bootstrap.
+3. The heaviest part of the bootstrap, when no screen adds anything to it.
+4. Without source maps, the heaviest screen and its three parts.
+
 ## 3. The signals
 
 A number on its own is not a problem. What turns data into something worth touching is context: how
@@ -814,13 +859,25 @@ shared chunk, `metafile: true`, `minify: true` — comes out at **0.9892**, and 
 **0.9975**: the deficit is the per-chunk wrapper, in the direction the overhead predicts. Whatever
 moves the figure sits between esbuild's metafile and the folder Angular writes, on some of its builds.
 
-**Why it is a signal and not a correction.** Scaling the breakdown down by the ratio would make the
-totals reconcile and would be a model: it assumes every file moved by the same proportion, and nothing
-here measures whether it did. There is an exact answer available instead, and the signal's fix is to
-go and get it — build with source maps and drop the folder, and the split is measured on the generated
-file itself. On the same Angular 22 probe, the graph walk over the metafile alone totals 280 153 bytes
-against a 222 555-byte bootstrap (**+26 %**); with the maps alongside it, 221 555 (**−0.45 %**). It
-does not fire on chunks a map covered, because for those there is nothing left to drift.
+**A signal, and since 28/10/2026 a correction too.** This section used to stop at the signal:
+scaling the breakdown down by the ratio would make the totals reconcile and would be a model, assuming
+every file moved by the same proportion. Two things changed that. The cause was found — Angular's
+chunk optimizer bundles the chunks again after esbuild and shares each chunk's length out in
+proportion, before the last minification — which is exactly a same-proportion move. And leaving the
+figures as they were made the report contradict itself on every card but this one: espaciot-app
+without maps read "Bootstrap 117 kB" over "≈117 kB of packages against ≈30 kB of your own" (147),
+and one package was 53 kB in one card and 72 kB in another. Scaled to the file, the same build gives
+93 + 24; built with maps, it measures 93 + 25.
+
+So a chunk whose parts add up to **more** than the file, past the same 5 % and kibibyte, has them
+scaled down to it (`chunkScalesOf`), and every card's figures add up. Never up: parts short of the
+file are the wrapper and the runtime, which belong to nobody's file, and sharing them out would be
+inventing them. This card still fires, saying the metafile was off and by how much, because the
+scaled figures are a proportion and the exact answer is still one flag away — build with source maps
+and drop the folder, and the split is measured on the generated file itself. On the same Angular 22
+probe, the graph walk over the metafile alone totals 280 153 bytes against a 222 555-byte bootstrap
+(**+26 %**); with the maps alongside it, 221 555 (**−0.45 %**). It does not fire on chunks a map
+covered, because for those there is nothing left to drift.
 
 ### 3.24 What `loadline.json` forbids
 
@@ -1123,6 +1180,17 @@ line carries a **count as a screen** button, as every row of the table carries a
 telling a screen from a piece of one is partly done by reading file names, and no set of names fits
 every project. A reclassified entry is remembered with the session.
 
+### What is refused by name: a native app
+
+An Expo export for Android or iOS — a `metadata.json` naming those platforms, bundles under
+`_expo/static/js/android/` or `ios/`, Hermes bytecode (`.hbc`, or any file starting with its magic
+number) — is refused with exit code `2` and the code `NATIVE_APP` in `--format json`, saying what it
+is. So is the project folder of an Expo app with no web build in it. Loadline weighs what a browser
+downloads per screen; a native app arrives installed from a store, and read as a web build it gave a
+985 kB bootstrap with no screens, a first trip of 0 B and nine seconds on slow 4G for something
+nobody downloads that way. What a native bundle holds is what Expo Atlas shows. A web export
+(`expo export --platform web`) is a web build and is read as one.
+
 ### The other files, all optional
 
 | File                                       | What is read                                                                                                                                     |
@@ -1138,6 +1206,13 @@ every project. A reclassified entry is remembered with the session.
 | `package.json`                             | `scripts` (to follow the pipeline's commands), `zone.js` and `@angular/core`                                                                     |
 | `.gitlab-ci.yml` / GitHub workflow         | Commands containing `ng build` or a build script, with the job they live in                                                                      |
 
+A source map is read in either shape the specification allows: a regular map, with `sources` and
+`mappings` at its root, or an **index map** — `sections`, each with an offset and a map of its own —
+which is what Metro writes (an Expo export's map came in 2,290 sections). The sections are joined
+into one map where the JSON is read, so every reader sees the same thing. A section that points at
+another file (`url`) is not fetched, and a map that cannot be read is said to be there in a format
+Loadline does not read, never counted as no map.
+
 The page's "Export analysis" button and the command's `--export` write the same file. That matters
 more than it sounds: a `stats.json` is the only baseline a build can produce on its own, and Vite,
 Rollup, SvelteKit, Nuxt, Astro and Solid do not write one — so before `--export` the only way to get a
@@ -1145,6 +1220,14 @@ baseline for any of them was to open a browser and press a button, which a pipel
 
 The pipeline file is read without a YAML parser, line by line, which is why every command found is
 shown in the Project tab with what it resolves to: if the heuristic gets it wrong, it shows.
+
+**The name at the top of the report** comes from one order, whatever else was passed: the page's
+`<title>` in `index.html`, then the `name` of a `package.json` (the one `--project` names, or the
+nearest one above the build), then the Angular project, then the build folder's own name. The title
+is first because it is in the build: a package name is only known with `--project` or when the
+build sits inside its repository, and the same build copied to a temporary folder was called by its
+title without the flag and by its package with it. A title left as a generator wrote it (`Vite +
+React + TS`, `React App`) names a template, and is skipped.
 
 ### How `loadline.json` is allowed to grow
 

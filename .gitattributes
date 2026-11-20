@@ -14,3 +14,7 @@ bin/loadline.js text eol=lf
 # `eol=lf` as well: the driver writes the file with LF, and without this git rewrites it with CRLF
 # once the merge ends, leaving it marked as modified by a change that does not exist.
 pnpm-lock.yaml merge=pnpm-lock text eol=lf
+
+# The Metro fixture's map points at lines and columns of its bundle as written. A CRLF checkout adds
+# a byte to every line the map does not know about, so it is kept as it was generated.
+fixtures/metro-sectioned-map/dist/** text eol=lf

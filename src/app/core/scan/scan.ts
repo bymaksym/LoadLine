@@ -9,6 +9,7 @@
  */
 
 import { type ModuleEntry } from '../analysis/analysis.types';
+import { parseSourceMap } from '../analysis/sourcemap/index-map';
 import { isSourceMap, projectRootsOf, segmentsOf, sourceAt, sourcePathOf } from '../analysis/sourcemap/sourcemap';
 import { baseName, packageOf } from '../format/format.utils';
 import { isOwnFile } from '../format/ownership';
@@ -146,7 +147,7 @@ const mapReaders = (
         const map = maps.find(entry => entry.name === `${chunk}.map`);
         let reader: Reader | null = null;
         try {
-            const parsed: unknown = map ? JSON.parse(map.text) : null;
+            const parsed = map ? parseSourceMap(map.text) : null;
             if (isSourceMap(parsed)) {
                 const segments = segmentsOf(parsed);
                 // Line starts once, so resolving a position is a binary search rather than a
@@ -233,12 +234,47 @@ const startsIndentedLine = (text: string, index: number): boolean => {
     }
     return start < index && text[start - 1] === '\n';
 };
+/**
+ * Whether a match sits in a comment, in a file that is not minified (a minifier keeps none but the
+ * legal ones). `// console.log(` on line 34 of a service worker was counted as a leftover, and it is
+ * the one thing about that line that is certain not to run.
+ *
+ * Read back to the start of the line, at most 500 characters: a line that starts a comment (`//`,
+ * `/*`, or the `*` of a block's middle), or a `//` after a space with no quote after it, which is a
+ * trailing comment and not the `//` of a URL inside a string.
+ */
+const inComment = (text: string, index: number): boolean => {
+    const lineStart = text.lastIndexOf('\n', index - 1) + 1;
+    const before = text.slice(Math.max(lineStart, index - 500), index);
+    const lead = before.trimStart();
+    if (lead.startsWith('//')) {
+        return true;
+    }
+    // A block comment the line opens or continues, unless it closes before the match: a licence
+    // header and the call after it on the same line (`/*! lodash MIT */ console.log(…)`) is code.
+    if ((lead.startsWith('/*') || lead.startsWith('*')) && !before.includes('*/')) {
+        return true;
+    }
+    const slashes = before.lastIndexOf('//');
+    return slashes > 0 && /\s/.test(before[slashes - 1] ?? '') && !/['"`]/.test(before.slice(slashes));
+};
+
+const isScript = (name: string): boolean => /\.m?js$/i.test(name);
+
 const leftoversOf = (
     texts: ReadonlyMap<string, string>,
     modules: readonly ModuleEntry[],
     readerFor: (chunk: string) => Reader | null,
+    generated: ReadonlySet<string> | null,
 ): Leftover[] => {
     const found: Leftover[] = [];
+
+    // A file in the folder the bundler did not write: copied as it is, from `public/` or an assets
+    // folder — a service worker, a configuration script. Only known where the bundler listed what it
+    // wrote (a metafile, webpack's stats); a folder read on its own cannot tell, and says nothing.
+    // Whose code it is stays unknown without a map: it may be the project's, or a library somebody
+    // copied in. What changes is that it is not called a chunk.
+    const copied = (chunk: string): boolean => !!generated && isScript(chunk) && !generated.has(chunk);
 
     /**
      * How many of a marker's matches in one chunk are the project's own, and whether that could be
@@ -246,7 +282,9 @@ const leftoversOf = (
      */
     const countIn = (chunk: string, text: string, pattern: RegExp): { count: number; attributed: boolean } => {
         const minified = isMinified(text);
-        const hits = [...text.matchAll(pattern)].filter(hit => !minified || !startsIndentedLine(text, hit.index));
+        const hits = [...text.matchAll(pattern)].filter(hit =>
+            minified ? !startsIndentedLine(text, hit.index) : !inComment(text, hit.index),
+        );
         if (hits.length === 0) {
             return { count: 0, attributed: true };
         }
@@ -267,6 +305,7 @@ const leftoversOf = (
         let count = 0;
         let attributed = true;
         const where: string[] = [];
+        const copies: string[] = [];
         for (const [chunk, text] of texts) {
             const hits = countIn(chunk, text, pattern);
             attributed &&= hits.attributed;
@@ -276,9 +315,12 @@ const leftoversOf = (
 
             count += hits.count;
             where.push(chunk);
+            if (copied(chunk)) {
+                copies.push(chunk);
+            }
         }
         if (count > 0) {
-            found.push({ kind, count, where, attributed });
+            found.push({ kind, count, where, attributed, copied: copies });
         }
     }
 
@@ -287,7 +329,13 @@ const leftoversOf = (
     for (const { kind, pattern } of DEV_INPUTS) {
         const hit = modules.filter(module => pattern.test(module.path));
         if (hit.length > 0) {
-            found.push({ kind, count: hit.length, where: hit.map(module => module.label), attributed: true });
+            found.push({
+                kind,
+                count: hit.length,
+                where: hit.map(module => module.label),
+                attributed: true,
+                copied: [],
+            });
         }
     }
 
@@ -357,7 +405,7 @@ export const exposureOf = (maps: readonly { name: string; text: string }[]): Sou
             // Both fields are checked entry by entry rather than asserted whole: the assertion
             // made a map with one non-string in `sources` throw on the first `.includes`, and the
             // catch below then dropped everything that map knew instead of the one bad entry.
-            const parsed = asRecord(JSON.parse(map.text));
+            const parsed = asRecord(parseSourceMap(map.text));
             return {
                 sources: (asArray(parsed?.['sources']) ?? []).map(source => asText(source)),
                 contents: asArray(parsed?.['sourcesContent']) ?? [],
@@ -404,14 +452,26 @@ export interface ScanInput {
     boot: ReadonlySet<string>;
     /** The `.js.map` files, with their text. Empty when the folder carried none. */
     maps: readonly { name: string; text: string }[];
+    /**
+     * The scripts the bundler says it wrote, by file name: a metafile's or webpack's outputs. Absent
+     * when the folder was read on its own, which cannot tell a chunk from a file copied in.
+     */
+    generated?: ReadonlySet<string> | null;
 }
+
+/**
+ * The scripts the bundler wrote, by file name, when it said so: every chunk of a metafile or of
+ * webpack's stats. `null` for a folder read on its own, where every script found is a chunk.
+ */
+export const generatedOf = (analysis: { readFrom: string; allChunks: readonly string[] }): Set<string> | null =>
+    analysis.readFrom === 'folder' ? null : new Set(analysis.allChunks.map(chunk => baseName(chunk)));
 
 export const scanBuild = (input: ScanInput): ScanReport => {
     const readerFor = mapReaders(input.texts, input.maps);
 
     return {
         secrets: findSecrets(input.texts, envOwners(input.modules, readerFor)),
-        leftovers: leftoversOf(input.texts, input.modules, readerFor),
+        leftovers: leftoversOf(input.texts, input.modules, readerFor, input.generated ?? null),
         licences: licencesOf(input.texts),
         thirdParty: thirdPartyOf(input.modules, input.boot),
         exposure: exposureOf(input.maps),

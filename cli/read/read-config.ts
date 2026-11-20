@@ -125,12 +125,32 @@ const readFile = async (
     return { config, problems };
 };
 
+/**
+ * Where an unnamed `loadline.json` is looked for, in order: the working directory, then `.config/`
+ * in it. A repository that keeps its tool configurations together in `.config/` — this one does, and
+ * crowded-folders looks there too — had its file ignored without a word, and every gate in it was
+ * off. The root wins when both exist, because that is where the file has always been read from.
+ */
+const UNNAMED = ['loadline.json', '.config/loadline.json'] as const;
+
+const unnamedPath = async (cwd: string): Promise<string | null> => {
+    for (const name of UNNAMED) {
+        const path = resolve(cwd, name);
+        if (await exists(path)) {
+            return path;
+        }
+    }
+    return null;
+};
+
 export const readLoadlineConfig = async (given: string | null, cwd: string, lang: Lang = 'en'): Promise<ConfigRead> => {
-    const path = resolve(cwd, given ?? 'loadline.json');
-    if (!given && !(await exists(path))) {
+    const path = given ? resolve(cwd, given) : await unnamedPath(cwd);
+    if (!path) {
         return { config: null, problems: [], name: null };
     }
-    const shown = (file: string): string => relative(cwd, file) || file;
+    // With `/` on every system: `.config\loadline.json` on Windows and `.config/loadline.json` on a
+    // runner are the same file, and the line naming it should not depend on who ran the command.
+    const shown = (file: string): string => (relative(cwd, file) || file).replaceAll('\\', '/');
 
     // A file somebody pointed at by name is meant to be one; one that merely sits in the working
     // directory under that name may be somebody else's, and gets the warning.

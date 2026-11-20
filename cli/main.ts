@@ -77,7 +77,7 @@ const portableName = (target: string): string => {
  */
 const codeOf = (error: unknown): string => {
     if (error instanceof InputError) {
-        return 'input';
+        return error.code;
     }
     return error instanceof Error && /^[A-Z][A-Z_]+$/.test(error.message) ? error.message : 'unexpected';
 };
@@ -336,14 +336,20 @@ export const run = async (argv: string[], version: string): Promise<number> => {
         options = { ...options, target: located.target, dist: located.dist };
         // On stderr: which build was chosen is said, without getting into what a script parses.
         if (located.others) {
-            write(process.stderr, CLI_TEXT[options.lang].alsoFound(located.others.join(', ')));
+            write(
+                process.stderr,
+                CLI_TEXT[options.lang].alsoFound(located.others.map(name => portableName(name)).join(', ')),
+            );
         }
         const input = await readInputs(options);
         // The gates the file asks for, where the command line did not ask for that one. A flag typed
         // by hand is somebody overriding the committed decision on purpose, so it wins.
         const gates = mergeGates(options.gates, input.config ?? null);
         const report = buildReport(input, { ...options, gates });
-        report.located = located.found;
+        // In the lead's terms — relative, with `/` — and without the one the lead already names: the
+        // same build printed twice, once as `../../Temp/…` and once as `C:\Users\…\browser`, read
+        // as two builds.
+        report.located = located.found.map(name => portableName(name)).filter(name => name !== report.statsName);
         const unchecked = uncheckedGates(report, gates, options.gates);
         if (unchecked.refuse) {
             throw new InputError(unchecked.refuse);

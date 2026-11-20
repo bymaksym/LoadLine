@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type Analysis, type ModuleEntry } from '../../analysis/analysis.types';
 import { type GraphInsights } from '../../analysis/graph/insights.types';
 import { RECOMMENDED } from '../../criteria/criteria';
-import { buildFolderFindings, buildShippedFindings } from './shipped';
+import { buildFolderFindings, buildShippedFindings, mapCount } from './shipped';
 
 const KB = 1024;
 
@@ -231,5 +231,16 @@ describe('buildFolderFindings · a screens table nobody can read', () => {
         );
 
         expect(finding?.severity).toBe('info');
+    });
+});
+
+/** One folder said "43 source maps" in one card and "44" in the next: two counts of one thing. */
+describe('mapCount', () => {
+    it('counts the map files, which is what the card about what they expose counts too', () => {
+        expect(mapCount([{}, {}, {}], 2)).toBe(3);
+    });
+
+    it('falls back to the chunks a map split when the files are not there', () => {
+        expect(mapCount([], 5)).toBe(5);
     });
 });

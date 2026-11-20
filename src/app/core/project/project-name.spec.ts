@@ -3,8 +3,20 @@ import { titleIn } from '../build-text/index-html';
 import { projectNameOf } from './project-name';
 
 describe('projectNameOf', () => {
-    it('takes the package name first, as the name people use', () => {
-        expect(projectNameOf({ packageName: 'conduit', angularProject: 'app', pageTitle: 'Conduit' })).toBe('conduit');
+    /**
+     * The same build was "Esail IT Solutions" without `--project` and "control-horario-angular" with
+     * it: the package name came first and is only known with the flag. The title is in the build.
+     */
+    it("takes the page's title first, so --project does not change the name", () => {
+        const title = { pageTitle: 'Esail IT Solutions', folder: 'browser' };
+        expect(projectNameOf(title)).toBe('Esail IT Solutions');
+        expect(projectNameOf({ ...title, packageName: 'control-horario-angular' })).toBe('Esail IT Solutions');
+    });
+
+    it('takes the package name when the title is missing or is the template one', () => {
+        expect(projectNameOf({ packageName: 'conduit', angularProject: 'app' })).toBe('conduit');
+        expect(projectNameOf({ packageName: 'shop', pageTitle: 'Vite + React + TS' })).toBe('shop');
+        expect(projectNameOf({ packageName: 'shop', pageTitle: 'React App' })).toBe('shop');
     });
 
     /** Without context files — which almost nobody loads — the build still says what it is. */
