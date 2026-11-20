@@ -25,7 +25,7 @@ const labels = (list: { label: string }[]): string[] =>
 
 describe('readDist on a Vite build', () => {
     it('reads the graph out of the chunks, with no stats file anywhere', async () => {
-        const dist = await readDist(FOLDER, true);
+        const dist = await readDist(FOLDER, { derive: true });
         const meta = dist.graph?.meta;
 
         expect(Object.keys(meta?.outputs ?? {})).toHaveLength(6);
@@ -34,7 +34,7 @@ describe('readDist on a Vite build', () => {
     });
 
     it('three routes are three screens, and the deferred widget is not a fourth', async () => {
-        const dist = await readDist(FOLDER, true);
+        const dist = await readDist(FOLDER, { derive: true });
         const analysis = analyze(
             dist.graph!.meta,
             dist.gzip,
@@ -52,7 +52,7 @@ describe('readDist on a Vite build', () => {
     });
 
     it('the preload list is what stops a screen being counted a round trip too deep', async () => {
-        const dist = await readDist(FOLDER, true);
+        const dist = await readDist(FOLDER, { derive: true });
         const withLists = analyze(dist.graph!.meta, null, null, dist.announced, null, undefined, dist.graph!.parallel);
         const without = analyze(dist.graph!.meta, null, null, dist.announced);
 
@@ -71,7 +71,7 @@ describe('readDist on a Vite build', () => {
      * other from the `<script>` of the page.
      */
     it('the graph and index.html agree on which chunks are the bootstrap', async () => {
-        const dist = await readDist(FOLDER, true);
+        const dist = await readDist(FOLDER, { derive: true });
         const analysis = analyze(dist.graph!.meta, null, null, dist.announced, null, undefined, dist.graph!.parallel);
         const check = checkBoot(dist.graph!.meta.outputs, analysis.bootChunks, dist.announced!);
 
@@ -97,14 +97,14 @@ describe.each([
     const folder = join(process.cwd(), 'fixtures', fixture, 'dist');
 
     it('reads the same three screens', async () => {
-        const dist = await readDist(folder, true);
+        const dist = await readDist(folder, { derive: true });
         const analysis = analyze(dist.graph!.meta, null, null, dist.announced, null, undefined, dist.graph!.parallel);
 
         expect(labels(analysis.screens)).toEqual(['home', 'orders', 'settings']);
     });
 
     it('reads its preload list, so a screen and the chunk it shares arrive in one round trip', async () => {
-        const dist = await readDist(folder, true);
+        const dist = await readDist(folder, { derive: true });
         const analysis = analyze(dist.graph!.meta, null, null, dist.announced, null, undefined, dist.graph!.parallel);
 
         expect(analysis.screens.map(screen => screen.waves)).toEqual([1, 1, 1]);
@@ -121,7 +121,7 @@ describe('readDist on a build with a route table', () => {
     const folder = join(process.cwd(), 'fixtures', 'vite-router-app', 'dist');
 
     it('reads the routes out of the table, path and name', async () => {
-        const dist = await readDist(folder, true);
+        const dist = await readDist(folder, { derive: true });
         const routes = [...dist.graph!.routes].map(([chunk, list]) => [basename(chunk).split('-', 1)[0], list]);
 
         expect(routes).toEqual([
@@ -132,7 +132,7 @@ describe('readDist on a build with a route table', () => {
     });
 
     it('names each screen after its route and keeps the language file out of the screens', async () => {
-        const dist = await readDist(folder, true);
+        const dist = await readDist(folder, { derive: true });
         const graph = dist.graph!;
         const analysis = analyze(graph.meta, null, null, dist.announced, null, undefined, graph.parallel, graph.routes);
 
@@ -143,7 +143,7 @@ describe('readDist on a build with a route table', () => {
     });
 
     it('says when a folder has no table it can read', async () => {
-        const dist = await readDist(FOLDER, true);
+        const dist = await readDist(FOLDER, { derive: true });
         const graph = dist.graph!;
         const analysis = analyze(graph.meta, null, null, dist.announced, null, undefined, graph.parallel, graph.routes);
 
@@ -160,9 +160,9 @@ describe('readDist on a build with a route table', () => {
  */
 describe('readDist on a webpack 4 build', () => {
     it('refuses the folder rather than reading three lazy routes as no screens', async () => {
-        await expect(readDist(join(process.cwd(), 'fixtures', 'webpack4-app', 'dist'), true)).rejects.toThrow(
-            'NOT_ESM_GRAPH',
-        );
+        await expect(
+            readDist(join(process.cwd(), 'fixtures', 'webpack4-app', 'dist'), { derive: true }),
+        ).rejects.toThrow('NOT_ESM_GRAPH');
     });
 });
 
@@ -174,7 +174,7 @@ describe('readDist on a webpack 4 build', () => {
  */
 describe('readDist on a build with a nomodule copy', () => {
     it('reads the modern copy and leaves the legacy one out, counted', async () => {
-        const dist = await readDist(join(process.cwd(), 'fixtures', 'vite-legacy-app', 'dist'), true);
+        const dist = await readDist(join(process.cwd(), 'fixtures', 'vite-legacy-app', 'dist'), { derive: true });
         const analysis = analyze(dist.graph?.meta ?? { inputs: {}, outputs: {} }, dist.gzip);
 
         expect(labels(analysis.screens)).toEqual(['home.page', 'orders.page', 'settings.page']);
@@ -192,7 +192,7 @@ describe('readDist on a build with a nomodule copy', () => {
  */
 describe('readDist on an AMD build', () => {
     it('reads the dependency lists and the lazy requires, starting where data-main says', async () => {
-        const dist = await readDist(join(process.cwd(), 'fixtures', 'rollup-amd-app', 'dist'), true);
+        const dist = await readDist(join(process.cwd(), 'fixtures', 'rollup-amd-app', 'dist'), { derive: true });
         const analysis = analyze(dist.graph?.meta ?? { inputs: {}, outputs: {} }, dist.gzip);
 
         expect(labels(analysis.screens)).toEqual(['home.page', 'orders.page', 'settings.page']);
@@ -255,7 +255,7 @@ describe('readDist on a Metro build with a sectioned map', () => {
     const METRO = join(process.cwd(), 'fixtures', 'metro-sectioned-map', 'dist');
 
     it('splits the bundle by source file through the sections', async () => {
-        const dist = await readDist(METRO, true);
+        const dist = await readDist(METRO, { derive: true });
         const split = dist.splits?.get('entry-3f9a1c2b7d4e5f60.js');
 
         expect([...(split?.keys() ?? [])].toSorted((a, b) => a.localeCompare(b))).toEqual([
@@ -267,7 +267,7 @@ describe('readDist on a Metro build with a sectioned map', () => {
     });
 
     it('counts only the console.log that is the project’s own', async () => {
-        const dist = await readDist(METRO, true);
+        const dist = await readDist(METRO, { derive: true });
         const leftover = scanBuild({
             texts: dist.texts ?? new Map(),
             modules: [],

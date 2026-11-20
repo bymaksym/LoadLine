@@ -515,6 +515,9 @@ export class ReportStore {
         const caching = this.caching();
         const scan = this.scan();
         const deps = this.deps();
+        const situation = this.situation.situation();
+        const { tool } = analysis;
+        const scale = unitScale(analysis);
 
         return [
             ...buildFolderFindings(
@@ -524,17 +527,15 @@ export class ReportStore {
                     derived: this.derived(),
                     screens: analysis.screens.map(s => s.label),
                     drift: analysis.splitDrift,
-                    tool: analysis.tool,
+                    tool,
                 },
                 lang,
             ),
             ...(assets ? buildAssetFindings(assets, lang, criteria, this.assetSources()) : []),
-            ...(caching
-                ? buildCachingFindings(caching, lang, criteria, this.situation.situation(), analysis.tool)
-                : []),
+            ...(caching ? buildCachingFindings(caching, lang, criteria, { situation, tool }) : []),
             ...buildPageFindings(this.pageOrigins(), lang),
-            ...(scan ? buildScanFindings(scan, lang, criteria, unitScale(analysis), analysis.tool) : []),
-            ...(deps ? buildDepsFindings(deps, lang, criteria, unitScale(analysis)) : []),
+            ...(scan ? buildScanFindings(scan, lang, criteria, { scale, tool }) : []),
+            ...(deps ? buildDepsFindings(deps, lang, criteria, scale) : []),
         ];
     }
 
@@ -604,7 +605,7 @@ export class ReportStore {
     private readonly measuredResult = computed<MeasuredReport | MeasurementError | null>(() => {
         const analysis = this.analysis();
         const measurement = this.measurement();
-        return !analysis || !measurement ? null : contrast(analysis, measurement, this.measurementPick());
+        return analysis && measurement ? contrast(analysis, measurement, this.measurementPick()) : null;
     });
 
     /** The measurement contrasted against the analysis: what came down against what was predicted. */
@@ -624,9 +625,9 @@ export class ReportStore {
     readonly observed = computed<Observed | null>(() => {
         const analysis = this.analysis();
         const measurement = this.measurement();
-        return !analysis || !measurement
-            ? null
-            : observedFrom(measurement, new Set(analysis.allChunks.map(file => baseName(file))));
+        return analysis && measurement
+            ? observedFrom(measurement, new Set(analysis.allChunks.map(file => baseName(file))))
+            : null;
     });
 
     /**

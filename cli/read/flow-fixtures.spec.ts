@@ -34,7 +34,7 @@ const analyses = async (fixture: string): Promise<Analysis[]> => {
     const fromStats = await exists(stats);
     // A folder with its stats.json is read for its sizes only, as the command does; without one,
     // the graph comes out of the folder itself.
-    const dist = await readDist(join(root, 'dist'), !fromStats);
+    const dist = await readDist(join(root, 'dist'), { derive: !fromStats });
     const meta = fromStats ? await readStats(stats, EN) : dist.graph?.meta;
     if (!meta) {
         throw new Error(`${fixture}: no graph`);

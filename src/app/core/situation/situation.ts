@@ -274,10 +274,10 @@ export const readSituation = (value: unknown, lang: Lang = 'en'): { situation: S
     situation.answeredBy = readText(raw['answeredBy']);
 
     const answeredAt = readText(raw['answeredAt']);
-    if (answeredAt !== null && !DATE.test(answeredAt)) {
-        problems.push(t.badAnsweredAt(answeredAt));
-    } else {
+    if (answeredAt === null || DATE.test(answeredAt)) {
         situation.answeredAt = answeredAt;
+    } else {
+        problems.push(t.badAnsweredAt(answeredAt));
     }
 
     return { situation, problems };

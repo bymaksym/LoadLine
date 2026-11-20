@@ -39,7 +39,7 @@ const folderName = (folder: string): string | null =>
     folder
         .replaceAll('\\', '/')
         .split('/')
-        .filter(part => part !== '' && part !== '.' && part !== '..')
+        .filter(part => !['', '.', '..'].includes(part))
         .findLast(part => !GENERIC_FOLDERS.has(part.toLowerCase()) && !/\.json$/i.test(part)) ?? null;
 
 /**

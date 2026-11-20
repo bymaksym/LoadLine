@@ -168,10 +168,13 @@ const bundleFilesOf = (folder: string, paths: readonly string[]): Promise<Bundle
  * The build folder. Names are cut down to their last segment, which is how the metafile names its
  * outputs and how the page keys the same figures.
  *
- * @param derive also read the import graph out of the chunks, for a build with no stats file. It
- *               reads every source map on the way, so the maps are never parsed twice.
+ * @param options.derive also read the import graph out of the chunks, for a build with no stats
+ *                       file. It reads every source map on the way, so the maps are never parsed twice.
  */
-export const readDist = async (folder: string, derive = false, hints: BuildHints = {}): Promise<DistSizes> => {
+export const readDist = async (
+    folder: string,
+    { derive = false, hints = {} }: { derive?: boolean; hints?: BuildHints } = {},
+): Promise<DistSizes> => {
     const paths = await filesUnder(folder);
     const gzip = new Map<string, number>();
     const found = new Map<string, number>();

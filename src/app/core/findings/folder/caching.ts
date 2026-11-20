@@ -82,9 +82,14 @@ export const buildCachingFindings = (
     caching: CachingReport,
     lang: Lang,
     c: Criteria,
-    situation: Situation = EMPTY_SITUATION,
-    /** What wrote the build, for which setting the advice on splitting names. */
-    tool?: BuildTool,
+    {
+        situation = EMPTY_SITUATION,
+        tool,
+    }: {
+        situation?: Situation;
+        /** What wrote the build, for which setting the advice on splitting names. */
+        tool?: BuildTool;
+    } = {},
 ): Finding[] => {
     const text = TEXT[lang];
     const findings: Finding[] = [];

@@ -213,8 +213,8 @@ export const buildReport = (input: BuildInput, options: Options): CliReport => {
         ),
         ...(input.assets ? buildAssetFindings(input.assets, lang, criteria, input.assetSources ?? null, true) : []),
         ...buildPageFindings(input.pageOrigins ?? null, lang),
-        ...buildCachingFindings(caching, lang, criteria, situation, analysis.tool),
-        ...(scan ? buildScanFindings(scan, lang, criteria, unitScale(analysis), analysis.tool) : []),
+        ...buildCachingFindings(caching, lang, criteria, { situation, tool: analysis.tool }),
+        ...(scan ? buildScanFindings(scan, lang, criteria, { scale: unitScale(analysis), tool: analysis.tool }) : []),
         ...buildDepsFindings(deps, lang, criteria, unitScale(analysis)),
     ];
     const own = [...base, ...fromContext, ...fromBuild];

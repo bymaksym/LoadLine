@@ -14,7 +14,7 @@ const FOLDER = join(process.cwd(), 'fixtures', 'vite-app', 'dist');
 
 describe('selfCheck', () => {
     it('passes on a build both readers agree about, in the language asked for', async () => {
-        const dist = await readDist(FOLDER, true);
+        const dist = await readDist(FOLDER, { derive: true });
         const meta = dist.graph!.meta;
         const analysis = analyze(meta, null, null, dist.announced, null, undefined, dist.graph!.parallel);
 
@@ -28,7 +28,7 @@ describe('selfCheck', () => {
     });
 
     it('cannot run without the page, and says so in Spanish too', async () => {
-        const dist = await readDist(FOLDER, true);
+        const dist = await readDist(FOLDER, { derive: true });
         const meta = dist.graph!.meta;
         const analysis = analyze(meta, null, null, null);
 

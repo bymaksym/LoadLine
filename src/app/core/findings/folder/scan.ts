@@ -21,17 +21,22 @@ const named = (items: readonly string[]): string => items.map(item => mono(item)
 /** The ones that are a problem whatever else is true, as opposed to a build pointed at the wrong place. */
 const ALWAYS_SERIOUS = new Set<SecretKind>(['privateKey', 'awsKey', 'githubToken', 'slackToken', 'googleKey']);
 
-/**
- * @param scale how the raw weights of packages are said in the report's unit: `unitScale` of the
- *              analysis. Raw by default, which is what a raw report needs and nothing more.
- */
 export const buildScanFindings = (
     scan: ScanReport,
     lang: Lang,
     c: Criteria,
-    scale: UnitScale = RAW_SCALE,
-    /** What wrote the build: which setting the advice on source maps names, and whose console it may be. */
-    tool?: BuildTool,
+    {
+        scale = RAW_SCALE,
+        tool,
+    }: {
+        /**
+         * How the raw weights of packages are said in the report's unit: `unitScale` of the
+         * analysis. Raw by default, which is what a raw report needs and nothing more.
+         */
+        scale?: UnitScale;
+        /** What wrote the build: which setting the advice on source maps names, and whose console it may be. */
+        tool?: BuildTool;
+    } = {},
 ): Finding[] => {
     const sized = (bytes: number): string => formatSaving(bytes, scale);
     const text = TEXT[lang];

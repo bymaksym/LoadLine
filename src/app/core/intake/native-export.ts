@@ -46,7 +46,7 @@ export const nativePlatformsIn = (metadata: string | null): string[] => {
         const parsed: unknown = JSON.parse(metadata);
         const files =
             parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)['fileMetadata'] : undefined;
-        return !files || typeof files !== 'object' ? [] : NATIVE_PLATFORMS.filter(platform => platform in files);
+        return files && typeof files === 'object' ? NATIVE_PLATFORMS.filter(platform => platform in files) : [];
     } catch {
         return [];
     }

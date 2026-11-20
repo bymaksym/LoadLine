@@ -331,7 +331,7 @@ const standingLines = (report: CliReport, palette: Palette): string[] => {
         limit: bound,
         over: standing.current > limit,
         warning: standing.warning !== null,
-        error: standing.warning !== null && standing.error !== null ? formatBytes(standing.error) : null,
+        error: standing.warning === null || standing.error === null ? null : formatBytes(standing.error),
         config: standing.config,
     });
     return ['', ...wrap(line, WIDTH).map(row => (standing.current > limit ? palette.warn(row) : palette.dim(row)))];

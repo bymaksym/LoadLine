@@ -150,7 +150,7 @@ const readInputs = async (options: Options): Promise<BuildInput> => {
     const said = configRead.config?.build;
     const build =
         options.entries.length > 0 ? { ...said, entries: [...(said?.entries ?? []), ...options.entries] } : said;
-    const dist = folder ? await readDist(folder, derive, build) : NO_DIST;
+    const dist = folder ? await readDist(folder, { derive, hints: build }) : NO_DIST;
     const meta = dist.graph ? dist.graph.meta : await readStats(options.target, UI[options.lang]);
     const deps = await readDepsFiles(options.lock, options.audit);
     const context = options.project ? await readProject(options.project) : { angular: null, pkg: null, pipelines: [] };

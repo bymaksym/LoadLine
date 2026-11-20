@@ -101,7 +101,9 @@ describe('the update cost, before anybody answers', () => {
 describe('the update cost, once the two questions are answered', () => {
     it('takes the colour it was refusing to claim', () => {
         const update = find(
-            buildCachingFindings(caching, 'en', criteria, answered({ deploys: 'daily', returning: 'most' })),
+            buildCachingFindings(caching, 'en', criteria, {
+                situation: answered({ deploys: 'daily', returning: 'most' }),
+            }),
             'updateWeight',
         );
 
@@ -113,7 +115,9 @@ describe('the update cost, once the two questions are answered', () => {
 
     it('stays informative when the answers say it is rarely paid, and says why', () => {
         const update = find(
-            buildCachingFindings(caching, 'en', criteria, answered({ deploys: 'monthly', returning: 'few' })),
+            buildCachingFindings(caching, 'en', criteria, {
+                situation: answered({ deploys: 'monthly', returning: 'few' }),
+            }),
             'updateWeight',
         );
 
@@ -124,7 +128,7 @@ describe('the update cost, once the two questions are answered', () => {
     /** Half the pair is not the pair. This is where a median would have been quietly invented. */
     it('goes on withholding the colour when only one of the two was answered', () => {
         const update = find(
-            buildCachingFindings(caching, 'en', criteria, answered({ deploys: 'daily' })),
+            buildCachingFindings(caching, 'en', criteria, { situation: answered({ deploys: 'daily' }) }),
             'updateWeight',
         );
 
@@ -240,7 +244,7 @@ describe('the asymmetry, over every answer there is', () => {
         expect(floor).toBeDefined();
 
         for (const situation of combinations) {
-            const update = find(buildCachingFindings(caching, 'en', criteria, situation), 'updateWeight');
+            const update = find(buildCachingFindings(caching, 'en', criteria, { situation }), 'updateWeight');
             // And it is still there. Nothing an answer says ever removes a signal from the list:
             // the report reorders and re-thresholds, and it never filters.
             expect(update).toBeDefined();
@@ -251,7 +255,7 @@ describe('the asymmetry, over every answer there is', () => {
     it('only ever raises it on the answers that say the cost is actually paid', () => {
         const raised = combinations.filter(
             situation =>
-                find(buildCachingFindings(caching, 'en', criteria, situation), 'updateWeight')?.severity !== 'info',
+                find(buildCachingFindings(caching, 'en', criteria, { situation }), 'updateWeight')?.severity !== 'info',
         );
 
         // Every one of them answered both halves, and neither with "I don't know".

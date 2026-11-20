@@ -208,9 +208,6 @@ const breakdownKnown = (snapshot: Snapshot): boolean =>
 /** Report unit per raw byte: what the part shows over what it weighs on disk. `null` with nothing on disk. */
 const ratioOf = (shown: number, raw: number | undefined): number | null => (raw ? shown / raw : null);
 
-/** One way of telling two builds' screens are the same screen, after the source file has had its say. */
-type ScreenKey = (screen: SnapshotScreen) => string;
-
 /**
  * Which baseline screen each current screen is, by source file first and then — for the ones left —
  * by the name with the hash off and by the label, each only when it names one screen on each side.
@@ -233,6 +230,8 @@ const pairScreens = (
         }
     }
 
+    /** One way of telling two builds' screens are the same screen, after the source file has had its say. */
+    type ScreenKey = (screen: SnapshotScreen) => string;
     const keys: ScreenKey[] = [screen => unhashedName(screen.source), screen => screen.label];
     for (const keyOf of keys) {
         const taken = new Set([...pairs.values()].map(screen => screen.source));
