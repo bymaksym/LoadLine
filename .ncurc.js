@@ -15,9 +15,10 @@
  * Tied to the Angular major:
  *   `@angular/*`         → the framework itself.
  *   `angular-eslint`     → peer `@angular/cli` pinned to one major.
- *   `vitest`             → `ng test` runs it THROUGH `@angular/build`, whose peer says `^4.0.8`.
- *                          Being a major ahead worked, and a peer range that already says no is
- *                          a breakage nobody is going to treat as a bug.
+ *   `vitest`             → `ng test` runs it THROUGH `@angular/build`, whose peer names each major
+ *                          it takes (`^4.0.8 || ^5.0.0` since 22.2). A major ahead of that range is
+ *                          a breakage nobody is going to treat as a bug: move to the next one when
+ *                          the peer lists it, by hand.
  */
 const ANGULAR_COUPLED = [/^@angular\//, /^@angular-eslint\//, /^angular-eslint$/, /^vitest$/];
 

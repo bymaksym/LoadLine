@@ -13,6 +13,15 @@ allowBuilds:
   msgpackr-extract: true
   unrs-resolver: true
 
+# Peer ranges accepted beyond what a package declares, each with why. Removing an entry is how one
+# is looked at again.
+peerDependencyRules:
+  allowedVersions:
+    # stylelint-plugin-use-baseline 1.4.8 (the latest, 18/10/2026) still declares stylelint ^16 || ^17.
+    # On 20/11/2026 it ran under stylelint 18 and flagged `field-sizing` and `text-wrap-style` in a
+    # probe file, as it should. Remove this once a release declares 18.
+    stylelint-plugin-use-baseline>stylelint: '18'
+
 # Advisories accepted, each with why. Removing an entry is how one is looked at again.
 auditConfig:
   ignoreGhsas:
