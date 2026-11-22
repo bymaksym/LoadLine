@@ -8,6 +8,37 @@ is numbers, so a release that moves one silently is indistinguishable from a reg
 `1.0.0`, a minor bump may change the command's flags or its output. The page and the command share
 their analysis, so a change to one is a change to both unless an entry says otherwise.
 
+## [1.3.0](https://github.com/bymaksym/LoadLine/compare/v1.2.1...v1.3.0) (2026-11-22)
+
+
+### Features
+
+* **cli:** look for loadline.json in .config/ as well ([4066951](https://github.com/bymaksym/LoadLine/commit/4066951b81f3be34ecf8b9dbbf767ca64a0ff4de))
+* **cli:** name a native Expo app instead of misreading it ([f7b5746](https://github.com/bymaksym/LoadLine/commit/f7b57463cb6b7404da596e2a989bb29d975d1463))
+* **cli:** say where the initial load stands against angular.json's budget ([061c7e6](https://github.com/bymaksym/LoadLine/commit/061c7e60ab1b8cd47147875eac0d7cf974145ea1))
+* **flow:** a Flow tab that says which package makes which screen heavy ([20999d9](https://github.com/bymaksym/LoadLine/commit/20999d94aeefda4da4afa860ab711c82d71001fe))
+* **flow:** model and layout of the "where the bytes go" diagram ([9e4b952](https://github.com/bymaksym/LoadLine/commit/9e4b952c60342edb8c0bc2fd626ad77d8f816b5c))
+* **flow:** name what a build does not break down, and say something about it too ([1eaa234](https://github.com/bymaksym/LoadLine/commit/1eaa23491ddc9b0bc68fe80fa0e0e902e78dac54))
+* read index source maps, the sectioned format Metro writes ([b65b441](https://github.com/bymaksym/LoadLine/commit/b65b4417edc08717de81c148cc4b434b92a612e1))
+
+
+### Bug Fixes
+
+* a commented console.log is not a leftover; copied files are not chunks ([bcf725a](https://github.com/bymaksym/LoadLine/commit/bcf725aab570ee4dd5725c99fd2e839824ff04a4))
+* an import chain says where an import() takes it out of the bootstrap ([776db30](https://github.com/bymaksym/LoadLine/commit/776db301eb7ac81b61cdd6f044b81856641a1ba4))
+* an order for "what to fix first" when nothing saves a kilobyte ([2a50f16](https://github.com/bymaksym/LoadLine/commit/2a50f16cef423c46a8e47e6cb21b92a57dde7ff0))
+* **cli:** name the build once, relative and with / ([a588ffe](https://github.com/bymaksym/LoadLine/commit/a588ffee27f7b56ac2ee1f23b43a2943670f91d7))
+* **flow:** labels on a plate, over every ribbon, dimmed by their ink only ([2b99f01](https://github.com/bymaksym/LoadLine/commit/2b99f01360b0e6af2d07506e76a7ccbeef7a9dfc))
+* never round a mixed chunk to 100 % dependencies ([887b706](https://github.com/bymaksym/LoadLine/commit/887b7068cb00fa3cef88ee1f309d9e29b1190305))
+* one count of source maps in every card ([e72bf0e](https://github.com/bymaksym/LoadLine/commit/e72bf0e736def077a126d77d58d60ee21a623e97))
+* one source order for the app name, title first ([4a0c362](https://github.com/bymaksym/LoadLine/commit/4a0c362b92eaaf33b92b2396522ce64f87047bf7))
+* platform icons are not a file downloaded twice; fonts say their weights ([0e52e0e](https://github.com/bymaksym/LoadLine/commit/0e52e0e61044a04f9ab0dc201cf56332567e6925))
+* read pnpm 9 lock files for who brings each dependency ([9626bdd](https://github.com/bymaksym/LoadLine/commit/9626bdd7c7671bde82b88b648f368db0bbcb5491))
+* scale a chunk's parts to its weight when they add up to more than it ([2cb0495](https://github.com/bymaksym/LoadLine/commit/2cb0495a2eeaf2233e9b61b0663b62efb3794c6a))
+* tell copied files from chunks only where the bundler listed its chunks ([bbb37cc](https://github.com/bymaksym/LoadLine/commit/bbb37ccd51c3c2790fe6ac269a263f76b4367b17))
+* the advice for deep screens names how this build's tool preloads ([e266c18](https://github.com/bymaksym/LoadLine/commit/e266c18b9958cb28a07bc5cd922c7f58f53a034d))
+* the duplicates advice names every duplicated package ([f63f3d2](https://github.com/bymaksym/LoadLine/commit/f63f3d21ac29d29f2c7968c0e22ae84fcd07d68f))
+
 ## [1.2.1](https://github.com/bymaksym/LoadLine/compare/v1.2.0...v1.2.1) (2026-10-10)
 
 
